@@ -82,6 +82,28 @@ pub fn rolling(solves: &[Solve], size: usize) -> Vec<(usize, Average)> {
         .collect()
 }
 
+/// Splits the non-DNF solves into `buckets` equal-width ranges between the
+/// extremes, returning each range's start and how many solves fall in it.
+pub fn histogram(solves: &[Solve], buckets: usize) -> Vec<(u64, u32)> {
+    let times: Vec<u64> = solves.iter().filter_map(Solve::effective_ms).collect();
+    let (Some(&min), Some(&max)) = (times.iter().min(), times.iter().max()) else {
+        return Vec::new();
+    };
+    if buckets == 0 {
+        return Vec::new();
+    }
+    let width = (max - min) / buckets as u64 + 1;
+    let mut counts = vec![0_u32; buckets];
+    for ms in times {
+        counts[((ms - min) / width) as usize] += 1;
+    }
+    counts
+        .into_iter()
+        .enumerate()
+        .map(|(index, count)| (min + index as u64 * width, count))
+        .collect()
+}
+
 /// The current and best values for one rolling window.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct WindowStats {
@@ -243,6 +265,23 @@ mod tests {
         let mo3 = stats.windows[0];
         assert_eq!(mo3.current, Some(Average::Dnf));
         assert_eq!(mo3.best, Some((Average::Time(1_000), 2)));
+    }
+
+    #[test]
+    fn the_histogram_counts_every_finished_solve_once() {
+        let mut attempts = solves(&[1_000, 1_000, 9_000]);
+        attempts.push(dnf());
+        let buckets = histogram(&attempts, 12);
+        assert_eq!(buckets.len(), 12);
+        assert_eq!(buckets.iter().map(|&(_, count)| count).sum::<u32>(), 3);
+        assert_eq!(buckets[0], (1_000, 2));
+        assert_eq!(buckets[11].1, 1);
+    }
+
+    #[test]
+    fn the_histogram_handles_identical_times_and_no_times() {
+        assert_eq!(histogram(&solves(&[1_000, 1_000]), 4)[0], (1_000, 2));
+        assert!(histogram(&[dnf()], 4).is_empty());
     }
 
     #[test]

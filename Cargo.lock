@@ -1179,9 +1179,6 @@ dependencies = [
 [[package]]
 name = "cube-locale"
 version = "0.1.0"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "cube-ui"
@@ -1192,6 +1189,7 @@ dependencies = [
  "cube-core",
  "cube-locale",
  "gpui-kit",
+ "sys-locale",
 ]
 
 [[package]]

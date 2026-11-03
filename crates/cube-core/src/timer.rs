@@ -18,7 +18,9 @@ pub const DEFAULT_HOLD: Duration = Duration::from_millis(300);
 pub enum TimerPhase {
     Idle,
     /// The key is down with inspection off; `since` is when it was pressed.
-    Holding { since: Instant },
+    Holding {
+        since: Instant,
+    },
     /// The inspection countdown is running.
     Inspecting {
         started: Instant,

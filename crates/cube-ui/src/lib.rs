@@ -1,1 +1,37 @@
-//! placeholder
+//! GPUI user interface for cube.
+
+use gpui_kit::component::TitleBar;
+use gpui_kit::*;
+
+mod app;
+mod details;
+mod palette;
+mod settings_view;
+mod sidebar;
+mod stats_panel;
+mod stats_screen;
+mod timer_view;
+
+/// Starts the application and blocks until the last window closes.
+pub fn run() {
+    gpui_kit::application()
+        .with_assets(gpui_kit::assets::AllAssets)
+        .run(|cx| {
+            gpui_kit::init(cx);
+            let state = app::Loaded::load();
+            palette::apply(state.settings.theme, cx);
+
+            let bounds = Bounds::centered(None, size(px(1180.), px(760.)), cx);
+            let options = WindowOptions {
+                window_bounds: Some(WindowBounds::Windowed(bounds)),
+                window_min_size: Some(size(px(860.), px(560.))),
+                ..TitleBar::window_options()
+            };
+            gpui_kit::open_window(options, cx, move |window, cx| {
+                window.set_window_title("cube");
+                cx.new(|cx| app::CubeApp::new(state, window, cx))
+            })
+            .expect("failed to open the main window");
+            cx.activate(true);
+        });
+}
