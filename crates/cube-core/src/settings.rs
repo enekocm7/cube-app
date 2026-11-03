@@ -26,6 +26,8 @@ pub enum ThemePreference {
 #[allow(clippy::struct_excessive_bools, reason = "independent user toggles")]
 pub struct Settings {
     pub inspection: bool,
+    /// Plays the 8-second and 12-second inspection warnings.
+    pub inspection_audio: bool,
     /// Inspection length in milliseconds.
     pub inspection_limit_ms: u64,
     /// How long the timer key must be held, in milliseconds.
@@ -46,6 +48,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             inspection: true,
+            inspection_audio: false,
             inspection_limit_ms: 15_000,
             hold_ms: DEFAULT_HOLD.as_millis() as u64,
             theme: ThemePreference::default(),
@@ -111,6 +114,13 @@ mod tests {
         ));
         settings.adopt_existing_history(&[History::new(), history]);
         assert!(!settings.shows_start_hint());
+    }
+
+    #[test]
+    fn inspection_audio_is_off_by_default() {
+        assert!(!Settings::default().inspection_audio);
+        let settings: Settings = toml::from_str("inspection_audio = true").unwrap();
+        assert!(settings.inspection_audio);
     }
 
     #[test]

@@ -122,6 +122,7 @@ pub struct Strings {
     pub settings_timer: &'static str,
     pub settings_appearance: &'static str,
     pub setting_inspection: &'static str,
+    pub setting_inspection_audio: &'static str,
     pub setting_toasts: &'static str,
     pub setting_accurate: &'static str,
     pub setting_solve_list_ao5: &'static str,
@@ -135,6 +136,8 @@ pub struct Strings {
     pub toast_new_best: &'static str,
     pub toast_plus_two: &'static str,
     pub toast_dnf: &'static str,
+    /// `{error}`: why the cue could not be played.
+    pub toast_audio_failed: &'static str,
     pub toast_cancelled: &'static str,
     /// `{error}`: the cause.
     pub toast_save_failed: &'static str,
@@ -167,6 +170,7 @@ mod tests {
             assert!(strings.edited_times.contains("{count}"));
             assert!(strings.toast_save_failed.contains("{error}"));
             assert!(strings.toast_load_failed.contains("{error}"));
+            assert!(strings.toast_audio_failed.contains("{error}"));
         }
     }
 }

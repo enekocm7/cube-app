@@ -194,7 +194,9 @@ impl CubeApp {
     }
 
     fn tick(&mut self, window: &mut Window, cx: &mut Context<Self>) -> Duration {
-        if let Some(outcome) = self.timer.tick(Instant::now()) {
+        let now = Instant::now();
+        self.play_inspection_cues(now, window, cx);
+        if let Some(outcome) = self.timer.tick(now) {
             self.finish_attempt(outcome, window, cx);
         }
         if self.scramble.is_none()
@@ -208,6 +210,23 @@ impl CubeApp {
             ACTIVE_TICK
         } else {
             IDLE_TICK
+        }
+    }
+
+    /// Plays any inspection warnings whose time has come, without interrupting
+    /// the attempt.
+    fn play_inspection_cues(&mut self, now: Instant, window: &mut Window, cx: &mut Context<Self>) {
+        for cue in self.timer.take_inspection_cues(now).into_iter().flatten() {
+            if !self.settings.inspection_audio {
+                continue;
+            }
+            if let Err(error) = crate::audio::play(cue) {
+                let message = self
+                    .strings()
+                    .toast_audio_failed
+                    .replace("{error}", &format!("{error:#}"));
+                self.toast_warning(&message, window, cx);
+            }
         }
     }
 
@@ -345,6 +364,14 @@ impl CubeApp {
     pub(crate) fn toast(&self, message: &str, window: &mut Window, cx: &mut Context<Self>) {
         if self.settings.toasts {
             let toast = Notification::info(message.to_owned()).placement(Anchor::BottomRight);
+            window.push_notification(toast, cx);
+        }
+    }
+
+    /// Shows a warning without changing what the timer is doing.
+    pub(crate) fn toast_warning(&self, message: &str, window: &mut Window, cx: &mut Context<Self>) {
+        if self.settings.toasts {
+            let toast = Notification::warning(message.to_owned()).placement(Anchor::BottomRight);
             window.push_notification(toast, cx);
         }
     }
