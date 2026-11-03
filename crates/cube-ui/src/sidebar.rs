@@ -114,7 +114,7 @@ impl CubeApp {
                 Button::new("session-rename")
                     .ghost()
                     .small()
-                    .icon(IconName::Inbox)
+                    .icon(IconName::Pencil)
                     .tooltip(strings.rename_session)
                     .tab_stop(false)
                     .on_click(cx.listener(|app, _, window, cx| {
@@ -125,7 +125,7 @@ impl CubeApp {
                 Button::new("session-delete")
                     .ghost()
                     .small()
-                    .icon(IconName::Delete)
+                    .icon(IconName::Trash)
                     .tooltip(strings.delete_session)
                     .tab_stop(false)
                     .on_click(cx.listener(|app, _, window, cx| {
