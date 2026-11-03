@@ -34,8 +34,10 @@ impl CubeApp {
             .child(
                 h_flex()
                     .px_3()
-                    .py_1()
+                    .py_2()
                     .justify_between()
+                    .border_t_1()
+                    .border_color(border)
                     .text_xs()
                     .text_color(muted)
                     .child(strings.solves)
@@ -43,6 +45,10 @@ impl CubeApp {
             )
             .child(if count == 0 {
                 div()
+                    .flex_1()
+                    .flex()
+                    .items_center()
+                    .justify_center()
                     .p_3()
                     .text_sm()
                     .text_color(muted)

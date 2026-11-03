@@ -13,9 +13,9 @@ use crate::timer::{DEFAULT_HOLD, Timer};
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ThemePreference {
-    #[default]
     System,
     Light,
+    #[default]
     Dark,
 }
 
