@@ -1,12 +1,12 @@
-//! The central panel: event, scramble, digits and the latest result's actions.
+//! The central panel: scramble, digits and the latest result's actions.
 
 use std::time::Instant;
 
 use cube_core::format::format_ms;
-use cube_core::{Modifier, Readiness, TimerPhase, WcaEvent};
-use gpui_kit::assets::IconName;
+use cube_core::{Modifier, Readiness, TimerPhase};
 use gpui_kit::component::button::{Button, ButtonVariants as _};
-use gpui_kit::component::menu::{DropdownMenu as _, PopupMenuItem};
+use gpui_kit::component::scroll::ScrollableElement as _;
+use gpui_kit::component::tooltip::Tooltip;
 use gpui_kit::component::{ActiveTheme as _, Selectable as _, Sizable as _, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
@@ -16,6 +16,17 @@ use crate::palette::Palette;
 
 /// Digit size of the timer.
 const DIGITS_SIZE: Pixels = px(112.);
+
+/// Line height of the scramble.
+const SCRAMBLE_LINE: Pixels = px(24.);
+
+/// Lines the scramble row always reserves: enough for most events, so that the
+/// digits stay put from one scramble to the next.
+const SCRAMBLE_MIN_LINES: f32 = 2.;
+
+/// Lines the scramble may take before it scrolls, so that the long scrambles of
+/// the big events leave room for the digits in a small window.
+const SCRAMBLE_MAX_LINES: f32 = 8.;
 
 /// What the digits show at a given moment.
 struct Display {
@@ -120,84 +131,49 @@ impl CubeApp {
 
     fn render_scramble_bar(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
         let strings = self.strings();
-        let entity = cx.entity().downgrade();
-        let current = self.event;
         let scramble = self.scramble.clone();
         let theme = cx.theme();
         let mono = theme.mono_font_family.clone();
         let muted = theme.muted_foreground;
+        let border = theme.border;
         let text: SharedString = scramble
             .clone()
             .unwrap_or_else(|| strings.generating_scramble.to_owned())
             .into();
 
-        v_flex()
+        h_flex()
+            .flex_none()
             .w_full()
-            .gap_3()
-            .items_center()
+            .min_h(SCRAMBLE_LINE * SCRAMBLE_MIN_LINES)
+            .pb_3()
+            .border_b_1()
+            .border_color(border)
             .child(
-                h_flex()
-                    .gap_1()
-                    .child(
-                        Button::new("event")
-                            .outline()
-                            .small()
-                            .label(current.name())
-                            .tab_stop(false)
-                            .dropdown_menu(move |mut menu, _, _| {
-                                for event in WcaEvent::ALL {
-                                    let entity = entity.clone();
-                                    menu = menu.item(
-                                        PopupMenuItem::new(event.name())
-                                            .checked(event == current)
-                                            .on_click(move |_, _, cx| {
-                                                entity
-                                                    .update(cx, |app, cx| app.set_event(event, cx))
-                                                    .ok();
-                                            }),
-                                    );
-                                }
-                                menu
-                            }),
-                    )
-                    .child(
-                        Button::new("next-scramble")
-                            .ghost()
-                            .small()
-                            .icon(IconName::Redo)
-                            .tooltip(strings.new_scramble)
-                            .tab_stop(false)
-                            .on_click(cx.listener(|app, _, window, cx| {
-                                app.skip_scramble(cx);
-                                app.focus.focus(window, cx);
-                            })),
-                    )
-                    .child(
-                        Button::new("copy-scramble")
-                            .ghost()
-                            .small()
-                            .icon(IconName::Copy)
-                            .tooltip(strings.copy_scramble)
-                            .tab_stop(false)
-                            .on_click(cx.listener(move |app, _, window, cx| {
-                                if let Some(scramble) = &app.scramble {
-                                    cx.write_to_clipboard(ClipboardItem::new_string(
-                                        scramble.clone(),
-                                    ));
-                                    app.toast(app.strings().scramble_copied, window, cx);
-                                }
-                                app.focus.focus(window, cx);
-                            })),
-                    ),
-            )
-            .child(
+                // Keyed by the text so that a new scramble starts from its top.
                 div()
-                    .w_full()
-                    .max_w(px(760.))
+                    .id(text.clone())
+                    .flex_1()
+                    .min_w_0()
+                    .h_auto()
+                    .max_h(SCRAMBLE_LINE * SCRAMBLE_MAX_LINES)
                     .text_center()
                     .font_family(mono)
-                    .text_lg()
+                    .text_base()
+                    .line_height(SCRAMBLE_LINE)
                     .when(scramble.is_none(), |text| text.text_color(muted))
+                    .when(scramble.is_some(), |text| {
+                        text.cursor_pointer().tooltip(move |window, cx| {
+                            Tooltip::new(strings.copy_scramble).build(window, cx)
+                        })
+                    })
+                    .on_click(cx.listener(|app, _, window, cx| {
+                        if let Some(scramble) = &app.scramble {
+                            cx.write_to_clipboard(ClipboardItem::new_string(scramble.clone()));
+                            app.toast(app.strings().scramble_copied, window, cx);
+                        }
+                        app.focus.focus(window, cx);
+                    }))
+                    .overflow_y_scrollbar()
                     .child(text),
             )
     }
