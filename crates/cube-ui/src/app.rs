@@ -1,9 +1,11 @@
 //! Application state and the operations on it. Views live in sibling modules.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use cube_core::cstimer::{self, ImportReport};
 use cube_core::scramble::{self, ScrambleQueue};
 use cube_core::stats::{self, Average, SessionStats};
 use cube_core::{
@@ -11,6 +13,8 @@ use cube_core::{
     format::format_ms, persistence,
 };
 use cube_locale::{Language, Strings};
+use cube_updater::Release;
+use gpui_kit::assets::IconName;
 use gpui_kit::component::notification::Notification;
 use gpui_kit::component::{ActiveTheme as _, TitleBar, WindowExt as _, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
@@ -85,6 +89,10 @@ pub struct LastResult {
 }
 
 /// The application window's root view.
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "independent timer, saving and update states"
+)]
 pub struct CubeApp {
     pub(crate) focus: FocusHandle,
     pub(crate) screen: Screen,
@@ -104,6 +112,11 @@ pub struct CubeApp {
     history_path: Option<PathBuf>,
     settings_path: Option<PathBuf>,
     saving_blocked: bool,
+    /// The newer release the update notification offers, if any.
+    pub(crate) available: Option<Arc<Release>>,
+    pub(crate) update_checking: bool,
+    pub(crate) updating: bool,
+    pub(crate) update_ticker: Option<Task<()>>,
 }
 
 impl CubeApp {
@@ -124,7 +137,7 @@ impl CubeApp {
         let event = session_event(&sessions[0]);
         let focus = cx.focus_handle();
         focus.focus(window, cx);
-        let app = Self {
+        let mut app = Self {
             focus,
             screen: Screen::Timer,
             timer: settings.timer(),
@@ -142,6 +155,10 @@ impl CubeApp {
             history_path,
             settings_path,
             saving_blocked: load_error.is_some(),
+            available: None,
+            update_checking: false,
+            updating: false,
+            update_ticker: None,
         };
         if let Some(error) = load_error {
             let message = app.strings().toast_load_failed.replace("{error}", &error);
@@ -152,6 +169,7 @@ impl CubeApp {
             });
         }
         app.start_ticking(window, cx);
+        app.startup_update_tasks(window, cx);
         cx.observe_window_activation(window, Self::on_activation_changed)
             .detach();
         app
@@ -197,7 +215,9 @@ impl CubeApp {
     }
 
     fn tick(&mut self, window: &mut Window, cx: &mut Context<Self>) -> Duration {
-        if let Some(outcome) = self.timer.tick(Instant::now()) {
+        let now = Instant::now();
+        self.play_inspection_cues(now, window, cx);
+        if let Some(outcome) = self.timer.tick(now) {
             self.finish_attempt(outcome, window, cx);
         }
         if self.scramble.is_none()
@@ -211,6 +231,23 @@ impl CubeApp {
             ACTIVE_TICK
         } else {
             IDLE_TICK
+        }
+    }
+
+    /// Plays any inspection warnings whose time has come, without interrupting
+    /// the attempt.
+    fn play_inspection_cues(&mut self, now: Instant, window: &mut Window, cx: &mut Context<Self>) {
+        for cue in self.timer.take_inspection_cues(now).into_iter().flatten() {
+            if !self.settings.inspection_audio {
+                continue;
+            }
+            if let Err(error) = crate::audio::play(cue) {
+                let message = self
+                    .strings()
+                    .toast_audio_failed
+                    .replace("{error}", &format!("{error:#}"));
+                self.toast_warning(&message, window, cx);
+            }
         }
     }
 
@@ -352,6 +389,14 @@ impl CubeApp {
         }
     }
 
+    /// Shows a warning without changing what the timer is doing.
+    pub(crate) fn toast_warning(&self, message: &str, window: &mut Window, cx: &mut Context<Self>) {
+        if self.settings.toasts {
+            let toast = Notification::warning(message.to_owned()).placement(Anchor::BottomRight);
+            window.push_notification(toast, cx);
+        }
+    }
+
     /// Replaces the scramble without recording anything.
     pub(crate) fn skip_scramble(&mut self, cx: &mut Context<Self>) {
         if !self.timer.is_active() {
@@ -469,6 +514,101 @@ impl CubeApp {
         }
     }
 
+    /// Imports a csTimer export, adding its sessions to the history.
+    pub(crate) fn import_cstimer(
+        &mut self,
+        path: &Path,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        match cstimer::import(path) {
+            Ok(report) => self.add_imported(report, window, cx),
+            Err(error) => self.report_error(self.strings().toast_import_failed, &error, window, cx),
+        }
+    }
+
+    /// Writes every session to a csTimer export.
+    pub(crate) fn export_cstimer(&self, path: &Path, window: &mut Window, cx: &mut Context<Self>) {
+        match cstimer::export(path, &self.sessions) {
+            Ok(path) => {
+                let message = self
+                    .strings()
+                    .toast_export_done
+                    .replace("{path}", &path.display().to_string());
+                self.toast(&message, window, cx);
+            }
+            Err(error) => self.report_error(self.strings().toast_export_failed, &error, window, cx),
+        }
+    }
+
+    /// Appends imported sessions, replacing an untouched default session.
+    fn add_imported(&mut self, report: ImportReport, window: &mut Window, cx: &mut Context<Self>) {
+        let ImportReport {
+            sessions,
+            mut imported,
+            mut skipped,
+        } = report;
+        if !sessions.is_empty() {
+            // An untouched first session is only the empty default; replacing
+            // it keeps imported sessions from starting at "Session 2".
+            let first = if self.sessions.len() == 1
+                && self.sessions[0].is_empty()
+                && self.sessions[0].name().is_empty()
+            {
+                self.sessions.clear();
+                0
+            } else {
+                self.sessions.len()
+            };
+            let mut added = false;
+            for (index, session) in sessions.into_iter().enumerate() {
+                if first + index < MAX_SESSIONS {
+                    self.sessions.push(session);
+                    added = true;
+                } else {
+                    imported = imported.saturating_sub(session.len());
+                    skipped += session.len();
+                }
+            }
+            if added {
+                self.current = first.min(self.sessions.len() - 1);
+                self.last_result = None;
+                self.refresh_stats();
+                let event = session_event(self.session());
+                self.set_event(event, cx);
+                self.save_history(window, cx);
+            }
+        }
+
+        let message = self
+            .strings()
+            .toast_import_done
+            .replace("{imported}", &imported.to_string())
+            .replace("{skipped}", &skipped.to_string());
+        self.toast(&message, window, cx);
+        cx.notify();
+    }
+
+    /// Reports a failed file picker.
+    pub(crate) fn report_import_error(
+        &self,
+        error: &anyhow::Error,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.report_error(self.strings().toast_import_failed, error, window, cx);
+    }
+
+    /// Reports a failed file picker.
+    pub(crate) fn report_export_error(
+        &self,
+        error: &anyhow::Error,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.report_error(self.strings().toast_export_failed, error, window, cx);
+    }
+
     /// Keeps the timer display in step with an edit to the newest solve.
     fn sync_last_result(&mut self) {
         if self.last_result.is_some()
@@ -508,13 +648,18 @@ impl CubeApp {
         }
         scramble::set_accurate_3x3(self.settings.accurate_3x3);
         palette::apply(&self.settings, cx);
+        self.save_settings(window, cx);
+        window.refresh();
+        cx.notify();
+    }
+
+    /// Writes the current settings to disk.
+    pub(crate) fn save_settings(&self, window: &mut Window, cx: &mut Context<Self>) {
         if let Some(path) = &self.settings_path
             && let Err(error) = persistence::save_settings(path, &self.settings)
         {
             self.report_save_error(&error, window, cx);
         }
-        window.refresh();
-        cx.notify();
     }
 
     fn solves_changed(&mut self, window: &mut Window, cx: &mut Context<Self>) {
@@ -553,10 +698,18 @@ impl CubeApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let message = self
-            .strings()
-            .toast_save_failed
-            .replace("{error}", &format!("{error:#}"));
+        self.report_error(self.strings().toast_save_failed, error, window, cx);
+    }
+
+    /// Shows `template`, with `{error}` filled in, as an error notification.
+    fn report_error(
+        &self,
+        template: &'static str,
+        error: &anyhow::Error,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let message = template.replace("{error}", &format!("{error:#}"));
         window.push_notification(Notification::error(message), cx);
     }
 
@@ -612,7 +765,9 @@ impl CubeApp {
                         Button::new("open-settings")
                             .ghost()
                             .small()
-                            .label(strings.settings)
+                            .icon(IconName::Settings)
+                            .tooltip(strings.settings)
+                            .accessibility_label(strings.settings)
                             .tab_stop(false)
                             .on_click(cx.listener(|app, _, window, cx| {
                                 if app.timer.is_active() {

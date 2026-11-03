@@ -20,12 +20,88 @@ pub enum ThemePreference {
     Dark,
 }
 
+/// Which releases the update check looks at.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum UpdateChannel {
+    /// Finished releases only.
+    #[default]
+    Stable,
+    /// Also offer pre-releases.
+    Prerelease,
+}
+
+/// How often the automatic update check runs.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum UpdateFrequency {
+    /// On every launch.
+    #[default]
+    Start,
+    /// At most once a day.
+    Daily,
+    /// At most once a week.
+    Weekly,
+}
+
+/// Updater state and preferences.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct UpdateSettings {
+    /// Runs the update check automatically.
+    pub auto_check: bool,
+    /// Stable releases only, or pre-releases too.
+    pub channel: UpdateChannel,
+    /// How often the automatic check runs.
+    pub frequency: UpdateFrequency,
+    /// Unix timestamp of the last check (any check, manual or automatic).
+    pub last_check: Option<i64>,
+    /// Version the user chose to skip.
+    pub skipped_version: Option<String>,
+    /// Version that ran last, used to show "Updated to vX" after an update.
+    pub last_run_version: Option<String>,
+}
+
+impl Default for UpdateSettings {
+    fn default() -> Self {
+        Self {
+            auto_check: true,
+            channel: UpdateChannel::default(),
+            frequency: UpdateFrequency::default(),
+            last_check: None,
+            skipped_version: None,
+            last_run_version: None,
+        }
+    }
+}
+
+impl UpdateSettings {
+    /// Returns whether an automatic check is due at `now` (Unix seconds).
+    pub fn check_due(&self, now: i64) -> bool {
+        if !self.auto_check {
+            return false;
+        }
+        let hours = match self.last_check {
+            Some(last) => now.saturating_sub(last).max(0) / 3600,
+            // Never checked: always due.
+            None => return true,
+        };
+        match self.frequency {
+            UpdateFrequency::Start => true,
+            UpdateFrequency::Daily => hours >= 24,
+            UpdateFrequency::Weekly => hours >= 24 * 7,
+        }
+    }
+}
+
 /// Persisted user preferences. Unknown keys are ignored, missing keys default.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 #[allow(clippy::struct_excessive_bools, reason = "independent user toggles")]
 pub struct Settings {
     pub inspection: bool,
+    /// Plays the 8-second and 12-second inspection warnings.
+    pub inspection_audio: bool,
     /// Inspection length in milliseconds.
     pub inspection_limit_ms: u64,
     /// How long the timer key must be held, in milliseconds.
@@ -43,12 +119,14 @@ pub struct Settings {
     pub solve_list_ao5: bool,
     /// Whether the start hint has been used, so it is no longer shown while idle.
     pub start_hint_seen: bool,
+    pub updates: UpdateSettings,
 }
 
 impl Default for Settings {
     fn default() -> Self {
         Self {
             inspection: true,
+            inspection_audio: false,
             inspection_limit_ms: 15_000,
             hold_ms: DEFAULT_HOLD.as_millis() as u64,
             theme: ThemePreference::default(),
@@ -58,6 +136,7 @@ impl Default for Settings {
             accurate_3x3: false,
             solve_list_ao5: false,
             start_hint_seen: false,
+            updates: UpdateSettings::default(),
         }
     }
 }
@@ -118,14 +197,23 @@ mod tests {
     }
 
     #[test]
+    fn inspection_audio_is_off_by_default() {
+        assert!(!Settings::default().inspection_audio);
+        let settings: Settings = toml::from_str("inspection_audio = true").unwrap();
+        assert!(settings.inspection_audio);
+    }
+
+    #[test]
     fn settings_round_trip() {
-        let settings = Settings {
+        let mut settings = Settings {
             theme: ThemePreference::Dark,
             theme_file: "default.toml".into(),
             language: "es".into(),
             start_hint_seen: true,
             ..Settings::default()
         };
+        settings.updates.frequency = UpdateFrequency::Weekly;
+        settings.updates.skipped_version = Some("0.2.0".into());
         let text = toml::to_string(&settings).unwrap();
         assert_eq!(toml::from_str::<Settings>(&text).unwrap(), settings);
     }
@@ -141,5 +229,45 @@ mod tests {
     fn an_empty_theme_file_is_left_out_of_the_saved_file() {
         let text = toml::to_string(&Settings::default()).unwrap();
         assert!(!text.contains("theme_file"));
+    }
+
+    #[test]
+    fn update_settings_default_to_checking_every_launch() {
+        let updates = Settings::default().updates;
+        assert!(updates.auto_check);
+        assert_eq!(updates.channel, UpdateChannel::Stable);
+        assert_eq!(updates.frequency, UpdateFrequency::Start);
+        assert!(updates.skipped_version.is_none());
+        assert!(updates.check_due(0));
+    }
+
+    #[test]
+    fn update_frequency_respects_the_last_check() {
+        let mut updates = UpdateSettings {
+            frequency: UpdateFrequency::Daily,
+            last_check: Some(1_000_000),
+            ..UpdateSettings::default()
+        };
+        assert!(!updates.check_due(1_000_000 + 23 * 3600));
+        assert!(updates.check_due(1_000_000 + 24 * 3600));
+
+        updates.frequency = UpdateFrequency::Weekly;
+        assert!(!updates.check_due(1_000_000 + 6 * 24 * 3600));
+        assert!(updates.check_due(1_000_000 + 7 * 24 * 3600));
+
+        updates.frequency = UpdateFrequency::Start;
+        assert!(updates.check_due(1_000_000));
+
+        updates.auto_check = false;
+        assert!(!updates.check_due(1_000_000));
+    }
+
+    #[test]
+    fn old_settings_files_gain_the_updater_defaults() {
+        let settings: Settings =
+            toml::from_str("inspection = false\n[updates]\nauto_check = false\n").unwrap();
+        assert!(!settings.inspection);
+        assert!(!settings.updates.auto_check);
+        assert_eq!(settings.updates.frequency, UpdateFrequency::Start);
     }
 }

@@ -122,12 +122,20 @@ pub struct Strings {
     pub settings_timer: &'static str,
     pub settings_appearance: &'static str,
     pub settings_theme: &'static str,
+    pub settings_data: &'static str,
     pub setting_inspection: &'static str,
+    pub setting_inspection_audio: &'static str,
     pub setting_toasts: &'static str,
     pub setting_accurate: &'static str,
     pub setting_solve_list_ao5: &'static str,
     pub setting_theme: &'static str,
     pub setting_language: &'static str,
+    pub setting_import: &'static str,
+    pub setting_export: &'static str,
+    pub import_button: &'static str,
+    pub export_button: &'static str,
+    /// The label of the import file picker's confirm button.
+    pub import_prompt: &'static str,
     pub theme_system: &'static str,
     pub theme_light: &'static str,
     pub theme_dark: &'static str,
@@ -168,15 +176,74 @@ pub struct Strings {
     pub theme_load_failed: &'static str,
     pub no_themes: &'static str,
 
+    pub settings_updates: &'static str,
+    pub setting_check_updates: &'static str,
+    pub setting_update_channel: &'static str,
+    pub setting_update_frequency: &'static str,
+    pub setting_check_now: &'static str,
+    pub setting_clear_skip: &'static str,
+    /// `{version}`: the version being skipped.
+    pub setting_skipping: &'static str,
+    pub update_channel_stable: &'static str,
+    pub update_channel_prerelease: &'static str,
+    pub update_frequency_start: &'static str,
+    pub update_frequency_daily: &'static str,
+    pub update_frequency_weekly: &'static str,
+    pub update_now: &'static str,
+    pub update_release_notes: &'static str,
+    pub update_skip: &'static str,
+    pub update_later: &'static str,
+    pub update_restart_now: &'static str,
+
+    /// `{version}`: the version being downloaded.
+    pub update_downloading: &'static str,
+    pub update_updating_title: &'static str,
+    pub update_updated_title: &'static str,
+    /// `{current}`: the version that is now running.
+    pub update_updated_body: &'static str,
+    pub update_check_failed_title: &'static str,
+    /// `{error}`: the cause.
+    pub update_check_failed_body: &'static str,
+    pub update_uptodate_title: &'static str,
+    /// `{version}`: the running version.
+    pub update_uptodate_body: &'static str,
+    pub update_available_title: &'static str,
+    /// `{version}`: the new version; `{current}`: the running one.
+    pub update_available_body: &'static str,
+    pub update_skipped_title: &'static str,
+    /// `{version}`: the skipped version.
+    pub update_skipped_body: &'static str,
+    pub update_no_notes: &'static str,
+    /// `{version}`: the new version.
+    pub update_notes_title: &'static str,
+    pub update_no_asset: &'static str,
+    pub update_failed_title: &'static str,
+    pub update_cancelled_body: &'static str,
+    pub update_restart_title: &'static str,
+    /// `{version}`: the version waiting to be installed.
+    pub update_restart_body: &'static str,
+    /// `{error}`: the cause.
+    pub update_install_failed: &'static str,
+
     /// `{label}`: the statistic; `{time}`: its new value.
     pub toast_new_best: &'static str,
     pub toast_plus_two: &'static str,
     pub toast_dnf: &'static str,
+    /// `{error}`: why the cue could not be played.
+    pub toast_audio_failed: &'static str,
     pub toast_cancelled: &'static str,
     /// `{error}`: the cause.
     pub toast_save_failed: &'static str,
     /// `{error}`: the cause.
     pub toast_load_failed: &'static str,
+    /// `{imported}`: how many solves were added; `{skipped}`: how many were not.
+    pub toast_import_done: &'static str,
+    /// `{path}`: the file that was written.
+    pub toast_export_done: &'static str,
+    /// `{error}`: the cause.
+    pub toast_import_failed: &'static str,
+    /// `{error}`: the cause.
+    pub toast_export_failed: &'static str,
 }
 
 #[cfg(test)]
@@ -210,6 +277,23 @@ mod tests {
             assert!(strings.theme_saved.contains("{name}"));
             assert!(strings.theme_delete_confirm.contains("{name}"));
             assert!(strings.theme_deleted.contains("{name}"));
+            assert!(strings.toast_import_done.contains("{imported}"));
+            assert!(strings.toast_import_done.contains("{skipped}"));
+            assert!(strings.toast_export_done.contains("{path}"));
+            assert!(strings.toast_import_failed.contains("{error}"));
+            assert!(strings.toast_export_failed.contains("{error}"));
+            assert!(strings.toast_audio_failed.contains("{error}"));
+            assert!(strings.setting_skipping.contains("{version}"));
+            assert!(strings.update_downloading.contains("{version}"));
+            assert!(strings.update_updated_body.contains("{current}"));
+            assert!(strings.update_check_failed_body.contains("{error}"));
+            assert!(strings.update_uptodate_body.contains("{version}"));
+            assert!(strings.update_available_body.contains("{version}"));
+            assert!(strings.update_available_body.contains("{current}"));
+            assert!(strings.update_skipped_body.contains("{version}"));
+            assert!(strings.update_notes_title.contains("{version}"));
+            assert!(strings.update_restart_body.contains("{version}"));
+            assert!(strings.update_install_failed.contains("{error}"));
         }
     }
 }

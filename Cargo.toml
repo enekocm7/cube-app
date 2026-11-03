@@ -1,6 +1,11 @@
 [workspace]
 resolver = "3"
-members = ["crates/cube-core", "crates/cube-locale", "crates/cube-ui"]
+members = [
+    "crates/cube-core",
+    "crates/cube-locale",
+    "crates/cube-ui",
+    "crates/cube-updater",
+]
 
 [workspace.package]
 version = "0.1.0"
@@ -12,15 +17,23 @@ repository = "https://github.com/enekocm7/cube-gui"
 cube-core = { path = "crates/cube-core" }
 cube-locale = { path = "crates/cube-locale" }
 cube-ui = { path = "crates/cube-ui" }
+cube-updater = { path = "crates/cube-updater" }
 
 anyhow = "1"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 dirs = "7"
+flate2 = "1"
 gpui-kit = { version = "0.9.0", features = ["gpui-fast"] }
+rodio = { version = "0.22.2", features = ["mp3"] }
+semver = "1.0.28"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+sha2 = "0.11.1"
+tar = "0.4"
 tnoodle-rs = "0.1.1"
 toml = "0.8"
+ureq = "3"
+zip = { version = "9.2.2", default-features = false, features = ["deflate"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
@@ -52,6 +65,7 @@ path = "src/main.rs"
 
 [dependencies]
 cube-ui.workspace = true
+cube-updater.workspace = true
 
 [build-dependencies]
 embed-resource = "3"

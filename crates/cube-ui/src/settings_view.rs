@@ -2,10 +2,10 @@
 
 use cube_core::Settings;
 use cube_core::persistence;
-use cube_core::settings::ThemePreference;
+use cube_core::settings::{ThemePreference, UpdateChannel, UpdateFrequency};
 use cube_core::theme;
 use cube_core::theme::{ThemeColor, ThemeFile};
-use cube_locale::Language;
+use cube_locale::{Language, Strings};
 use gpui_kit::assets::IconName;
 use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
@@ -35,6 +35,59 @@ struct SettingsView {
 }
 
 impl SettingsView {
+    /// Opens a picker and imports the chosen csTimer export.
+    fn import(&self, window: &mut Window, cx: &mut Context<Self>) {
+        let prompt = self.app.read(cx).strings().import_prompt;
+        let receiver = cx.prompt_for_paths(PathPromptOptions {
+            files: true,
+            directories: false,
+            multiple: false,
+            prompt: Some(prompt.into()),
+        });
+        let app = self.app.clone();
+        cx.spawn_in(window, async move |_, cx| match receiver.await {
+            Ok(Ok(Some(paths))) => {
+                if let Some(path) = paths.first() {
+                    let _ = app.update_in(cx, |app, window, cx| {
+                        app.import_cstimer(path, window, cx);
+                    });
+                }
+            }
+            Ok(Err(error)) => {
+                let _ = app.update_in(cx, |app, window, cx| {
+                    app.report_import_error(&error, window, cx);
+                });
+            }
+            // Cancelled, or the window closed while the picker was open.
+            Ok(Ok(None)) | Err(_) => {}
+        })
+        .detach();
+    }
+
+    /// Opens a save picker and exports every session as csTimer JSON.
+    fn export(&self, window: &mut Window, cx: &mut Context<Self>) {
+        let directory = dirs::document_dir()
+            .or_else(dirs::home_dir)
+            .unwrap_or_default();
+        let receiver = cx.prompt_for_new_path(&directory, Some("cstimer.json"));
+        let app = self.app.clone();
+        cx.spawn_in(window, async move |_, cx| match receiver.await {
+            Ok(Ok(Some(path))) => {
+                let _ = app.update_in(cx, |app, window, cx| {
+                    app.export_cstimer(&path, window, cx);
+                });
+            }
+            Ok(Err(error)) => {
+                let _ = app.update_in(cx, |app, window, cx| {
+                    app.report_export_error(&error, window, cx);
+                });
+            }
+            // Cancelled, or the window closed while the picker was open.
+            Ok(Ok(None)) | Err(_) => {}
+        })
+        .detach();
+    }
+
     fn change(
         &self,
         window: &mut Window,
@@ -44,6 +97,28 @@ impl SettingsView {
         self.app.update(cx, |app, cx| {
             app.update_settings(window, cx, change);
         });
+    }
+
+    /// The csTimer import and export actions.
+    fn data_rows(&self, strings: &'static Strings, cx: &mut Context<Self>) -> [AnyElement; 2] {
+        [
+            row(
+                strings.setting_import,
+                Button::new("import-cstimer")
+                    .small()
+                    .outline()
+                    .label(strings.import_button)
+                    .on_click(cx.listener(|view, _, window, cx| view.import(window, cx))),
+            ),
+            row(
+                strings.setting_export,
+                Button::new("export-cstimer")
+                    .small()
+                    .outline()
+                    .label(strings.export_button)
+                    .on_click(cx.listener(|view, _, window, cx| view.export(window, cx))),
+            ),
+        ]
     }
 
     fn switch(
@@ -63,6 +138,148 @@ impl SettingsView {
                 },
             )),
         )
+    }
+
+    fn languages(&self, current: &str, cx: &mut Context<Self>) -> Vec<Button> {
+        Language::ALL
+            .into_iter()
+            .map(|language| {
+                choice(
+                    language.code(),
+                    language.native_name(),
+                    Language::from_code(current) == Some(language),
+                )
+                .on_click(cx.listener(move |view, _, window, cx| {
+                    view.change(window, cx, move |settings| {
+                        language.code().clone_into(&mut settings.language);
+                    });
+                }))
+            })
+            .collect()
+    }
+
+    /// The updater's preferences and its manual check.
+    #[allow(clippy::too_many_lines, reason = "one row per updater preference")]
+    fn update_rows(
+        &self,
+        strings: &'static Strings,
+        settings: &Settings,
+        cx: &mut Context<Self>,
+    ) -> Vec<AnyElement> {
+        let channel_button = |id: &'static str,
+                              label: &'static str,
+                              channel: UpdateChannel,
+                              cx: &mut Context<Self>| {
+            choice(id, label, settings.updates.channel == channel).on_click(cx.listener(
+                move |view, _, window, cx| {
+                    view.change(window, cx, move |settings| {
+                        settings.updates.channel = channel;
+                    });
+                },
+            ))
+        };
+        let frequency_button = |id: &'static str,
+                                label: &'static str,
+                                frequency: UpdateFrequency,
+                                cx: &mut Context<Self>| {
+            choice(id, label, settings.updates.frequency == frequency).on_click(cx.listener(
+                move |view, _, window, cx| {
+                    view.change(window, cx, move |settings| {
+                        settings.updates.frequency = frequency;
+                    });
+                },
+            ))
+        };
+        let mut rows = vec![
+            self.switch(
+                "auto-updates",
+                strings.setting_check_updates,
+                settings.updates.auto_check,
+                |settings, value| settings.updates.auto_check = value,
+                cx,
+            ),
+            row(
+                strings.setting_update_channel,
+                h_flex()
+                    .gap_2()
+                    .child(channel_button(
+                        "update-stable",
+                        strings.update_channel_stable,
+                        UpdateChannel::Stable,
+                        cx,
+                    ))
+                    .child(channel_button(
+                        "update-prerelease",
+                        strings.update_channel_prerelease,
+                        UpdateChannel::Prerelease,
+                        cx,
+                    )),
+            ),
+            row(
+                strings.setting_update_frequency,
+                h_flex()
+                    .gap_2()
+                    .child(frequency_button(
+                        "update-freq-start",
+                        strings.update_frequency_start,
+                        UpdateFrequency::Start,
+                        cx,
+                    ))
+                    .child(frequency_button(
+                        "update-freq-daily",
+                        strings.update_frequency_daily,
+                        UpdateFrequency::Daily,
+                        cx,
+                    ))
+                    .child(frequency_button(
+                        "update-freq-weekly",
+                        strings.update_frequency_weekly,
+                        UpdateFrequency::Weekly,
+                        cx,
+                    )),
+            ),
+            row(
+                strings.setting_check_now,
+                Button::new("check-updates")
+                    .small()
+                    .outline()
+                    .label(strings.setting_check_now)
+                    .on_click(cx.listener(|view, _, window, cx| {
+                        view.app
+                            .update(cx, |app, cx| app.check_for_updates(true, window, cx));
+                    })),
+            ),
+        ];
+        if let Some(version) = settings.updates.skipped_version.clone() {
+            rows.push(
+                h_flex()
+                    .min_h(ROW_MIN_HEIGHT)
+                    .px_3()
+                    .py_2()
+                    .gap_4()
+                    .justify_between()
+                    .text_sm()
+                    .child(
+                        div()
+                            .flex_1()
+                            .min_w_0()
+                            .child(strings.setting_skipping.replace("{version}", &version)),
+                    )
+                    .child(
+                        Button::new("clear-skip")
+                            .small()
+                            .outline()
+                            .label(strings.setting_clear_skip)
+                            .on_click(cx.listener(|view, _, window, cx| {
+                                view.change(window, cx, |settings| {
+                                    settings.updates.skipped_version = None;
+                                });
+                            })),
+                    )
+                    .into_any_element(),
+            );
+        }
+        rows
     }
 
     /// One row per theme file, with controls to apply, edit or delete it.
@@ -254,25 +471,6 @@ impl SettingsView {
         });
     }
 
-    /// One button per language, with the active one filled.
-    fn language_choices(settings: &Settings, cx: &mut Context<Self>) -> Vec<Button> {
-        Language::ALL
-            .into_iter()
-            .map(|language| {
-                choice(
-                    language.code(),
-                    language.native_name(),
-                    Language::from_code(&settings.language) == Some(language),
-                )
-                .on_click(cx.listener(move |view, _, window, cx| {
-                    view.change(window, cx, move |settings| {
-                        language.code().clone_into(&mut settings.language);
-                    });
-                }))
-            })
-            .collect()
-    }
-
     /// The built-in light/dark choices. A custom theme takes precedence, so
     /// none of them looks selected while one is active.
     fn theme_row(
@@ -332,7 +530,7 @@ impl Render for SettingsView {
         let strings = app.strings();
         let settings = app.settings.clone();
 
-        let languages = Self::language_choices(&settings, cx);
+        let languages = self.languages(&settings.language, cx);
         let mut theme_rows = vec![
             self.theme_row(&settings, strings, cx),
             Self::new_theme_row(strings, cx),
@@ -345,6 +543,13 @@ impl Render for SettingsView {
                 strings.setting_inspection,
                 settings.inspection,
                 |settings, value| settings.inspection = value,
+                cx,
+            ),
+            self.switch(
+                "inspection-audio",
+                strings.setting_inspection_audio,
+                settings.inspection_audio,
+                |settings, value| settings.inspection_audio = value,
                 cx,
             ),
             self.switch(
@@ -371,12 +576,14 @@ impl Render for SettingsView {
                 cx,
             ),
         ];
+        let updates = self.update_rows(strings, &settings, cx);
         let language = [h_flex()
             .min_h(ROW_MIN_HEIGHT)
             .px_3()
             .gap_2()
             .children(languages)
             .into_any_element()];
+        let data = self.data_rows(strings, cx);
 
         let max_height =
             (window.viewport_size().height - DIALOG_CHROME_HEIGHT).min(BODY_MAX_HEIGHT);
@@ -389,7 +596,9 @@ impl Render for SettingsView {
             .child(section(strings.settings_timer, timer, cx))
             .child(section(strings.settings_theme, theme_rows, cx))
             .child(section(strings.settings_appearance, appearance, cx))
+            .child(section(strings.settings_updates, updates, cx))
             .child(section(strings.setting_language, language, cx))
+            .child(section(strings.settings_data, data, cx))
             .overflow_y_scrollbar()
     }
 }

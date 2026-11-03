@@ -4,6 +4,7 @@
 //! The on-disk formats are shared with [cube-tui](https://github.com/enekocm7/cube-tui),
 //! so both applications read and write the same solve history.
 
+pub mod cstimer;
 pub mod event;
 pub mod format;
 pub mod history;
@@ -17,6 +18,6 @@ pub mod timer;
 
 pub use event::WcaEvent;
 pub use history::History;
-pub use settings::Settings;
+pub use settings::{Settings, UpdateChannel, UpdateFrequency, UpdateSettings};
 pub use solve::{Modifier, Solve, SolveChange, SolveSnapshot};
-pub use timer::{Readiness, Timer, TimerOutcome, TimerPhase};
+pub use timer::{InspectionCue, Readiness, Timer, TimerOutcome, TimerPhase};

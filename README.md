@@ -11,13 +11,16 @@ solve history, so you can move between the terminal and the desktop without impo
 
 ## Features
 
-- Timer with WCA inspection: `+2` and DNF are applied automatically, and hold colors work like a stackmat's
+- Timer with WCA inspection that counts up to 15 seconds: `+2` and DNF are applied automatically, optional 8 s and
+  12 s audio cues warn you, and hold colors work like a stackmat's
 - Official WCA random-state scrambles for 12 events, generated with `tnoodle-rs`
 - Sessions with custom names
 - Solve history, with details, comments, penalties and edits that keep an audit trail
 - Current and best single, mo3, ao5, ao12, ao50 and ao100, plus mean, deviation and DNF count
 - Stats screen with charts of your times, your ao5 and their distribution
 - Light and dark themes, plus cube-tui TOML themes with a color-picker editor
+- Import and export csTimer sessions, with file pickers, from Settings → Data
+- Checks GitHub for new releases and updates itself, verifying the download against the release's SHA-256
 - Interface in English and Spanish
 
 Features still on the way are tracked in the [issues](https://github.com/enekocm7/cube-gui/issues).
@@ -25,6 +28,10 @@ Features still on the way are tracked in the [issues](https://github.com/enekocm
 ## Install
 
 Download the installer or a portable build from the [releases](https://github.com/enekocm7/cube-gui/releases) page.
+Installed builds update themselves silently; portable builds swap the executable and restart. Both wait for you to
+accept an update, and the download is checked against the release's `SHA256SUMS` file before anything is installed.
+Turn the automatic check off, change its frequency or release channel, or check manually from
+**Settings → Updates**.
 
 To build from source, install [Rust](https://rustup.rs/) and run:
 
@@ -70,6 +77,10 @@ accent = "#FFD700"
 `accent` is optional and defaults to gold, so older cube-tui themes keep working. cube creates `default.toml` the
 first time it makes the themes folder; a deleted theme is not recreated.
 
+Open **Settings → Data** to import a csTimer export or to export every session. Importing adds the
+file's sessions to your history, infers each solve's event from its scramble, and keeps penalties and
+comments; solves that can't be read are skipped and counted in the notification.
+
 ## Your data
 
 Solves are stored in cube-tui's `times.json`, in your user data folder (`%APPDATA%\cube-tui` on Windows). Settings for
@@ -87,6 +98,7 @@ Don't keep cube and cube-tui open at the same time: each one overwrites the file
 | `cube-gui` (root) | The `cube` binary and icon embedding |
 | `crates/cube-core` | Solves, statistics, the timer state machine, scrambles and persistence, with no GUI dependency |
 | `crates/cube-locale` | Translated strings |
+| `crates/cube-updater` | GitHub release check, verified download and self-update |
 | `crates/cube-ui` | The GPUI interface |
 
 ## License

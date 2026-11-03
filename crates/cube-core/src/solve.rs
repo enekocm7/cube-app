@@ -63,13 +63,34 @@ pub struct SolveChange {
 impl Solve {
     /// Creates a solve that finished just now.
     pub fn new(time_ms: u64, event: WcaEvent, scramble: String, modifier: Modifier) -> Self {
+        Self::new_with_meta(
+            time_ms,
+            event,
+            scramble,
+            current_unix_ms(),
+            modifier,
+            String::new(),
+        )
+    }
+
+    /// Creates a solve from stored data, such as one imported from csTimer.
+    ///
+    /// Imported solves have no audit trail: there is no earlier version to keep.
+    pub fn new_with_meta(
+        time_ms: u64,
+        event: WcaEvent,
+        scramble: String,
+        solved_at_unix_ms: u64,
+        modifier: Modifier,
+        comment: String,
+    ) -> Self {
         Self {
             time_ms,
             event,
             scramble,
-            solved_at_unix_ms: current_unix_ms(),
+            solved_at_unix_ms,
             modifier,
-            comment: String::new(),
+            comment,
             changes: Vec::new(),
             was_single_record: false,
         }

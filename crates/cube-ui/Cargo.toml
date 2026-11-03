@@ -11,8 +11,11 @@ anyhow.workspace = true
 chrono.workspace = true
 cube-core.workspace = true
 cube-locale.workspace = true
+cube-updater.workspace = true
+dirs.workspace = true
 sys-locale = "0.3"
 gpui-kit.workspace = true
+rodio.workspace = true
 
 [lints]
 workspace = true
