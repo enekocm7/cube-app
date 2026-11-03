@@ -189,7 +189,7 @@ impl CubeApp {
                         .justify_between()
                         .child(
                             Button::new("solve-delete")
-                                .ghost()
+                                .danger()
                                 .label(strings.delete_solve)
                                 .on_click(move |_, window, cx| {
                                     window.close_dialog(cx);
