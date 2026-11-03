@@ -4,8 +4,6 @@
 
 <p align="center">A desktop timer and session manager for speedcubing, built with Rust and <a href="https://gpui-kit.com/docs/">GPUI Kit</a>.</p>
 
-<p align="center"><a href="https://github.com/enekocm7/cube-gui/actions/workflows/ci.yml"><img src="https://github.com/enekocm7/cube-gui/actions/workflows/ci.yml/badge.svg" alt="CI status"></a></p>
-
 ![cube's timer screen](docs/screenshot.png)
 
 cube is the graphical sibling of [cube-tui](https://github.com/enekocm7/cube-tui). Both apps read and write the same
