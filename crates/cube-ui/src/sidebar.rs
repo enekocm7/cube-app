@@ -179,7 +179,7 @@ impl CubeApp {
                         .child(
                             div()
                                 .flex_1()
-                                .when_some(time_color, |time, color| time.text_color(color))
+                                .when_some(time_color, gpui_kit::Styled::text_color)
                                 .child(solve.to_string()),
                         )
                         .child(
@@ -238,7 +238,7 @@ impl CubeApp {
                                     let name = input_for_save.read(cx).value().to_string();
                                     entity
                                         .update(cx, |app, cx| {
-                                            app.rename_session(index, name, window, cx);
+                                            app.rename_session(index, &name, window, cx);
                                             app.focus.focus(window, cx);
                                         })
                                         .ok();
@@ -260,7 +260,7 @@ impl CubeApp {
             .delete_session_confirm
             .replace("{name}", &self.session_label(index))
             .replace("{count}", &self.session().len().to_string());
-        let on_confirm = cx.listener(move |app: &mut Self, _: &(), window, cx| {
+        let on_confirm = cx.listener(move |app: &mut Self, (): &(), window, cx| {
             app.delete_session(index, window, cx);
             app.focus.focus(window, cx);
         });

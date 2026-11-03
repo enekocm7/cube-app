@@ -1,5 +1,9 @@
 //! GPUI user interface for cube.
 
+// GPUI is designed to be glob-imported, and view helpers take `self` so every
+// call site reads the same whether or not they need state today.
+#![allow(clippy::wildcard_imports, clippy::unused_self)]
+
 use gpui_kit::component::TitleBar;
 use gpui_kit::*;
 

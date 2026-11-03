@@ -182,7 +182,7 @@ impl CubeApp {
             let mut delay = IDLE_TICK;
             loop {
                 cx.background_executor().timer(delay).await;
-                let updated = this.update_in(cx, |app, window, cx| app.tick(window, cx));
+                let updated = this.update_in(cx, CubeApp::tick);
                 match updated {
                     Ok(next_delay) => delay = next_delay,
                     Err(_) => break,
@@ -388,7 +388,7 @@ impl CubeApp {
     pub(crate) fn rename_session(
         &mut self,
         index: usize,
-        name: String,
+        name: &str,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {

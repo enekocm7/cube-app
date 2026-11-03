@@ -233,7 +233,7 @@ impl CubeApp {
         cx: &mut Context<Self>,
     ) {
         let strings = self.strings();
-        let on_confirm = cx.listener(move |app: &mut Self, _: &(), window, cx| {
+        let on_confirm = cx.listener(move |app: &mut Self, (): &(), window, cx| {
             app.delete_solve(index, window, cx);
             app.focus.focus(window, cx);
         });

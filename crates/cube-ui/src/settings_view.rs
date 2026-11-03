@@ -74,7 +74,7 @@ impl Render for SettingsView {
                     .selected(Language::from_code(&settings.language) == Some(language))
                     .on_click(cx.listener(move |view, _, window, cx| {
                         view.change(window, cx, move |settings| {
-                            settings.language = language.code().to_owned();
+                            language.code().clone_into(&mut settings.language);
                         });
                     }))
             })
