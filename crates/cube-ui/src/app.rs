@@ -11,6 +11,7 @@ use cube_core::{
     format::format_ms, persistence,
 };
 use cube_locale::{Language, Strings};
+use gpui_kit::assets::IconName;
 use gpui_kit::component::notification::Notification;
 use gpui_kit::component::{ActiveTheme as _, TitleBar, WindowExt as _, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
@@ -636,7 +637,9 @@ impl CubeApp {
                         Button::new("open-settings")
                             .ghost()
                             .small()
-                            .label(strings.settings)
+                            .icon(IconName::Settings)
+                            .tooltip(strings.settings)
+                            .accessibility_label(strings.settings)
                             .tab_stop(false)
                             .on_click(cx.listener(|app, _, window, cx| {
                                 if app.timer.is_active() {
