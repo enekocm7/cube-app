@@ -103,50 +103,51 @@ impl Render for SettingsView {
                 |settings, value| settings.accurate_3x3 = value,
                 cx,
             ))
-            .child(
-                v_flex()
+            .child(self.switch(
+                "solve-list-ao5",
+                strings.setting_solve_list_ao5,
+                settings.solve_list_ao5,
+                |settings, value| settings.solve_list_ao5 = value,
+                cx,
+            ))
+            .child(section(
+                strings.setting_theme,
+                muted,
+                h_flex()
                     .gap_2()
-                    .child(
-                        div()
-                            .text_xs()
-                            .text_color(muted)
-                            .child(strings.setting_theme),
-                    )
-                    .child(
-                        h_flex()
-                            .gap_2()
-                            .child(theme_button(
-                                "theme-system",
-                                strings.theme_system,
-                                ThemePreference::System,
-                                cx,
-                            ))
-                            .child(theme_button(
-                                "theme-light",
-                                strings.theme_light,
-                                ThemePreference::Light,
-                                cx,
-                            ))
-                            .child(theme_button(
-                                "theme-dark",
-                                strings.theme_dark,
-                                ThemePreference::Dark,
-                                cx,
-                            )),
-                    ),
-            )
-            .child(
-                v_flex()
-                    .gap_2()
-                    .child(
-                        div()
-                            .text_xs()
-                            .text_color(muted)
-                            .child(strings.setting_language),
-                    )
-                    .child(h_flex().gap_2().children(languages)),
-            )
+                    .child(theme_button(
+                        "theme-system",
+                        strings.theme_system,
+                        ThemePreference::System,
+                        cx,
+                    ))
+                    .child(theme_button(
+                        "theme-light",
+                        strings.theme_light,
+                        ThemePreference::Light,
+                        cx,
+                    ))
+                    .child(theme_button(
+                        "theme-dark",
+                        strings.theme_dark,
+                        ThemePreference::Dark,
+                        cx,
+                    )),
+            ))
+            .child(section(
+                strings.setting_language,
+                muted,
+                h_flex().gap_2().children(languages),
+            ))
     }
+}
+
+/// A small muted label above its controls.
+fn section(label: &'static str, color: Hsla, content: impl IntoElement) -> impl IntoElement {
+    v_flex()
+        .gap_2()
+        .child(div().text_xs().text_color(color).child(label))
+        .child(content)
 }
 
 impl CubeApp {

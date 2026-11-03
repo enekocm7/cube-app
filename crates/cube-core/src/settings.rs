@@ -22,6 +22,7 @@ pub enum ThemePreference {
 /// Persisted user preferences. Unknown keys are ignored, missing keys default.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
+#[allow(clippy::struct_excessive_bools, reason = "independent user toggles")]
 pub struct Settings {
     pub inspection: bool,
     /// Inspection length in milliseconds.
@@ -34,6 +35,8 @@ pub struct Settings {
     pub toasts: bool,
     /// Keeps the 3x3x3 solver searching for shorter scrambles, like `TNoodle`.
     pub accurate_3x3: bool,
+    /// Adds a rolling ao5 column to the solve list.
+    pub solve_list_ao5: bool,
 }
 
 impl Default for Settings {
@@ -46,6 +49,7 @@ impl Default for Settings {
             language: String::new(),
             toasts: true,
             accurate_3x3: false,
+            solve_list_ao5: false,
         }
     }
 }

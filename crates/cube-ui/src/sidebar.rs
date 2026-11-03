@@ -8,12 +8,12 @@ use gpui_kit::assets::IconName;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::input::{Input, InputState};
 use gpui_kit::component::menu::{DropdownMenu as _, PopupMenuItem};
-use gpui_kit::component::scroll::Scrollbar;
+use gpui_kit::component::scroll::{Scrollbar, ScrollbarMode};
 use gpui_kit::component::{ActiveTheme as _, Sizable as _, WindowExt as _, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
-use crate::app::{CubeApp, format_average_at};
+use crate::app::{CubeApp, average_label, format_average_at};
 use crate::palette::Palette;
 
 const SIDEBAR_WIDTH: Pixels = px(300.);
@@ -24,12 +24,17 @@ const SESSION_MAX_WIDTH: Pixels = px(120.);
 /// The widest a session's name gets in the session menu.
 const SESSION_MENU_MAX_WIDTH: Pixels = px(260.);
 
+const AVERAGE_WIDTH: Pixels = px(64.);
+/// The rolling average the solve list can show.
+const LIST_AVERAGE_SIZE: usize = 5;
+
 impl CubeApp {
     pub(crate) fn render_sidebar(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
         let strings = self.strings();
         let count = self.session().len();
         let theme = cx.theme();
         let (border, muted) = (theme.border, theme.muted_foreground);
+        let show_average = self.settings.solve_list_ao5 && count > 0;
 
         v_flex()
             .w(SIDEBAR_WIDTH)
@@ -48,7 +53,14 @@ impl CubeApp {
                     .text_xs()
                     .text_color(muted)
                     .child(strings.solves)
-                    .child(count.to_string()),
+                    .when(show_average, |header| {
+                        header.child(
+                            div()
+                                .w(AVERAGE_WIDTH)
+                                .text_right()
+                                .child(average_label(LIST_AVERAGE_SIZE)),
+                        )
+                    }),
             )
             .child(if count == 0 {
                 div()
@@ -71,7 +83,7 @@ impl CubeApp {
                             .size_full()
                             .track_scroll(&self.solves_scroll),
                     )
-                    .child(Scrollbar::vertical(&self.solves_scroll))
+                    .child(Scrollbar::vertical(&self.solves_scroll).mode(ScrollbarMode::Always))
                     .into_any_element()
             })
     }
@@ -237,6 +249,7 @@ impl CubeApp {
         let mono = theme.mono_font_family.clone();
         let solves = self.session().solves();
         let total = solves.len();
+        let show_average = self.settings.solve_list_ao5;
 
         range
             .filter_map(|row| {
@@ -272,14 +285,16 @@ impl CubeApp {
                                 .when_some(time_color, gpui_kit::Styled::text_color)
                                 .child(solve.to_string()),
                         )
-                        .child(
-                            div()
-                                .w(px(64.))
-                                .text_right()
-                                .text_xs()
-                                .text_color(muted)
-                                .child(format_average_at(solves, index, 5)),
-                        )
+                        .when(show_average, |row| {
+                            row.child(
+                                div()
+                                    .w(AVERAGE_WIDTH)
+                                    .text_right()
+                                    .text_xs()
+                                    .text_color(muted)
+                                    .child(format_average_at(solves, index, LIST_AVERAGE_SIZE)),
+                            )
+                        })
                         .on_click(cx.listener(move |app, _, window, cx| {
                             app.open_solve_details(index, window, cx);
                         }))

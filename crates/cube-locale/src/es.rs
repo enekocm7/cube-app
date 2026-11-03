@@ -63,6 +63,7 @@ pub const STRINGS: Strings = Strings {
     setting_inspection: "Inspección WCA",
     setting_toasts: "Mostrar notificaciones",
     setting_accurate: "Mezclas de 3x3x3 más cortas (tardan más en generarse)",
+    setting_solve_list_ao5: "Mostrar ao5 en la lista de solves",
     setting_theme: "Tema",
     setting_language: "Idioma",
     theme_system: "Sistema",
