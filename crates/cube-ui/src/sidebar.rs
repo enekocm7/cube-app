@@ -1,8 +1,9 @@
-//! The left panel: the session picker and the session's solves, newest first.
+//! The left panel: the session and event pickers and the session's solves,
+//! newest first.
 
 use std::ops::Range;
 
-use cube_core::Modifier;
+use cube_core::{Modifier, WcaEvent};
 use gpui_kit::assets::IconName;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::input::{Input, InputState};
@@ -15,7 +16,14 @@ use gpui_kit::*;
 use crate::app::{CubeApp, average_label, format_average_at};
 use crate::palette::Palette;
 
-const SIDEBAR_WIDTH: Pixels = px(250.);
+const SIDEBAR_WIDTH: Pixels = px(300.);
+
+/// The widest the session picker gets, however long the session's name is.
+const SESSION_MAX_WIDTH: Pixels = px(120.);
+
+/// The widest a session's name gets in the session menu.
+const SESSION_MENU_MAX_WIDTH: Pixels = px(260.);
+
 const AVERAGE_WIDTH: Pixels = px(64.);
 /// The rolling average the solve list can show.
 const LIST_AVERAGE_SIZE: usize = 5;
@@ -81,7 +89,6 @@ impl CubeApp {
     }
 
     fn render_session_picker(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
-        let strings = self.strings();
         let entity = cx.entity().downgrade();
         let labels: Vec<String> = (0..self.sessions.len())
             .map(|index| self.session_label(index))
@@ -89,32 +96,110 @@ impl CubeApp {
         let current = self.current;
         let current_label = labels[current].clone();
 
+        let session = h_flex()
+            .flex_1()
+            .min_w_0()
+            .gap_1()
+            // A dropdown menu wraps its button, so sizing has to go on a parent. The
+            // name is the only thing here that gives way when space runs out.
+            .child(
+                v_flex().min_w_0().max_w(SESSION_MAX_WIDTH).child(
+                    Button::new("session")
+                        .outline()
+                        .small()
+                        .w_full()
+                        .label(current_label)
+                        .tab_stop(false)
+                        .dropdown_menu(move |mut menu, _, _| {
+                            for (index, label) in labels.iter().enumerate() {
+                                let entity = entity.clone();
+                                let label = label.clone();
+                                menu = menu.item(
+                                    PopupMenuItem::element(move |_, _| {
+                                        div()
+                                            .max_w(SESSION_MENU_MAX_WIDTH)
+                                            .truncate()
+                                            .child(label.clone())
+                                    })
+                                    .checked(index == current)
+                                    .on_click(
+                                        move |_, _, cx| {
+                                            entity
+                                                .update(cx, |app, cx| app.select_session(index, cx))
+                                                .ok();
+                                        },
+                                    ),
+                                );
+                            }
+                            menu
+                        }),
+                ),
+            )
+            .child(self.render_session_actions(cx));
+
         h_flex()
             .p_2()
+            .gap_2()
+            .justify_between()
+            .child(session)
+            .child(self.render_event_picker(cx))
+    }
+
+    /// The current event and the control to skip its scramble.
+    fn render_event_picker(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
+        let strings = self.strings();
+        let entity = cx.entity().downgrade();
+        let event = self.event;
+
+        h_flex()
+            .flex_none()
             .gap_1()
             .child(
-                Button::new("session")
-                    .outline()
-                    .small()
-                    .flex_1()
-                    .label(current_label)
-                    .tab_stop(false)
-                    .dropdown_menu(move |mut menu, _, _| {
-                        for (index, label) in labels.iter().enumerate() {
-                            let entity = entity.clone();
-                            menu = menu.item(
-                                PopupMenuItem::new(label.clone())
-                                    .checked(index == current)
-                                    .on_click(move |_, _, cx| {
-                                        entity
-                                            .update(cx, |app, cx| app.select_session(index, cx))
-                                            .ok();
-                                    }),
-                            );
-                        }
-                        menu
-                    }),
+                div().flex_none().child(
+                    Button::new("event")
+                        .text()
+                        .small()
+                        .label(event.name())
+                        .dropdown_caret(true)
+                        .tab_stop(false)
+                        .dropdown_menu(move |mut menu, _, _| {
+                            for item in WcaEvent::ALL {
+                                let entity = entity.clone();
+                                menu = menu.item(
+                                    PopupMenuItem::new(item.name())
+                                        .checked(item == event)
+                                        .on_click(move |_, _, cx| {
+                                            entity
+                                                .update(cx, |app, cx| app.set_event(item, cx))
+                                                .ok();
+                                        }),
+                                );
+                            }
+                            menu
+                        }),
+                ),
             )
+            .child(
+                Button::new("next-scramble")
+                    .ghost()
+                    .small()
+                    .flex_none()
+                    .icon(IconName::Redo)
+                    .tooltip(strings.new_scramble)
+                    .tab_stop(false)
+                    .on_click(cx.listener(|app, _, window, cx| {
+                        app.skip_scramble(cx);
+                        app.focus.focus(window, cx);
+                    })),
+            )
+    }
+
+    fn render_session_actions(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
+        let strings = self.strings();
+
+        h_flex()
+            .flex_none()
+            .gap_1()
             .child(
                 Button::new("session-add")
                     .ghost()

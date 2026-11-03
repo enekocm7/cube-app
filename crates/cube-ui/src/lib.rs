@@ -28,7 +28,7 @@ pub fn run() {
             let bounds = Bounds::centered(None, size(px(1180.), px(760.)), cx);
             let options = WindowOptions {
                 window_bounds: Some(WindowBounds::Windowed(bounds)),
-                window_min_size: Some(size(px(860.), px(560.))),
+                window_min_size: Some(size(px(910.), px(560.))),
                 ..TitleBar::window_options()
             };
             gpui_kit::open_window(options, cx, move |window, cx| {
