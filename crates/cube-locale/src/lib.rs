@@ -121,6 +121,7 @@ pub struct Strings {
     pub setting_inspection: &'static str,
     pub setting_toasts: &'static str,
     pub setting_accurate: &'static str,
+    pub setting_solve_list_ao5: &'static str,
     pub setting_theme: &'static str,
     pub setting_language: &'static str,
     pub theme_system: &'static str,
