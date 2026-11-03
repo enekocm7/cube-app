@@ -60,10 +60,13 @@ pub struct Strings {
     pub nav_stats: &'static str,
     pub settings: &'static str,
 
+    /// `{key}`: the timer's binding.
     pub hint_start: &'static str,
     pub hint_hold: &'static str,
     pub hint_release: &'static str,
+    /// `{key}`: the timer's binding.
     pub hint_inspecting: &'static str,
+    /// `{key}`: the timer's binding.
     pub hint_stop: &'static str,
     pub generating_scramble: &'static str,
     pub new_scramble: &'static str,
@@ -139,6 +142,28 @@ pub struct Strings {
     pub theme_light: &'static str,
     pub theme_dark: &'static str,
 
+    pub help_title: &'static str,
+    pub help_hint: &'static str,
+    pub help_any_key_stops: &'static str,
+    pub help_section_timer: &'static str,
+    pub help_section_solves: &'static str,
+    pub help_section_events_sessions: &'static str,
+    pub help_section_screens: &'static str,
+    pub action_timer: &'static str,
+    pub action_cancel: &'static str,
+    pub action_toggle_inspection: &'static str,
+    pub action_previous_solve: &'static str,
+    pub action_next_solve: &'static str,
+    pub action_open_solve: &'static str,
+    pub action_penalty_plus_two: &'static str,
+    pub action_penalty_dnf: &'static str,
+    pub action_next_event: &'static str,
+    pub action_previous_event: &'static str,
+    pub action_next_session: &'static str,
+    pub action_previous_session: &'static str,
+    pub action_open_stats: &'static str,
+    pub action_show_help: &'static str,
+
     /// `{label}`: the statistic; `{time}`: its new value.
     pub toast_new_best: &'static str,
     pub toast_plus_two: &'static str,
@@ -191,6 +216,9 @@ mod tests {
             assert!(strings.toast_import_failed.contains("{error}"));
             assert!(strings.toast_export_failed.contains("{error}"));
             assert!(strings.toast_audio_failed.contains("{error}"));
+            assert!(strings.hint_start.contains("{key}"));
+            assert!(strings.hint_inspecting.contains("{key}"));
+            assert!(strings.hint_stop.contains("{key}"));
         }
     }
 }

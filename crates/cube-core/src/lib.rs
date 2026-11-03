@@ -8,6 +8,7 @@ pub mod cstimer;
 pub mod event;
 pub mod format;
 pub mod history;
+pub mod keybind;
 pub mod persistence;
 pub mod scramble;
 pub mod settings;
@@ -17,6 +18,7 @@ pub mod timer;
 
 pub use event::WcaEvent;
 pub use history::History;
+pub use keybind::{Action, KeyBinding, KeyPress, Keybinds};
 pub use settings::Settings;
 pub use solve::{Modifier, Solve, SolveChange, SolveSnapshot};
 pub use timer::{InspectionCue, Readiness, Timer, TimerOutcome, TimerPhase};

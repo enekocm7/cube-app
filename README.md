@@ -38,12 +38,57 @@ cargo run --release
 | Key | Action |
 |---|---|
 | `Space` | Start inspection, or hold and release to start the solve, and press to stop |
-| `Esc` | Cancel the current attempt without recording it |
+| Any other key | Stop a running solve |
+| `Esc` | Cancel the current attempt without recording it, or leave the stats screen |
+| `N` | New scramble |
+| `I` | Turn WCA inspection on or off |
+| `Up` / `Down` | Select a newer or older solve |
+| `Enter` | Open the selected solve's details |
+| `D` | Delete the selected solve |
+| `2` | Toggle `+2` on the selected solve |
+| `Shift+D` | Toggle DNF on the selected solve |
+| `E` / `Shift+E` | Next / previous event |
+| `]` / `[` | Next / previous session |
+| `S` | New session |
+| `F2` | Rename session |
+| `Shift+S` | Delete session |
+| `A` | Show stats, or return to the timer |
+| `Ctrl+,` | Open settings |
+| `F1` | Show the keyboard shortcuts |
 
-Click a solve in the list to see its details or edit it.
+Actions that need a solve use the keyboard selection, or the latest solve when nothing is
+selected. Click a solve in the list to see its details or edit it.
 
-The "Press space to start" hint is only shown until you start your first solve, so the timer stays clean once you
-know the controls.
+Every binding above can be changed with a `[keybindings]` table in `cube-gui.toml` (see below
+for the file's location). Anything you leave out keeps its default, and a broken entry or a
+duplicate is ignored rather than breaking the app. `F1` always shows the shortcuts in effect.
+
+```toml
+[keybindings]
+timer = "Space"             # must be an unmodified key
+cancel = "Escape"
+next_scramble = "N"
+toggle_inspection = "I"
+previous_solve = "Up"
+next_solve = "Down"
+open_solve = "Enter"
+delete_solve = "D"
+penalty_plus_two = "2"
+penalty_dnf = "Shift+D"
+next_event = "E"
+previous_event = "Shift+E"
+next_session = "]"
+previous_session = "["
+new_session = "S"
+rename_session = "F2"
+delete_session = "Shift+S"
+open_stats = "A"
+open_settings = "Ctrl+,"
+show_help = "F1"
+```
+
+The start hint is only shown until you start your first solve, so the timer stays clean once you know the
+controls. It names whichever key the timer is bound to.
 
 Open **Settings → Data** to import a csTimer export or to export every session. Importing adds the
 file's sessions to your history, infers each solve's event from its scramble, and keeps penalties and

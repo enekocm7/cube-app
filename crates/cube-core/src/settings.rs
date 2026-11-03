@@ -3,11 +3,13 @@
 //! These live in their own file: cube-tui rewrites `config.toml` from its own
 //! schema, so sharing it would lose settings on both sides.
 
+use std::collections::BTreeMap;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 
 use crate::history::History;
+use crate::keybind::Keybinds;
 use crate::timer::{DEFAULT_HOLD, Timer};
 
 /// The color scheme to use.
@@ -42,6 +44,9 @@ pub struct Settings {
     pub solve_list_ao5: bool,
     /// Whether the start hint has been used, so it is no longer shown while idle.
     pub start_hint_seen: bool,
+    /// Action name to keystroke overrides; see [`crate::keybind`].
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub keybindings: BTreeMap<String, String>,
 }
 
 impl Default for Settings {
@@ -57,6 +62,7 @@ impl Default for Settings {
             accurate_3x3: false,
             solve_list_ao5: false,
             start_hint_seen: false,
+            keybindings: BTreeMap::new(),
         }
     }
 }
@@ -74,6 +80,11 @@ impl Settings {
     /// Returns whether the idle timer should still show the start hint.
     pub const fn shows_start_hint(&self) -> bool {
         !self.start_hint_seen
+    }
+
+    /// Builds the effective key bindings, defaults plus configured overrides.
+    pub fn keybinds(&self) -> Keybinds {
+        Keybinds::from_overrides(&self.keybindings)
     }
 
     /// Treats an existing history as having used the start hint, so users who
@@ -129,9 +140,21 @@ mod tests {
             theme: ThemePreference::Dark,
             language: "es".into(),
             start_hint_seen: true,
+            keybindings: BTreeMap::from([("next_scramble".into(), "Ctrl+N".into())]),
             ..Settings::default()
         };
         let text = toml::to_string(&settings).unwrap();
         assert_eq!(toml::from_str::<Settings>(&text).unwrap(), settings);
+    }
+
+    #[test]
+    fn keybinding_overrides_tolerate_unknown_and_broken_entries() {
+        let settings: Settings = toml::from_str(
+            "[keybindings]\nnext_scramble = \"Ctrl+N\"\nnot_an_action = \"x\"\ntimer = \"Ctrl+Space\"",
+        )
+        .unwrap();
+        let keybinds = settings.keybinds();
+        assert_eq!(keybinds.label(crate::Action::NextScramble), "Ctrl+N");
+        assert_eq!(keybinds.label(crate::Action::Timer), "Space");
     }
 }

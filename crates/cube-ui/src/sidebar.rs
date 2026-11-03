@@ -245,11 +245,12 @@ impl CubeApp {
     ) -> Vec<AnyElement> {
         let colors = Palette::of(cx);
         let theme = cx.theme();
-        let (muted, hover) = (theme.muted_foreground, theme.muted);
+        let (muted, hover, selected_bg) = (theme.muted_foreground, theme.muted, theme.accent);
         let mono = theme.mono_font_family.clone();
         let solves = self.session().solves();
         let total = solves.len();
         let show_average = self.settings.solve_list_ao5;
+        let selected_solve = self.selected_solve;
 
         range
             .filter_map(|row| {
@@ -271,6 +272,7 @@ impl CubeApp {
                         .text_sm()
                         .font_family(mono.clone())
                         .cursor_pointer()
+                        .when(selected_solve == Some(index), |row| row.bg(selected_bg))
                         .hover(move |row| row.bg(hover))
                         .child(
                             div()
@@ -296,6 +298,7 @@ impl CubeApp {
                             )
                         })
                         .on_click(cx.listener(move |app, _, window, cx| {
+                            app.selected_solve = Some(index);
                             app.open_solve_details(index, window, cx);
                         }))
                         .into_any_element(),
@@ -304,7 +307,7 @@ impl CubeApp {
             .collect()
     }
 
-    fn open_rename_session(&self, window: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn open_rename_session(&self, window: &mut Window, cx: &mut Context<Self>) {
         let strings = self.strings();
         let index = self.current;
         let name = self.session().name().to_owned();
@@ -354,7 +357,7 @@ impl CubeApp {
         });
     }
 
-    fn confirm_delete_session(&self, window: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn confirm_delete_session(&self, window: &mut Window, cx: &mut Context<Self>) {
         let strings = self.strings();
         if self.sessions.len() <= 1 {
             self.toast(strings.last_session, window, cx);

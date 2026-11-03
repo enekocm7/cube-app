@@ -8,8 +8,8 @@ use cube_core::cstimer::{self, ImportReport};
 use cube_core::scramble::{self, ScrambleQueue};
 use cube_core::stats::{self, Average, SessionStats};
 use cube_core::{
-    History, Modifier, Settings, Solve, SolveSnapshot, Timer, TimerOutcome, TimerPhase, WcaEvent,
-    format::format_ms, persistence,
+    Action, History, KeyPress, Keybinds, Modifier, Settings, Solve, SolveSnapshot, Timer,
+    TimerOutcome, TimerPhase, WcaEvent, format::format_ms, persistence,
 };
 use cube_locale::{Language, Strings};
 use gpui_kit::assets::IconName;
@@ -28,9 +28,6 @@ pub const MAX_SESSIONS: usize = 99;
 const ACTIVE_TICK: Duration = Duration::from_millis(16);
 /// How often background work is polled otherwise.
 const IDLE_TICK: Duration = Duration::from_millis(100);
-
-/// The timer key.
-const TIMER_KEY: &str = "space";
 
 /// The top-level screens.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -100,6 +97,9 @@ pub struct CubeApp {
     pub(crate) stats: SessionStats,
     chart_data: Option<Rc<ChartData>>,
     pub(crate) solves_scroll: UniformListScrollHandle,
+    /// The solve selected with the keyboard, as an index into the session.
+    pub(crate) selected_solve: Option<usize>,
+    keybinds: Keybinds,
     history_path: Option<PathBuf>,
     settings_path: Option<PathBuf>,
     saving_blocked: bool,
@@ -119,6 +119,7 @@ impl CubeApp {
             sessions.push(History::new());
         }
         scramble::set_accurate_3x3(settings.accurate_3x3);
+        let keybinds = settings.keybinds();
 
         let event = session_event(&sessions[0]);
         let focus = cx.focus_handle();
@@ -138,6 +139,8 @@ impl CubeApp {
             last_result: None,
             chart_data: None,
             solves_scroll: UniformListScrollHandle::new(),
+            selected_solve: None,
+            keybinds,
             history_path,
             settings_path,
             saving_blocked: load_error.is_some(),
@@ -162,6 +165,11 @@ impl CubeApp {
             .or_else(|| sys_locale::get_locale().and_then(|code| Language::from_code(&code)))
             .unwrap_or_default()
             .strings()
+    }
+
+    /// Returns the effective keyboard bindings.
+    pub(crate) fn keybinds(&self) -> &Keybinds {
+        &self.keybinds
     }
 
     pub(crate) fn session(&self) -> &History {
@@ -238,22 +246,99 @@ impl CubeApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        match event.keystroke.key.as_str() {
-            TIMER_KEY => {
-                cx.stop_propagation();
-                if self.key_down || event.is_held || self.screen != Screen::Timer {
-                    return;
-                }
-                self.key_down = true;
-                self.press_timer(window, cx);
+        // Dialogs handle their own keys, including ones typed into inputs.
+        if event.is_held || window.has_active_dialog(cx) {
+            return;
+        }
+        let Some(press) = key_press(&event.keystroke) else {
+            return;
+        };
+
+        // Many cubers expect any key to stop the timer, not just the one that
+        // started it. Modifiers alone are ignored so the stop is deliberate.
+        if matches!(self.timer.phase(), TimerPhase::Running { .. }) {
+            if event.keystroke.is_modifier_key() {
+                return;
             }
-            "escape" if self.timer.is_active() => {
-                cx.stop_propagation();
-                self.timer.cancel();
-                self.toast(self.strings().toast_cancelled, window, cx);
+            cx.stop_propagation();
+            self.key_down = false;
+            if self.keybinds.action_for(&press) == Some(Action::Cancel) {
+                self.cancel(window, cx);
+            } else if let Some(outcome) = self.timer.press(Instant::now()) {
+                self.finish_attempt(outcome, window, cx);
+            }
+            return;
+        }
+
+        let Some(action) = self.keybinds.action_for(&press) else {
+            return;
+        };
+        cx.stop_propagation();
+        if action == Action::Timer {
+            if self.key_down || self.screen != Screen::Timer {
+                return;
+            }
+            self.key_down = true;
+            self.press_timer(window, cx);
+            return;
+        }
+        if action == Action::Cancel {
+            self.cancel(window, cx);
+            return;
+        }
+        if self.timer.is_active() {
+            return;
+        }
+        match action {
+            Action::PreviousSolve
+            | Action::NextSolve
+            | Action::OpenSolve
+            | Action::DeleteSolve
+            | Action::PenaltyPlusTwo
+            | Action::PenaltyDnf
+                if self.screen != Screen::Timer => {}
+            Action::NextScramble => self.skip_scramble(cx),
+            Action::ToggleInspection => self.toggle_inspection(window, cx),
+            Action::PreviousSolve => self.select_solve(true, cx),
+            Action::NextSolve => self.select_solve(false, cx),
+            Action::OpenSolve => {
+                if let Some(index) = self.target_solve() {
+                    self.open_solve_details(index, window, cx);
+                }
+            }
+            Action::DeleteSolve => {
+                if let Some(index) = self.target_solve() {
+                    self.confirm_delete_solve(index, window, cx);
+                }
+            }
+            Action::PenaltyPlusTwo => {
+                if let Some(index) = self.target_solve() {
+                    self.toggle_penalty(index, Modifier::PlusTwo, window, cx);
+                }
+            }
+            Action::PenaltyDnf => {
+                if let Some(index) = self.target_solve() {
+                    self.toggle_penalty(index, Modifier::DNF, window, cx);
+                }
+            }
+            Action::NextEvent => self.cycle_event(1, cx),
+            Action::PreviousEvent => self.cycle_event(-1, cx),
+            Action::NextSession => self.cycle_session(1, cx),
+            Action::PreviousSession => self.cycle_session(-1, cx),
+            Action::NewSession => self.add_session(window, cx),
+            Action::RenameSession => self.open_rename_session(window, cx),
+            Action::DeleteSession => self.confirm_delete_session(window, cx),
+            Action::OpenStats => {
+                self.screen = if self.screen == Screen::Stats {
+                    Screen::Timer
+                } else {
+                    Screen::Stats
+                };
                 cx.notify();
             }
-            _ => {}
+            Action::OpenSettings => self.open_settings(window, cx),
+            Action::ShowHelp => self.open_help(window, cx),
+            Action::Timer | Action::Cancel => {}
         }
     }
 
@@ -263,7 +348,10 @@ impl CubeApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if event.keystroke.key != TIMER_KEY {
+        let Some(press) = key_press(&event.keystroke) else {
+            return;
+        };
+        if self.keybinds.action_for(&press) != Some(Action::Timer) {
             return;
         }
         self.key_down = false;
@@ -283,6 +371,18 @@ impl CubeApp {
             self.toast(self.strings().toast_plus_two, window, cx);
         }
         cx.notify();
+    }
+
+    /// Cancels the current attempt, or leaves the stats screen when idle.
+    fn cancel(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.timer.is_active() {
+            self.timer.cancel();
+            self.toast(self.strings().toast_cancelled, window, cx);
+            cx.notify();
+        } else if self.screen != Screen::Timer {
+            self.screen = Screen::Timer;
+            cx.notify();
+        }
     }
 
     /// A key released while the window is inactive never reaches us, so a press
@@ -323,6 +423,7 @@ impl CubeApp {
         let solve = Solve::new(time_ms, self.event, scramble, modifier);
         self.sessions[self.current].push(solve);
         self.last_result = Some(LastResult { time_ms, modifier });
+        self.selected_solve = None;
         self.solves_changed(window, cx);
         self.solves_scroll.scroll_to_item(0, ScrollStrategy::Top);
 
@@ -396,12 +497,79 @@ impl CubeApp {
         }
     }
 
+    /// Moves to the next (`delta` 1) or previous (`delta` -1) event.
+    pub(crate) fn cycle_event(&mut self, delta: isize, cx: &mut Context<Self>) {
+        if self.timer.is_active() {
+            return;
+        }
+        let count = WcaEvent::ALL.len();
+        let current = WcaEvent::ALL
+            .iter()
+            .position(|&event| event == self.event)
+            .unwrap_or(0);
+        let step = delta.unsigned_abs() % count;
+        let index = if delta >= 0 {
+            (current + step) % count
+        } else {
+            (current + count - step) % count
+        };
+        self.set_event(WcaEvent::ALL[index], cx);
+    }
+
+    /// Moves to the next (`delta` 1) or previous (`delta` -1) session.
+    pub(crate) fn cycle_session(&mut self, delta: isize, cx: &mut Context<Self>) {
+        if self.sessions.len() <= 1 || self.timer.is_active() {
+            return;
+        }
+        let count = self.sessions.len();
+        let step = delta.unsigned_abs() % count;
+        let index = if delta >= 0 {
+            (self.current + step) % count
+        } else {
+            (self.current + count - step) % count
+        };
+        self.select_session(index, cx);
+    }
+
+    /// Turns WCA inspection on or off, saving the setting.
+    pub(crate) fn toggle_inspection(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.timer.is_active() {
+            self.update_settings(window, cx, |settings| {
+                settings.inspection = !settings.inspection;
+            });
+        }
+    }
+
+    /// Moves the solve selection one step newer (`newer`) or older.
+    pub(crate) fn select_solve(&mut self, newer: bool, cx: &mut Context<Self>) {
+        let count = self.session().len();
+        if count == 0 {
+            return;
+        }
+        let index = match self.selected_solve.map(|index| index.min(count - 1)) {
+            Some(index) if newer => (index + 1).min(count - 1),
+            Some(index) => index.saturating_sub(1),
+            None => count - 1,
+        };
+        self.selected_solve = Some(index);
+        self.solves_scroll
+            .scroll_to_item(count - 1 - index, ScrollStrategy::Nearest);
+        cx.notify();
+    }
+
+    /// Returns the solve an action applies to: the selection, or the latest.
+    pub(crate) fn target_solve(&self) -> Option<usize> {
+        let count = self.session().len();
+        (count > 0).then(|| self.selected_solve.unwrap_or(count - 1).min(count - 1))
+    }
+
     pub(crate) fn select_session(&mut self, index: usize, cx: &mut Context<Self>) {
         if index >= self.sessions.len() || self.timer.is_active() {
             return;
         }
         self.current = index;
         self.last_result = None;
+        self.selected_solve = None;
         self.refresh_stats();
         let event = session_event(self.session());
         self.set_event(event, cx);
@@ -489,6 +657,12 @@ impl CubeApp {
     ) {
         if self.sessions[self.current].remove(index).is_some() {
             self.last_result = None;
+            let count = self.session().len();
+            self.selected_solve = match self.selected_solve {
+                Some(selected) if selected > index => Some(selected - 1),
+                Some(selected) if selected == index => (count > 0).then(|| index.min(count - 1)),
+                selected => selected,
+            };
             self.solves_changed(window, cx);
             self.toast(self.strings().solve_deleted, window, cx);
             cx.notify();
@@ -554,6 +728,7 @@ impl CubeApp {
             if added {
                 self.current = first.min(self.sessions.len() - 1);
                 self.last_result = None;
+                self.selected_solve = None;
                 self.refresh_stats();
                 let event = session_event(self.session());
                 self.set_event(event, cx);
@@ -624,6 +799,7 @@ impl CubeApp {
         change: impl FnOnce(&mut Settings),
     ) {
         change(&mut self.settings);
+        self.keybinds = self.settings.keybinds();
         if !self.timer.is_active() {
             self.timer = self.settings.timer();
         }
@@ -737,22 +913,41 @@ impl CubeApp {
                         ),
                 )
                 .child(
-                    div().occlude().child(
-                        Button::new("open-settings")
-                            .ghost()
-                            .small()
-                            .icon(IconName::Settings)
-                            .tooltip(strings.settings)
-                            .accessibility_label(strings.settings)
-                            .tab_stop(false)
-                            .on_click(cx.listener(|app, _, window, cx| {
-                                if app.timer.is_active() {
-                                    app.focus.focus(window, cx);
-                                } else {
-                                    app.open_settings(window, cx);
-                                }
-                            })),
-                    ),
+                    h_flex()
+                        .occlude()
+                        .gap_1()
+                        .child(
+                            Button::new("open-help")
+                                .ghost()
+                                .small()
+                                .icon(IconName::Keyboard)
+                                .tooltip(strings.help_title)
+                                .accessibility_label(strings.help_title)
+                                .tab_stop(false)
+                                .on_click(cx.listener(|app, _, window, cx| {
+                                    if app.timer.is_active() {
+                                        app.focus.focus(window, cx);
+                                    } else {
+                                        app.open_help(window, cx);
+                                    }
+                                })),
+                        )
+                        .child(
+                            Button::new("open-settings")
+                                .ghost()
+                                .small()
+                                .icon(IconName::Settings)
+                                .tooltip(strings.settings)
+                                .accessibility_label(strings.settings)
+                                .tab_stop(false)
+                                .on_click(cx.listener(|app, _, window, cx| {
+                                    if app.timer.is_active() {
+                                        app.focus.focus(window, cx);
+                                    } else {
+                                        app.open_settings(window, cx);
+                                    }
+                                })),
+                        ),
                 ),
         )
     }
@@ -806,6 +1001,16 @@ pub(crate) fn format_average(average: Option<Average>) -> String {
 /// Returns the rolling average of `size` ending at `index`, formatted.
 pub(crate) fn format_average_at(solves: &[Solve], index: usize, size: usize) -> String {
     format_average(stats::average_at(solves, index, size))
+}
+
+/// Converts a platform keystroke into the shared, normalized model.
+fn key_press(keystroke: &Keystroke) -> Option<KeyPress> {
+    KeyPress::new(
+        &keystroke.key,
+        keystroke.modifiers.control || keystroke.modifiers.platform,
+        keystroke.modifiers.alt,
+        keystroke.modifiers.shift,
+    )
 }
 
 /// A session resumes on the event of its latest solve.
