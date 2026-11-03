@@ -1,0 +1,18 @@
+[package]
+name = "cube-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "GUI-free solve model, statistics, timer, scrambles and persistence for cube"
+
+[dependencies]
+anyhow.workspace = true
+dirs.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tnoodle-rs.workspace = true
+toml.workspace = true
+
+[lints]
+workspace = true

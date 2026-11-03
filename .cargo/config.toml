@@ -1,0 +1,4 @@
+# rust-lld ships with every rustup toolchain and links far faster than
+# MSVC link.exe, which matters for a GPUI-sized binary.
+[target.x86_64-pc-windows-msvc]
+linker = "rust-lld.exe"

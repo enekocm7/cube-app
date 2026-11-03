@@ -1,7 +1,82 @@
-[package]
-name = "cube-gui"
+[workspace]
+resolver = "3"
+members = ["crates/cube-core", "crates/cube-locale", "crates/cube-ui"]
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/enekocm7/cube-gui"
+
+[workspace.dependencies]
+cube-core = { path = "crates/cube-core" }
+cube-locale = { path = "crates/cube-locale" }
+cube-ui = { path = "crates/cube-ui" }
+
+anyhow = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+dirs = "7"
+gpui-kit = { version = "0.9.0", features = ["gpui-fast"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tnoodle-rs = "0.1.1"
+toml = "0.8"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+cast_possible_truncation = "allow"
+cast_precision_loss = "allow"
+cast_sign_loss = "allow"
+
+[package]
+name = "cube-gui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Desktop timer and session manager for speedcubing"
+build = "build.rs"
+
+[[bin]]
+name = "cube"
+path = "src/main.rs"
 
 [dependencies]
-gpui-kit = { version = "0.9.0", features = ["gpui-fast"] }
+cube-ui.workspace = true
+
+[build-dependencies]
+embed-resource = "3"
+resvg = { version = "0.45", default-features = false }
+
+[lints]
+workspace = true
+
+# The scramble solvers are ~10x slower unoptimized.
+[profile.dev.package.tnoodle-rs]
+opt-level = 3
+
+[profile.dev.package."*"]
+opt-level = 2
+debug = false
+
+[profile.dev]
+opt-level = 1
+debug = "line-tables-only"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true
+panic = "abort"
+
+# gpui is huge: dependencies build with parallel codegen.
+[profile.release.package."*"]
+codegen-units = 16
