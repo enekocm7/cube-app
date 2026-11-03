@@ -40,6 +40,9 @@ cargo run --release
 
 Click a solve in the list to see its details or edit it.
 
+The "Press space to start" hint is only shown until you start your first solve, so the timer stays clean once you
+know the controls.
+
 ## Your data
 
 Solves are stored in cube-tui's `times.json`, in your user data folder (`%APPDATA%\cube-tui` on Windows). Settings for

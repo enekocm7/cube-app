@@ -106,12 +106,13 @@ pub struct CubeApp {
 impl CubeApp {
     pub fn new(loaded: Loaded, window: &mut Window, cx: &mut Context<Self>) -> Self {
         let Loaded {
-            settings,
+            mut settings,
             mut sessions,
             history_path,
             settings_path,
             load_error,
         } = loaded;
+        settings.adopt_existing_history(&sessions);
         if sessions.is_empty() {
             sessions.push(History::new());
         }
@@ -247,6 +248,9 @@ impl CubeApp {
         self.key_down = false;
         let was_inspecting = matches!(self.timer.phase(), TimerPhase::Inspecting { .. });
         let outcome = self.timer.release(Instant::now());
+        if matches!(self.timer.phase(), TimerPhase::Running { .. }) {
+            self.mark_start_hint_seen(window, cx);
+        }
         if let Some(outcome) = outcome {
             self.finish_attempt(outcome, window, cx);
         } else if was_inspecting
@@ -471,6 +475,20 @@ impl CubeApp {
                 time_ms: solve.raw_ms(),
                 modifier: solve.modifier(),
             });
+        }
+    }
+
+    /// Remembers that the start hint is no longer needed, from the first
+    /// attempt on.
+    fn mark_start_hint_seen(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.settings.start_hint_seen {
+            return;
+        }
+        self.settings.start_hint_seen = true;
+        if let Some(path) = &self.settings_path
+            && let Err(error) = persistence::save_settings(path, &self.settings)
+        {
+            self.report_save_error(&error, window, cx);
         }
     }
 
