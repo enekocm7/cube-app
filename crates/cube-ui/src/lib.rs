@@ -16,6 +16,7 @@ mod sidebar;
 mod stats_panel;
 mod stats_screen;
 mod timer_view;
+mod update_ui;
 
 /// Starts the application and blocks until the last window closes.
 pub fn run() {

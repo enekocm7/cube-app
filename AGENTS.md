@@ -17,11 +17,12 @@ same solve history, so a save from one must keep working in the other. See
 | `cube-gui` (root) | The `cube` binary (`src/main.rs`) and icon embedding (`build.rs`) |
 | `crates/cube-core` | Solves, statistics, the timer state machine, scrambles and persistence, with no GUI dependency |
 | `crates/cube-locale` | Translated strings (`en.rs`, `es.rs`) |
+| `crates/cube-updater` | GitHub release check, verified download and self-update |
 | `crates/cube-ui` | The GPUI interface |
 
-Dependency direction: `ui -> core`, `ui -> locale`. **Only `cube-ui` may
-depend on GPUI / `gpui-kit`**; keep everything else GUI-free so it builds and
-tests quickly. Put reusable logic in `cube-core`, not in the UI.
+Dependency direction: `ui -> core`, `ui -> locale`, `ui -> updater`. **Only
+`cube-ui` may depend on GPUI / `gpui-kit`**; keep everything else GUI-free so
+it builds and tests quickly. Put reusable logic in `cube-core`, not in the UI.
 
 ## Building, running and testing
 
@@ -29,8 +30,8 @@ Run commands from the repo root. This repo uses plain `cargo` (there are no
 cargo aliases). CI builds on stable, so do not use nightly-only features.
 
 ```sh
-# Fast GUI-free tests (core logic, locales)
-cargo test -p cube-core -p cube-locale
+# Fast GUI-free tests (core logic, locales, updater)
+cargo test -p cube-core -p cube-locale -p cube-updater
 
 # Full test suite
 cargo test --workspace

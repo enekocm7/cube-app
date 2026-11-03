@@ -1,7 +1,7 @@
 //! The settings dialog.
 
 use cube_core::Settings;
-use cube_core::settings::ThemePreference;
+use cube_core::settings::{ThemePreference, UpdateChannel, UpdateFrequency};
 use cube_locale::{Language, Strings};
 use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
@@ -150,6 +150,130 @@ impl SettingsView {
             })
             .collect()
     }
+
+    /// The updater's preferences and its manual check.
+    #[allow(clippy::too_many_lines, reason = "one row per updater preference")]
+    fn update_rows(
+        &self,
+        strings: &'static Strings,
+        settings: &Settings,
+        cx: &mut Context<Self>,
+    ) -> Vec<AnyElement> {
+        let channel_button = |id: &'static str,
+                              label: &'static str,
+                              channel: UpdateChannel,
+                              cx: &mut Context<Self>| {
+            choice(id, label, settings.updates.channel == channel).on_click(cx.listener(
+                move |view, _, window, cx| {
+                    view.change(window, cx, move |settings| {
+                        settings.updates.channel = channel;
+                    });
+                },
+            ))
+        };
+        let frequency_button = |id: &'static str,
+                                label: &'static str,
+                                frequency: UpdateFrequency,
+                                cx: &mut Context<Self>| {
+            choice(id, label, settings.updates.frequency == frequency).on_click(cx.listener(
+                move |view, _, window, cx| {
+                    view.change(window, cx, move |settings| {
+                        settings.updates.frequency = frequency;
+                    });
+                },
+            ))
+        };
+        let mut rows = vec![
+            self.switch(
+                "auto-updates",
+                strings.setting_check_updates,
+                settings.updates.auto_check,
+                |settings, value| settings.updates.auto_check = value,
+                cx,
+            ),
+            row(
+                strings.setting_update_channel,
+                h_flex()
+                    .gap_2()
+                    .child(channel_button(
+                        "update-stable",
+                        strings.update_channel_stable,
+                        UpdateChannel::Stable,
+                        cx,
+                    ))
+                    .child(channel_button(
+                        "update-prerelease",
+                        strings.update_channel_prerelease,
+                        UpdateChannel::Prerelease,
+                        cx,
+                    )),
+            ),
+            row(
+                strings.setting_update_frequency,
+                h_flex()
+                    .gap_2()
+                    .child(frequency_button(
+                        "update-freq-start",
+                        strings.update_frequency_start,
+                        UpdateFrequency::Start,
+                        cx,
+                    ))
+                    .child(frequency_button(
+                        "update-freq-daily",
+                        strings.update_frequency_daily,
+                        UpdateFrequency::Daily,
+                        cx,
+                    ))
+                    .child(frequency_button(
+                        "update-freq-weekly",
+                        strings.update_frequency_weekly,
+                        UpdateFrequency::Weekly,
+                        cx,
+                    )),
+            ),
+            row(
+                strings.setting_check_now,
+                Button::new("check-updates")
+                    .small()
+                    .outline()
+                    .label(strings.setting_check_now)
+                    .on_click(cx.listener(|view, _, window, cx| {
+                        view.app
+                            .update(cx, |app, cx| app.check_for_updates(true, window, cx));
+                    })),
+            ),
+        ];
+        if let Some(version) = settings.updates.skipped_version.clone() {
+            rows.push(
+                h_flex()
+                    .min_h(ROW_MIN_HEIGHT)
+                    .px_3()
+                    .py_2()
+                    .gap_4()
+                    .justify_between()
+                    .text_sm()
+                    .child(
+                        div()
+                            .flex_1()
+                            .min_w_0()
+                            .child(strings.setting_skipping.replace("{version}", &version)),
+                    )
+                    .child(
+                        Button::new("clear-skip")
+                            .small()
+                            .outline()
+                            .label(strings.setting_clear_skip)
+                            .on_click(cx.listener(|view, _, window, cx| {
+                                view.change(window, cx, |settings| {
+                                    settings.updates.skipped_version = None;
+                                });
+                            })),
+                    )
+                    .into_any_element(),
+            );
+        }
+        rows
+    }
 }
 
 impl Render for SettingsView {
@@ -232,6 +356,7 @@ impl Render for SettingsView {
                 cx,
             ),
         ];
+        let updates = self.update_rows(strings, &settings, cx);
         let language = [h_flex()
             .min_h(ROW_MIN_HEIGHT)
             .px_3()
@@ -250,6 +375,7 @@ impl Render for SettingsView {
             .gap_5()
             .child(section(strings.settings_timer, timer, cx))
             .child(section(strings.settings_appearance, appearance, cx))
+            .child(section(strings.settings_updates, updates, cx))
             .child(section(strings.setting_language, language, cx))
             .child(section(strings.settings_data, data, cx))
             .overflow_y_scrollbar()
