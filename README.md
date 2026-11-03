@@ -18,6 +18,7 @@ solve history, so you can move between the terminal and the desktop without impo
 - Solve history, with details, comments, penalties and edits that keep an audit trail
 - Current and best single, mo3, ao5, ao12, ao50 and ao100, plus mean, deviation and DNF count
 - Stats screen with charts of your times, your ao5 and their distribution
+- Import and export csTimer sessions, with file pickers, from Settings → Data
 - Light and dark themes, in English and Spanish
 
 Features still on the way are tracked in the [issues](https://github.com/enekocm7/cube-gui/issues).
@@ -43,6 +44,10 @@ Click a solve in the list to see its details or edit it.
 
 The "Press space to start" hint is only shown until you start your first solve, so the timer stays clean once you
 know the controls.
+
+Open **Settings → Data** to import a csTimer export or to export every session. Importing adds the
+file's sessions to your history, infers each solve's event from its scramble, and keeps penalties and
+comments; solves that can't be read are skipped and counted in the notification.
 
 ## Your data
 

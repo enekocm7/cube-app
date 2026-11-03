@@ -63,6 +63,7 @@ pub const STRINGS: Strings = Strings {
 
     settings_timer: "Temporizador",
     settings_appearance: "Apariencia",
+    settings_data: "Datos",
     setting_inspection: "Inspección WCA",
     setting_inspection_audio: "Avisos de audio de inspección (8 s y 12 s)",
     setting_toasts: "Mostrar notificaciones",
@@ -70,6 +71,11 @@ pub const STRINGS: Strings = Strings {
     setting_solve_list_ao5: "Mostrar ao5 en la lista de solves",
     setting_theme: "Tema",
     setting_language: "Idioma",
+    setting_import: "Importar sesiones de csTimer",
+    setting_export: "Exportar todas las sesiones a csTimer",
+    import_button: "Importar…",
+    export_button: "Exportar…",
+    import_prompt: "Importar",
     theme_system: "Sistema",
     theme_light: "Claro",
     theme_dark: "Oscuro",
@@ -81,4 +87,8 @@ pub const STRINGS: Strings = Strings {
     toast_cancelled: "Intento cancelado.",
     toast_save_failed: "No se han podido guardar tus solves: {error}",
     toast_load_failed: "No se han podido cargar tus solves, así que el guardado está desactivado para protegerlos: {error}",
+    toast_import_done: "Se importaron {imported} solves ({skipped} omitidos).",
+    toast_export_done: "Sesiones exportadas a {path}.",
+    toast_import_failed: "No se pudo importar: {error}",
+    toast_export_failed: "No se pudo exportar: {error}",
 };

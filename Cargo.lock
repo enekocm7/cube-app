@@ -1270,6 +1270,7 @@ dependencies = [
  "chrono",
  "cube-core",
  "cube-locale",
+ "dirs 7.0.0",
  "gpui-kit",
  "rodio",
  "sys-locale",

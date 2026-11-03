@@ -1,9 +1,10 @@
 //! Application state and the operations on it. Views live in sibling modules.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
+use cube_core::cstimer::{self, ImportReport};
 use cube_core::scramble::{self, ScrambleQueue};
 use cube_core::stats::{self, Average, SessionStats};
 use cube_core::{
@@ -493,6 +494,101 @@ impl CubeApp {
         }
     }
 
+    /// Imports a csTimer export, adding its sessions to the history.
+    pub(crate) fn import_cstimer(
+        &mut self,
+        path: &Path,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        match cstimer::import(path) {
+            Ok(report) => self.add_imported(report, window, cx),
+            Err(error) => self.report_error(self.strings().toast_import_failed, &error, window, cx),
+        }
+    }
+
+    /// Writes every session to a csTimer export.
+    pub(crate) fn export_cstimer(&self, path: &Path, window: &mut Window, cx: &mut Context<Self>) {
+        match cstimer::export(path, &self.sessions) {
+            Ok(path) => {
+                let message = self
+                    .strings()
+                    .toast_export_done
+                    .replace("{path}", &path.display().to_string());
+                self.toast(&message, window, cx);
+            }
+            Err(error) => self.report_error(self.strings().toast_export_failed, &error, window, cx),
+        }
+    }
+
+    /// Appends imported sessions, replacing an untouched default session.
+    fn add_imported(&mut self, report: ImportReport, window: &mut Window, cx: &mut Context<Self>) {
+        let ImportReport {
+            sessions,
+            mut imported,
+            mut skipped,
+        } = report;
+        if !sessions.is_empty() {
+            // An untouched first session is only the empty default; replacing
+            // it keeps imported sessions from starting at "Session 2".
+            let first = if self.sessions.len() == 1
+                && self.sessions[0].is_empty()
+                && self.sessions[0].name().is_empty()
+            {
+                self.sessions.clear();
+                0
+            } else {
+                self.sessions.len()
+            };
+            let mut added = false;
+            for (index, session) in sessions.into_iter().enumerate() {
+                if first + index < MAX_SESSIONS {
+                    self.sessions.push(session);
+                    added = true;
+                } else {
+                    imported = imported.saturating_sub(session.len());
+                    skipped += session.len();
+                }
+            }
+            if added {
+                self.current = first.min(self.sessions.len() - 1);
+                self.last_result = None;
+                self.refresh_stats();
+                let event = session_event(self.session());
+                self.set_event(event, cx);
+                self.save_history(window, cx);
+            }
+        }
+
+        let message = self
+            .strings()
+            .toast_import_done
+            .replace("{imported}", &imported.to_string())
+            .replace("{skipped}", &skipped.to_string());
+        self.toast(&message, window, cx);
+        cx.notify();
+    }
+
+    /// Reports a failed file picker.
+    pub(crate) fn report_import_error(
+        &self,
+        error: &anyhow::Error,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.report_error(self.strings().toast_import_failed, error, window, cx);
+    }
+
+    /// Reports a failed file picker.
+    pub(crate) fn report_export_error(
+        &self,
+        error: &anyhow::Error,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.report_error(self.strings().toast_export_failed, error, window, cx);
+    }
+
     /// Keeps the timer display in step with an edit to the newest solve.
     fn sync_last_result(&mut self) {
         if self.last_result.is_some()
@@ -577,10 +673,18 @@ impl CubeApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let message = self
-            .strings()
-            .toast_save_failed
-            .replace("{error}", &format!("{error:#}"));
+        self.report_error(self.strings().toast_save_failed, error, window, cx);
+    }
+
+    /// Shows `template`, with `{error}` filled in, as an error notification.
+    fn report_error(
+        &self,
+        template: &'static str,
+        error: &anyhow::Error,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let message = template.replace("{error}", &format!("{error:#}"));
         window.push_notification(Notification::error(message), cx);
     }
 

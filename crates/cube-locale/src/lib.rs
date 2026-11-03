@@ -121,6 +121,7 @@ pub struct Strings {
 
     pub settings_timer: &'static str,
     pub settings_appearance: &'static str,
+    pub settings_data: &'static str,
     pub setting_inspection: &'static str,
     pub setting_inspection_audio: &'static str,
     pub setting_toasts: &'static str,
@@ -128,6 +129,12 @@ pub struct Strings {
     pub setting_solve_list_ao5: &'static str,
     pub setting_theme: &'static str,
     pub setting_language: &'static str,
+    pub setting_import: &'static str,
+    pub setting_export: &'static str,
+    pub import_button: &'static str,
+    pub export_button: &'static str,
+    /// The label of the import file picker's confirm button.
+    pub import_prompt: &'static str,
     pub theme_system: &'static str,
     pub theme_light: &'static str,
     pub theme_dark: &'static str,
@@ -143,6 +150,14 @@ pub struct Strings {
     pub toast_save_failed: &'static str,
     /// `{error}`: the cause.
     pub toast_load_failed: &'static str,
+    /// `{imported}`: how many solves were added; `{skipped}`: how many were not.
+    pub toast_import_done: &'static str,
+    /// `{path}`: the file that was written.
+    pub toast_export_done: &'static str,
+    /// `{error}`: the cause.
+    pub toast_import_failed: &'static str,
+    /// `{error}`: the cause.
+    pub toast_export_failed: &'static str,
 }
 
 #[cfg(test)]
@@ -170,6 +185,11 @@ mod tests {
             assert!(strings.edited_times.contains("{count}"));
             assert!(strings.toast_save_failed.contains("{error}"));
             assert!(strings.toast_load_failed.contains("{error}"));
+            assert!(strings.toast_import_done.contains("{imported}"));
+            assert!(strings.toast_import_done.contains("{skipped}"));
+            assert!(strings.toast_export_done.contains("{path}"));
+            assert!(strings.toast_import_failed.contains("{error}"));
+            assert!(strings.toast_export_failed.contains("{error}"));
             assert!(strings.toast_audio_failed.contains("{error}"));
         }
     }

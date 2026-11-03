@@ -2,7 +2,7 @@
 
 use cube_core::Settings;
 use cube_core::settings::ThemePreference;
-use cube_locale::Language;
+use cube_locale::{Language, Strings};
 use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::scroll::ScrollableElement as _;
@@ -28,6 +28,59 @@ struct SettingsView {
 }
 
 impl SettingsView {
+    /// Opens a picker and imports the chosen csTimer export.
+    fn import(&self, window: &mut Window, cx: &mut Context<Self>) {
+        let prompt = self.app.read(cx).strings().import_prompt;
+        let receiver = cx.prompt_for_paths(PathPromptOptions {
+            files: true,
+            directories: false,
+            multiple: false,
+            prompt: Some(prompt.into()),
+        });
+        let app = self.app.clone();
+        cx.spawn_in(window, async move |_, cx| match receiver.await {
+            Ok(Ok(Some(paths))) => {
+                if let Some(path) = paths.first() {
+                    let _ = app.update_in(cx, |app, window, cx| {
+                        app.import_cstimer(path, window, cx);
+                    });
+                }
+            }
+            Ok(Err(error)) => {
+                let _ = app.update_in(cx, |app, window, cx| {
+                    app.report_import_error(&error, window, cx);
+                });
+            }
+            // Cancelled, or the window closed while the picker was open.
+            Ok(Ok(None)) | Err(_) => {}
+        })
+        .detach();
+    }
+
+    /// Opens a save picker and exports every session as csTimer JSON.
+    fn export(&self, window: &mut Window, cx: &mut Context<Self>) {
+        let directory = dirs::document_dir()
+            .or_else(dirs::home_dir)
+            .unwrap_or_default();
+        let receiver = cx.prompt_for_new_path(&directory, Some("cstimer.json"));
+        let app = self.app.clone();
+        cx.spawn_in(window, async move |_, cx| match receiver.await {
+            Ok(Ok(Some(path))) => {
+                let _ = app.update_in(cx, |app, window, cx| {
+                    app.export_cstimer(&path, window, cx);
+                });
+            }
+            Ok(Err(error)) => {
+                let _ = app.update_in(cx, |app, window, cx| {
+                    app.report_export_error(&error, window, cx);
+                });
+            }
+            // Cancelled, or the window closed while the picker was open.
+            Ok(Ok(None)) | Err(_) => {}
+        })
+        .detach();
+    }
+
     fn change(
         &self,
         window: &mut Window,
@@ -37,6 +90,28 @@ impl SettingsView {
         self.app.update(cx, |app, cx| {
             app.update_settings(window, cx, change);
         });
+    }
+
+    /// The csTimer import and export actions.
+    fn data_rows(&self, strings: &'static Strings, cx: &mut Context<Self>) -> [AnyElement; 2] {
+        [
+            row(
+                strings.setting_import,
+                Button::new("import-cstimer")
+                    .small()
+                    .outline()
+                    .label(strings.import_button)
+                    .on_click(cx.listener(|view, _, window, cx| view.import(window, cx))),
+            ),
+            row(
+                strings.setting_export,
+                Button::new("export-cstimer")
+                    .small()
+                    .outline()
+                    .label(strings.export_button)
+                    .on_click(cx.listener(|view, _, window, cx| view.export(window, cx))),
+            ),
+        ]
     }
 
     fn switch(
@@ -163,6 +238,7 @@ impl Render for SettingsView {
             .gap_2()
             .children(languages)
             .into_any_element()];
+        let data = self.data_rows(strings, cx);
 
         let max_height =
             (window.viewport_size().height - DIALOG_CHROME_HEIGHT).min(BODY_MAX_HEIGHT);
@@ -175,6 +251,7 @@ impl Render for SettingsView {
             .child(section(strings.settings_timer, timer, cx))
             .child(section(strings.settings_appearance, appearance, cx))
             .child(section(strings.setting_language, language, cx))
+            .child(section(strings.settings_data, data, cx))
             .overflow_y_scrollbar()
     }
 }
