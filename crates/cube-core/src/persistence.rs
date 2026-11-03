@@ -85,7 +85,7 @@ pub fn save_settings(path: &Path, settings: &Settings) -> Result<()> {
 }
 
 /// Writes through a sibling temporary file so a crash cannot truncate `path`.
-fn write_atomic(path: &Path, contents: &[u8]) -> std::io::Result<()> {
+pub(crate) fn write_atomic(path: &Path, contents: &[u8]) -> std::io::Result<()> {
     let mut temporary = OsString::from(path.as_os_str());
     temporary.push(".tmp");
     let temporary = PathBuf::from(temporary);
