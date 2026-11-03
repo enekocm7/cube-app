@@ -63,6 +63,7 @@ pub const STRINGS: Strings = Strings {
     setting_inspection: "WCA inspection",
     setting_toasts: "Show notifications",
     setting_accurate: "Shorter 3x3x3 scrambles (slower to generate)",
+    setting_solve_list_ao5: "Show ao5 in the solve list",
     setting_theme: "Theme",
     setting_language: "Language",
     theme_system: "System",
