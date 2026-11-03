@@ -12,6 +12,7 @@ pub mod scramble;
 pub mod settings;
 pub mod solve;
 pub mod stats;
+pub mod theme;
 pub mod timer;
 
 pub use event::WcaEvent;

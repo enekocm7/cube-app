@@ -31,6 +31,9 @@ pub struct Settings {
     /// How long the timer key must be held, in milliseconds.
     pub hold_ms: u64,
     pub theme: ThemePreference,
+    /// A cube-tui theme file in the shared `themes` folder; empty uses `theme`.
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub theme_file: String,
     /// A language code; empty follows the system language.
     pub language: String,
     pub toasts: bool,
@@ -49,6 +52,7 @@ impl Default for Settings {
             inspection_limit_ms: 15_000,
             hold_ms: DEFAULT_HOLD.as_millis() as u64,
             theme: ThemePreference::default(),
+            theme_file: String::new(),
             language: String::new(),
             toasts: true,
             accurate_3x3: false,
@@ -117,11 +121,25 @@ mod tests {
     fn settings_round_trip() {
         let settings = Settings {
             theme: ThemePreference::Dark,
+            theme_file: "default.toml".into(),
             language: "es".into(),
             start_hint_seen: true,
             ..Settings::default()
         };
         let text = toml::to_string(&settings).unwrap();
         assert_eq!(toml::from_str::<Settings>(&text).unwrap(), settings);
+    }
+
+    #[test]
+    fn a_missing_theme_file_keeps_the_built_in_theme() {
+        let settings: Settings = toml::from_str("theme = 'dark'").unwrap();
+        assert_eq!(settings.theme_file, "");
+        assert_eq!(settings.theme, ThemePreference::Dark);
+    }
+
+    #[test]
+    fn an_empty_theme_file_is_left_out_of_the_saved_file() {
+        let text = toml::to_string(&Settings::default()).unwrap();
+        assert!(!text.contains("theme_file"));
     }
 }

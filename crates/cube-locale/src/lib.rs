@@ -121,6 +121,7 @@ pub struct Strings {
 
     pub settings_timer: &'static str,
     pub settings_appearance: &'static str,
+    pub settings_theme: &'static str,
     pub setting_inspection: &'static str,
     pub setting_toasts: &'static str,
     pub setting_accurate: &'static str,
@@ -130,6 +131,42 @@ pub struct Strings {
     pub theme_system: &'static str,
     pub theme_light: &'static str,
     pub theme_dark: &'static str,
+
+    pub custom_themes: &'static str,
+    pub new_theme: &'static str,
+    pub edit_theme: &'static str,
+    pub delete_theme: &'static str,
+    pub theme_name: &'static str,
+    pub theme_name_placeholder: &'static str,
+    pub theme_colors: &'static str,
+    pub theme_background: &'static str,
+    pub theme_border: &'static str,
+    pub theme_scramble: &'static str,
+    pub theme_selection: &'static str,
+    pub theme_selection_text: &'static str,
+    pub theme_text: &'static str,
+    pub theme_accent: &'static str,
+    pub theme_preview: &'static str,
+    pub theme_preview_selected: &'static str,
+    pub theme_alpha_hint: &'static str,
+    pub theme_name_empty: &'static str,
+    pub theme_name_invalid: &'static str,
+    pub theme_name_too_long: &'static str,
+    pub theme_name_exists: &'static str,
+    pub theme_invalid_color: &'static str,
+    /// `{error}`: the cause.
+    pub theme_save_failed: &'static str,
+    /// `{name}`: the theme.
+    pub theme_saved: &'static str,
+    /// `{name}`: the theme.
+    pub theme_delete_confirm: &'static str,
+    /// `{name}`: the theme.
+    pub theme_deleted: &'static str,
+    /// `{error}`: the cause.
+    pub theme_delete_failed: &'static str,
+    /// `{error}`: the cause.
+    pub theme_load_failed: &'static str,
+    pub no_themes: &'static str,
 
     /// `{label}`: the statistic; `{time}`: its new value.
     pub toast_new_best: &'static str,
@@ -167,6 +204,12 @@ mod tests {
             assert!(strings.edited_times.contains("{count}"));
             assert!(strings.toast_save_failed.contains("{error}"));
             assert!(strings.toast_load_failed.contains("{error}"));
+            assert!(strings.theme_save_failed.contains("{error}"));
+            assert!(strings.theme_delete_failed.contains("{error}"));
+            assert!(strings.theme_load_failed.contains("{error}"));
+            assert!(strings.theme_saved.contains("{name}"));
+            assert!(strings.theme_delete_confirm.contains("{name}"));
+            assert!(strings.theme_deleted.contains("{name}"));
         }
     }
 }

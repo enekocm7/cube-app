@@ -142,6 +142,7 @@ impl CubeApp {
         let mono = theme.mono_font_family.clone();
         let muted = theme.muted_foreground;
         let border = theme.border;
+        let scramble_color = Palette::of(cx).scramble;
         let text: SharedString = scramble
             .clone()
             .unwrap_or_else(|| strings.generating_scramble.to_owned())
@@ -168,9 +169,9 @@ impl CubeApp {
                     .line_height(SCRAMBLE_LINE)
                     .when(scramble.is_none(), |text| text.text_color(muted))
                     .when(scramble.is_some(), |text| {
-                        text.cursor_pointer().tooltip(move |window, cx| {
-                            Tooltip::new(strings.copy_scramble).build(window, cx)
-                        })
+                        text.text_color(scramble_color).cursor_pointer().tooltip(
+                            move |window, cx| Tooltip::new(strings.copy_scramble).build(window, cx),
+                        )
                     })
                     .on_click(cx.listener(|app, _, window, cx| {
                         if let Some(scramble) = &app.scramble {

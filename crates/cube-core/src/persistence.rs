@@ -13,6 +13,7 @@ use anyhow::{Context, Result};
 
 use crate::history::History;
 use crate::settings::Settings;
+use crate::theme::{self, ThemeColors, ThemeFile};
 
 /// Returns the shared data directory, creating it when needed.
 pub fn data_dir() -> Result<PathBuf> {
@@ -40,6 +41,36 @@ pub fn history_file() -> Result<PathBuf> {
 /// Returns the settings file of the desktop app.
 pub fn settings_file() -> Result<PathBuf> {
     Ok(data_dir()?.join("cube-gui.toml"))
+}
+
+/// Returns the folder holding cube-tui theme files, creating it when needed.
+pub fn themes_dir() -> Result<PathBuf> {
+    let dir = data_dir()?.join("themes");
+    fs::create_dir_all(&dir).with_context(|| format!("Could not create {}", dir.display()))?;
+    Ok(dir)
+}
+
+/// Loads a theme by file name, adding `.toml` when it is missing.
+pub fn load_theme(name: &str) -> Result<ThemeColors> {
+    theme::load_named(&themes_dir()?, name)
+}
+
+/// Lists every valid theme in the shared themes folder.
+pub fn list_themes() -> Result<Vec<ThemeFile>> {
+    theme::list(&themes_dir()?)
+}
+
+/// Creates cube-tui's default theme the first time the themes folder is made.
+///
+/// An existing folder is left alone, even when it is empty, so a theme the
+/// user deleted does not come back.
+pub fn ensure_default_theme() -> Result<()> {
+    let dir = data_dir()?.join("themes");
+    if dir.try_exists()? {
+        return Ok(());
+    }
+    fs::create_dir_all(&dir).with_context(|| format!("Could not create {}", dir.display()))?;
+    theme::write_default(&dir.join("default.toml"))
 }
 
 /// Loads the sessions at `path`; `None` when no history exists yet.
@@ -85,7 +116,7 @@ pub fn save_settings(path: &Path, settings: &Settings) -> Result<()> {
 }
 
 /// Writes through a sibling temporary file so a crash cannot truncate `path`.
-fn write_atomic(path: &Path, contents: &[u8]) -> std::io::Result<()> {
+pub(crate) fn write_atomic(path: &Path, contents: &[u8]) -> std::io::Result<()> {
     let mut temporary = OsString::from(path.as_os_str());
     temporary.push(".tmp");
     let temporary = PathBuf::from(temporary);

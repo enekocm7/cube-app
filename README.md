@@ -17,7 +17,8 @@ solve history, so you can move between the terminal and the desktop without impo
 - Solve history, with details, comments, penalties and edits that keep an audit trail
 - Current and best single, mo3, ao5, ao12, ao50 and ao100, plus mean, deviation and DNF count
 - Stats screen with charts of your times, your ao5 and their distribution
-- Light and dark themes, in English and Spanish
+- Light and dark themes, plus cube-tui TOML themes with a color-picker editor
+- Interface in English and Spanish
 
 Features still on the way are tracked in the [issues](https://github.com/enekocm7/cube-gui/issues).
 
@@ -42,6 +43,32 @@ Click a solve in the list to see its details or edit it.
 
 The "Press space to start" hint is only shown until you start your first solve, so the timer stays clean once you
 know the controls.
+
+## Themes
+
+cube reads the same theme files as [cube-tui](https://github.com/enekocm7/cube-tui) from the `themes` folder in your
+data folder, so a theme works in both apps. Settings → Theme lists every valid theme: pick one to apply it, use the
+pencil to edit it, the trash can to delete it, or **New theme** to create one. Themes added to the folder appear the
+next time the settings dialog opens.
+
+The editor has a color picker for each of the seven colors, a text field that can switch between Hex, RGB, RGBA, HSL
+and HSLA, and a live preview. Rename a theme by changing its name; cube saves it as `<name>.toml`. Theme files store
+opaque colors, so an alpha value typed into an RGBA or HSLA field is ignored when saving.
+
+A theme is a TOML file of six-digit colors:
+
+```toml
+background = "#000000"
+border = "#FFFFFF"
+scramble = "#FFFFFF"
+selection = "#3399FF"
+selection_text = "#000000"
+text = "#FFFFFF"
+accent = "#FFD700"
+```
+
+`accent` is optional and defaults to gold, so older cube-tui themes keep working. cube creates `default.toml` the
+first time it makes the themes folder; a deleted theme is not recreated.
 
 ## Your data
 
