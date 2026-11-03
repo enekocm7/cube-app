@@ -55,11 +55,14 @@ pub const STRINGS: Strings = Strings {
 
     save: "Guardar",
     cancel: "Cancelar",
+    close: "Cerrar",
     delete: "Eliminar",
     delete_solve: "Eliminar solve",
     delete_solve_confirm: "¿Eliminar este solve? No se puede deshacer.",
     solve_deleted: "Solve eliminado.",
 
+    settings_timer: "Temporizador",
+    settings_appearance: "Apariencia",
     setting_inspection: "Inspección WCA",
     setting_toasts: "Mostrar notificaciones",
     setting_accurate: "Mezclas de 3x3x3 más cortas (tardan más en generarse)",

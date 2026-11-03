@@ -113,11 +113,14 @@ pub struct Strings {
 
     pub save: &'static str,
     pub cancel: &'static str,
+    pub close: &'static str,
     pub delete: &'static str,
     pub delete_solve: &'static str,
     pub delete_solve_confirm: &'static str,
     pub solve_deleted: &'static str,
 
+    pub settings_timer: &'static str,
+    pub settings_appearance: &'static str,
     pub setting_inspection: &'static str,
     pub setting_toasts: &'static str,
     pub setting_accurate: &'static str,
