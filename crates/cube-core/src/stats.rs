@@ -281,7 +281,7 @@ mod tests {
     #[test]
     fn the_histogram_handles_identical_times_and_no_times() {
         assert_eq!(histogram(&solves(&[1_000, 1_000]), 4)[0], (1_000, 2));
-        assert!(histogram(&[dnf()], 4).is_empty());
+        assert_eq!(histogram(&[dnf()], 4), []);
     }
 
     #[test]

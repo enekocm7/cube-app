@@ -16,17 +16,16 @@ use crate::settings::Settings;
 
 /// Returns the shared data directory, creating it when needed.
 pub fn data_dir() -> Result<PathBuf> {
-    let dir = match std::env::var_os("CUBE_DATA_DIR") {
-        Some(dir) => PathBuf::from(dir),
-        None => {
-            let dir = dirs::data_dir()
-                .context("Could not determine the application data directory")?
-                .join("cube-tui");
-            if cfg!(debug_assertions) {
-                dir.join("debug")
-            } else {
-                dir
-            }
+    let dir = if let Some(dir) = std::env::var_os("CUBE_DATA_DIR") {
+        PathBuf::from(dir)
+    } else {
+        let dir = dirs::data_dir()
+            .context("Could not determine the application data directory")?
+            .join("cube-tui");
+        if cfg!(debug_assertions) {
+            dir.join("debug")
+        } else {
+            dir
         }
     };
     fs::create_dir_all(&dir).with_context(|| format!("Could not create {}", dir.display()))?;

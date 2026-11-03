@@ -193,13 +193,13 @@ impl Timer {
 
     /// Returns whether the key is held, and for long enough to start the solve.
     pub fn readiness(&self, now: Instant) -> Readiness {
-        let since = match self.phase {
-            TimerPhase::Holding { since }
-            | TimerPhase::Inspecting {
-                held_since: Some(since),
-                ..
-            } => since,
-            _ => return Readiness::Released,
+        let (TimerPhase::Holding { since }
+        | TimerPhase::Inspecting {
+            held_since: Some(since),
+            ..
+        }) = self.phase
+        else {
+            return Readiness::Released;
         };
         if now.duration_since(since) >= self.hold {
             Readiness::Ready

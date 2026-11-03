@@ -34,6 +34,8 @@ missing_panics_doc = "allow"
 cast_possible_truncation = "allow"
 cast_precision_loss = "allow"
 cast_sign_loss = "allow"
+# Colors read better as plain hex.
+unreadable_literal = "allow"
 
 [package]
 name = "cube-gui"
