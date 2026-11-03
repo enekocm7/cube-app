@@ -108,13 +108,13 @@ impl CubeApp {
             }
             TimerPhase::Inspecting { .. } => {
                 let elapsed = self.timer.elapsed(now);
-                let remaining = self.timer.inspection_limit.saturating_sub(elapsed);
-                let text = match self.timer.inspection_modifier(elapsed) {
-                    Modifier::None => remaining.as_secs_f32().ceil().to_string(),
+                let modifier = self.timer.inspection_modifier(elapsed);
+                let text = match modifier {
+                    Modifier::None => elapsed.as_secs().to_string(),
                     Modifier::PlusTwo => "+2".to_owned(),
                     Modifier::DNF => "DNF".to_owned(),
                 };
-                let urgent = self.timer.inspection_modifier(elapsed) != Modifier::None;
+                let urgent = modifier != Modifier::None;
                 let (color, hint) = held.unwrap_or((
                     if urgent { colors.yellow } else { colors.orange },
                     strings.hint_inspecting,

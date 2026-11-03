@@ -18,4 +18,4 @@ pub use event::WcaEvent;
 pub use history::History;
 pub use settings::Settings;
 pub use solve::{Modifier, Solve, SolveChange, SolveSnapshot};
-pub use timer::{Readiness, Timer, TimerOutcome, TimerPhase};
+pub use timer::{InspectionCue, Readiness, Timer, TimerOutcome, TimerPhase};

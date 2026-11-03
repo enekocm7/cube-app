@@ -8,6 +8,7 @@ use gpui_kit::component::TitleBar;
 use gpui_kit::*;
 
 mod app;
+mod audio;
 mod details;
 mod palette;
 mod settings_view;

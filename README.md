@@ -11,7 +11,8 @@ solve history, so you can move between the terminal and the desktop without impo
 
 ## Features
 
-- Timer with WCA inspection: `+2` and DNF are applied automatically, and hold colors work like a stackmat's
+- Timer with WCA inspection that counts up to 15 seconds: `+2` and DNF are applied automatically, optional 8 s and
+  12 s audio cues warn you, and hold colors work like a stackmat's
 - Official WCA random-state scrambles for 12 events, generated with `tnoodle-rs`
 - Sessions with custom names
 - Solve history, with details, comments, penalties and edits that keep an audit trail

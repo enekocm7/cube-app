@@ -10,6 +10,12 @@ use crate::solve::Modifier;
 /// Extra time allowed after the limit before an inspection becomes a DNF.
 const PENALTY_WINDOW: Duration = Duration::from_secs(2);
 
+/// When the first inspection warning plays.
+const EIGHT_SECOND_CUE: Duration = Duration::from_secs(8);
+
+/// When the second inspection warning plays.
+const TWELVE_SECOND_CUE: Duration = Duration::from_secs(12);
+
 /// How long the timer key must be held by default before a release starts the solve.
 pub const DEFAULT_HOLD: Duration = Duration::from_millis(300);
 
@@ -21,11 +27,15 @@ pub enum TimerPhase {
     Holding {
         since: Instant,
     },
-    /// The inspection countdown is running.
+    /// The inspection count-up is running.
     Inspecting {
         started: Instant,
         /// When the key was pressed to start the solve, if it is still held.
         held_since: Option<Instant>,
+        /// Whether the 8-second warning has already played.
+        eight_cue_played: bool,
+        /// Whether the 12-second warning has already played.
+        twelve_cue_played: bool,
     },
     Running {
         started: Instant,
@@ -48,6 +58,15 @@ pub enum Readiness {
     /// The key is held, but not for long enough yet.
     Waiting,
     Ready,
+}
+
+/// An audio warning that plays during inspection.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum InspectionCue {
+    /// The warning that plays 8 seconds into inspection.
+    EightSeconds,
+    /// The warning that plays 12 seconds into inspection.
+    TwelveSeconds,
 }
 
 /// The timer's configuration and current phase.
@@ -85,6 +104,8 @@ impl Timer {
                 self.phase = TimerPhase::Inspecting {
                     started: now,
                     held_since: None,
+                    eight_cue_played: false,
+                    twelve_cue_played: false,
                 };
                 None
             }
@@ -93,10 +114,17 @@ impl Timer {
                 None
             }
             TimerPhase::Holding { .. } => None,
-            TimerPhase::Inspecting { started, .. } => {
+            TimerPhase::Inspecting {
+                started,
+                eight_cue_played,
+                twelve_cue_played,
+                ..
+            } => {
                 self.phase = TimerPhase::Inspecting {
                     started,
                     held_since: Some(now),
+                    eight_cue_played,
+                    twelve_cue_played,
                 };
                 None
             }
@@ -130,11 +158,15 @@ impl Timer {
             TimerPhase::Inspecting {
                 started,
                 held_since: Some(since),
+                eight_cue_played,
+                twelve_cue_played,
             } => {
                 if now.duration_since(since) < self.hold {
                     self.phase = TimerPhase::Inspecting {
                         started,
                         held_since: None,
+                        eight_cue_played,
+                        twelve_cue_played,
                     };
                     return None;
                 }
@@ -191,6 +223,34 @@ impl Timer {
         }
     }
 
+    /// Returns the inspection warnings that have become due since the last
+    /// call, in the order they should play.
+    ///
+    /// Each warning is reported once per inspection.
+    pub fn take_inspection_cues(&mut self, now: Instant) -> [Option<InspectionCue>; 2] {
+        let TimerPhase::Inspecting {
+            started,
+            eight_cue_played,
+            twelve_cue_played,
+            ..
+        } = &mut self.phase
+        else {
+            return [None, None];
+        };
+
+        let elapsed = now.duration_since(*started);
+        let mut cues = [None, None];
+        if elapsed >= EIGHT_SECOND_CUE && !*eight_cue_played {
+            *eight_cue_played = true;
+            cues[0] = Some(InspectionCue::EightSeconds);
+        }
+        if elapsed >= TWELVE_SECOND_CUE && !*twelve_cue_played {
+            *twelve_cue_played = true;
+            cues[1] = Some(InspectionCue::TwelveSeconds);
+        }
+        cues
+    }
+
     /// Returns whether the key is held, and for long enough to start the solve.
     pub fn readiness(&self, now: Instant) -> Readiness {
         let (TimerPhase::Holding { since }
@@ -236,6 +296,41 @@ mod tests {
         assert_eq!(timer.inspection_modifier(ms(15_000)), Modifier::PlusTwo);
         assert_eq!(timer.inspection_modifier(ms(16_999)), Modifier::PlusTwo);
         assert_eq!(timer.inspection_modifier(ms(17_000)), Modifier::DNF);
+    }
+
+    #[test]
+    fn inspection_audio_cues_fire_once_each() {
+        let mut timer = Timer::new(true, LIMIT, HOLD);
+        let start = Instant::now();
+        timer.press(start);
+
+        assert_eq!(timer.take_inspection_cues(start + ms(7_999)), [None, None]);
+        assert_eq!(
+            timer.take_inspection_cues(start + ms(8_000)),
+            [Some(InspectionCue::EightSeconds), None]
+        );
+        assert_eq!(timer.take_inspection_cues(start + ms(8_500)), [None, None]);
+        assert_eq!(
+            timer.take_inspection_cues(start + ms(12_000)),
+            [None, Some(InspectionCue::TwelveSeconds)]
+        );
+        assert_eq!(timer.take_inspection_cues(start + ms(14_000)), [None, None]);
+    }
+
+    #[test]
+    fn a_new_inspection_plays_its_cues_again() {
+        let mut timer = Timer::new(true, LIMIT, HOLD);
+        let start = Instant::now();
+        timer.press(start);
+        timer.take_inspection_cues(start + ms(8_000));
+        timer.cancel();
+
+        let next = start + ms(20_000);
+        timer.press(next);
+        assert_eq!(
+            timer.take_inspection_cues(next + ms(8_000)),
+            [Some(InspectionCue::EightSeconds), None]
+        );
     }
 
     #[test]

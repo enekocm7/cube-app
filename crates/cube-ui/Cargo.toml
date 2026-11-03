@@ -13,6 +13,7 @@ cube-core.workspace = true
 cube-locale.workspace = true
 sys-locale = "0.3"
 gpui-kit.workspace = true
+rodio.workspace = true
 
 [lints]
 workspace = true

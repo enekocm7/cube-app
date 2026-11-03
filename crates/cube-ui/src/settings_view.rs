@@ -57,6 +57,24 @@ impl SettingsView {
             )),
         )
     }
+
+    fn languages(&self, current: &str, cx: &mut Context<Self>) -> Vec<Button> {
+        Language::ALL
+            .into_iter()
+            .map(|language| {
+                choice(
+                    language.code(),
+                    language.native_name(),
+                    Language::from_code(current) == Some(language),
+                )
+                .on_click(cx.listener(move |view, _, window, cx| {
+                    view.change(window, cx, move |settings| {
+                        language.code().clone_into(&mut settings.language);
+                    });
+                }))
+            })
+            .collect()
+    }
 }
 
 impl Render for SettingsView {
@@ -75,21 +93,7 @@ impl Render for SettingsView {
                 },
             ))
         };
-        let languages: Vec<Button> = Language::ALL
-            .into_iter()
-            .map(|language| {
-                choice(
-                    language.code(),
-                    language.native_name(),
-                    Language::from_code(&settings.language) == Some(language),
-                )
-                .on_click(cx.listener(move |view, _, window, cx| {
-                    view.change(window, cx, move |settings| {
-                        language.code().clone_into(&mut settings.language);
-                    });
-                }))
-            })
-            .collect();
+        let languages = self.languages(&settings.language, cx);
 
         let timer = [
             self.switch(
@@ -97,6 +101,13 @@ impl Render for SettingsView {
                 strings.setting_inspection,
                 settings.inspection,
                 |settings, value| settings.inspection = value,
+                cx,
+            ),
+            self.switch(
+                "inspection-audio",
+                strings.setting_inspection_audio,
+                settings.inspection_audio,
+                |settings, value| settings.inspection_audio = value,
                 cx,
             ),
             self.switch(
