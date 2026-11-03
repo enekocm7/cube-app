@@ -2,6 +2,7 @@
 
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use cube_core::cstimer::{self, ImportReport};
@@ -12,6 +13,7 @@ use cube_core::{
     format::format_ms, persistence,
 };
 use cube_locale::{Language, Strings};
+use cube_updater::Release;
 use gpui_kit::assets::IconName;
 use gpui_kit::component::notification::Notification;
 use gpui_kit::component::{ActiveTheme as _, TitleBar, WindowExt as _, h_flex, v_flex};
@@ -84,6 +86,10 @@ pub struct LastResult {
 }
 
 /// The application window's root view.
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "independent timer, saving and update states"
+)]
 pub struct CubeApp {
     pub(crate) focus: FocusHandle,
     pub(crate) screen: Screen,
@@ -103,6 +109,11 @@ pub struct CubeApp {
     history_path: Option<PathBuf>,
     settings_path: Option<PathBuf>,
     saving_blocked: bool,
+    /// The newer release the update notification offers, if any.
+    pub(crate) available: Option<Arc<Release>>,
+    pub(crate) update_checking: bool,
+    pub(crate) updating: bool,
+    pub(crate) update_ticker: Option<Task<()>>,
 }
 
 impl CubeApp {
@@ -123,7 +134,7 @@ impl CubeApp {
         let event = session_event(&sessions[0]);
         let focus = cx.focus_handle();
         focus.focus(window, cx);
-        let app = Self {
+        let mut app = Self {
             focus,
             screen: Screen::Timer,
             timer: settings.timer(),
@@ -141,6 +152,10 @@ impl CubeApp {
             history_path,
             settings_path,
             saving_blocked: load_error.is_some(),
+            available: None,
+            update_checking: false,
+            updating: false,
+            update_ticker: None,
         };
         if let Some(error) = load_error {
             let message = app.strings().toast_load_failed.replace("{error}", &error);
@@ -151,6 +166,7 @@ impl CubeApp {
             });
         }
         app.start_ticking(window, cx);
+        app.startup_update_tasks(window, cx);
         cx.observe_window_activation(window, Self::on_activation_changed)
             .detach();
         app
@@ -629,13 +645,18 @@ impl CubeApp {
         }
         scramble::set_accurate_3x3(self.settings.accurate_3x3);
         palette::apply(self.settings.theme, cx);
+        self.save_settings(window, cx);
+        window.refresh();
+        cx.notify();
+    }
+
+    /// Writes the current settings to disk.
+    pub(crate) fn save_settings(&self, window: &mut Window, cx: &mut Context<Self>) {
         if let Some(path) = &self.settings_path
             && let Err(error) = persistence::save_settings(path, &self.settings)
         {
             self.report_save_error(&error, window, cx);
         }
-        window.refresh();
-        cx.notify();
     }
 
     fn solves_changed(&mut self, window: &mut Window, cx: &mut Context<Self>) {

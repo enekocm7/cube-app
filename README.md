@@ -19,6 +19,7 @@ solve history, so you can move between the terminal and the desktop without impo
 - Current and best single, mo3, ao5, ao12, ao50 and ao100, plus mean, deviation and DNF count
 - Stats screen with charts of your times, your ao5 and their distribution
 - Import and export csTimer sessions, with file pickers, from Settings → Data
+- Checks GitHub for new releases and updates itself, verifying the download against the release's SHA-256
 - Light and dark themes, in English and Spanish
 
 Features still on the way are tracked in the [issues](https://github.com/enekocm7/cube-gui/issues).
@@ -26,6 +27,10 @@ Features still on the way are tracked in the [issues](https://github.com/enekocm
 ## Install
 
 Download the installer or a portable build from the [releases](https://github.com/enekocm7/cube-gui/releases) page.
+Installed builds update themselves silently; portable builds swap the executable and restart. Both wait for you to
+accept an update, and the download is checked against the release's `SHA256SUMS` file before anything is installed.
+Turn the automatic check off, change its frequency or release channel, or check manually from
+**Settings → Updates**.
 
 To build from source, install [Rust](https://rustup.rs/) and run:
 
@@ -66,6 +71,7 @@ Don't keep cube and cube-tui open at the same time: each one overwrites the file
 | `cube-gui` (root) | The `cube` binary and icon embedding |
 | `crates/cube-core` | Solves, statistics, the timer state machine, scrambles and persistence, with no GUI dependency |
 | `crates/cube-locale` | Translated strings |
+| `crates/cube-updater` | GitHub release check, verified download and self-update |
 | `crates/cube-ui` | The GPUI interface |
 
 ## License

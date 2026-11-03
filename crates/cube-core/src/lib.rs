@@ -17,6 +17,6 @@ pub mod timer;
 
 pub use event::WcaEvent;
 pub use history::History;
-pub use settings::Settings;
+pub use settings::{Settings, UpdateChannel, UpdateFrequency, UpdateSettings};
 pub use solve::{Modifier, Solve, SolveChange, SolveSnapshot};
 pub use timer::{InspectionCue, Readiness, Timer, TimerOutcome, TimerPhase};
