@@ -55,11 +55,14 @@ pub const STRINGS: Strings = Strings {
 
     save: "Save",
     cancel: "Cancel",
+    close: "Close",
     delete: "Delete",
     delete_solve: "Delete solve",
     delete_solve_confirm: "Delete this solve? This can't be undone.",
     solve_deleted: "Solve deleted.",
 
+    settings_timer: "Timer",
+    settings_appearance: "Appearance",
     setting_inspection: "WCA inspection",
     setting_toasts: "Show notifications",
     setting_accurate: "Shorter 3x3x3 scrambles (slower to generate)",
