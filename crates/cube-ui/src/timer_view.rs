@@ -32,7 +32,7 @@ const SCRAMBLE_MAX_LINES: f32 = 8.;
 struct Display {
     text: String,
     color: Hsla,
-    hint: &'static str,
+    hint: Option<&'static str>,
 }
 
 impl CubeApp {
@@ -65,7 +65,9 @@ impl CubeApp {
                             .text_color(display.color)
                             .child(display.text),
                     )
-                    .child(div().text_sm().text_color(muted).child(display.hint))
+                    .when_some(display.hint, |column, hint| {
+                        column.child(div().text_sm().text_color(muted).child(hint))
+                    })
                     .when_some(self.last_result.filter(|_| !attempt), |column, result| {
                         column.child(self.render_result_actions(result, cx))
                     }),
@@ -95,36 +97,40 @@ impl CubeApp {
                 Display {
                     text,
                     color,
-                    hint: strings.hint_start,
+                    hint: self
+                        .settings
+                        .shows_start_hint()
+                        .then_some(strings.hint_start),
                 }
             }
-            TimerPhase::Holding { .. } => {
-                let (color, hint) = held.unwrap_or((foreground, strings.hint_start));
-                Display {
-                    text: format_ms(0),
-                    color,
-                    hint,
-                }
-            }
+            TimerPhase::Holding { .. } => Display {
+                text: format_ms(0),
+                color: held.map_or(foreground, |(color, _)| color),
+                hint: held.map(|(_, hint)| hint),
+            },
             TimerPhase::Inspecting { .. } => {
                 let elapsed = self.timer.elapsed(now);
-                let remaining = self.timer.inspection_limit.saturating_sub(elapsed);
-                let text = match self.timer.inspection_modifier(elapsed) {
-                    Modifier::None => remaining.as_secs_f32().ceil().to_string(),
+                let modifier = self.timer.inspection_modifier(elapsed);
+                let text = match modifier {
+                    Modifier::None => elapsed.as_secs().to_string(),
                     Modifier::PlusTwo => "+2".to_owned(),
                     Modifier::DNF => "DNF".to_owned(),
                 };
-                let urgent = self.timer.inspection_modifier(elapsed) != Modifier::None;
+                let urgent = modifier != Modifier::None;
                 let (color, hint) = held.unwrap_or((
                     if urgent { colors.yellow } else { colors.orange },
                     strings.hint_inspecting,
                 ));
-                Display { text, color, hint }
+                Display {
+                    text,
+                    color,
+                    hint: Some(hint),
+                }
             }
             TimerPhase::Running { .. } => Display {
                 text: format_ms(self.timer.elapsed(now).as_millis() as u64),
                 color: foreground,
-                hint: strings.hint_stop,
+                hint: Some(strings.hint_stop),
             },
         }
     }

@@ -92,25 +92,6 @@ impl SettingsView {
         });
     }
 
-    /// One button per supported language.
-    fn language_choices(&self, selected: &str, cx: &mut Context<Self>) -> Vec<Button> {
-        Language::ALL
-            .into_iter()
-            .map(|language| {
-                choice(
-                    language.code(),
-                    language.native_name(),
-                    Language::from_code(selected) == Some(language),
-                )
-                .on_click(cx.listener(move |view, _, window, cx| {
-                    view.change(window, cx, move |settings| {
-                        language.code().clone_into(&mut settings.language);
-                    });
-                }))
-            })
-            .collect()
-    }
-
     /// The csTimer import and export actions.
     fn data_rows(&self, strings: &'static Strings, cx: &mut Context<Self>) -> [AnyElement; 2] {
         [
@@ -151,6 +132,24 @@ impl SettingsView {
             )),
         )
     }
+
+    fn languages(&self, current: &str, cx: &mut Context<Self>) -> Vec<Button> {
+        Language::ALL
+            .into_iter()
+            .map(|language| {
+                choice(
+                    language.code(),
+                    language.native_name(),
+                    Language::from_code(current) == Some(language),
+                )
+                .on_click(cx.listener(move |view, _, window, cx| {
+                    view.change(window, cx, move |settings| {
+                        language.code().clone_into(&mut settings.language);
+                    });
+                }))
+            })
+            .collect()
+    }
 }
 
 impl Render for SettingsView {
@@ -169,7 +168,7 @@ impl Render for SettingsView {
                 },
             ))
         };
-        let languages = self.language_choices(&settings.language, cx);
+        let languages = self.languages(&settings.language, cx);
 
         let timer = [
             self.switch(
@@ -177,6 +176,13 @@ impl Render for SettingsView {
                 strings.setting_inspection,
                 settings.inspection,
                 |settings, value| settings.inspection = value,
+                cx,
+            ),
+            self.switch(
+                "inspection-audio",
+                strings.setting_inspection_audio,
+                settings.inspection_audio,
+                |settings, value| settings.inspection_audio = value,
                 cx,
             ),
             self.switch(

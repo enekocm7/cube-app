@@ -7,6 +7,7 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 
+use crate::history::History;
 use crate::timer::{DEFAULT_HOLD, Timer};
 
 /// The color scheme to use.
@@ -25,6 +26,8 @@ pub enum ThemePreference {
 #[allow(clippy::struct_excessive_bools, reason = "independent user toggles")]
 pub struct Settings {
     pub inspection: bool,
+    /// Plays the 8-second and 12-second inspection warnings.
+    pub inspection_audio: bool,
     /// Inspection length in milliseconds.
     pub inspection_limit_ms: u64,
     /// How long the timer key must be held, in milliseconds.
@@ -37,12 +40,15 @@ pub struct Settings {
     pub accurate_3x3: bool,
     /// Adds a rolling ao5 column to the solve list.
     pub solve_list_ao5: bool,
+    /// Whether the start hint has been used, so it is no longer shown while idle.
+    pub start_hint_seen: bool,
 }
 
 impl Default for Settings {
     fn default() -> Self {
         Self {
             inspection: true,
+            inspection_audio: false,
             inspection_limit_ms: 15_000,
             hold_ms: DEFAULT_HOLD.as_millis() as u64,
             theme: ThemePreference::default(),
@@ -50,6 +56,7 @@ impl Default for Settings {
             toasts: true,
             accurate_3x3: false,
             solve_list_ao5: false,
+            start_hint_seen: false,
         }
     }
 }
@@ -63,17 +70,57 @@ impl Settings {
             Duration::from_millis(self.hold_ms),
         )
     }
+
+    /// Returns whether the idle timer should still show the start hint.
+    pub const fn shows_start_hint(&self) -> bool {
+        !self.start_hint_seen
+    }
+
+    /// Treats an existing history as having used the start hint, so users who
+    /// upgrade from an older version or from cube-tui never see it again.
+    pub fn adopt_existing_history(&mut self, sessions: &[History]) {
+        if sessions.iter().any(|session| !session.is_empty()) {
+            self.start_hint_seen = true;
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::event::WcaEvent;
+    use crate::solve::{Modifier, Solve};
 
     #[test]
     fn missing_and_unknown_keys_are_tolerated() {
         let settings: Settings = toml::from_str("inspection = false\nfuture = 1").unwrap();
         assert!(!settings.inspection);
         assert_eq!(settings.inspection_limit_ms, 15_000);
+        assert!(settings.shows_start_hint());
+    }
+
+    #[test]
+    fn existing_history_counts_as_seen() {
+        let mut settings = Settings::default();
+        settings.adopt_existing_history(&[History::new()]);
+        assert!(settings.shows_start_hint());
+
+        let mut history = History::new();
+        history.push(Solve::new(
+            10_000,
+            WcaEvent::Cube3x3,
+            String::new(),
+            Modifier::None,
+        ));
+        settings.adopt_existing_history(&[History::new(), history]);
+        assert!(!settings.shows_start_hint());
+    }
+
+    #[test]
+    fn inspection_audio_is_off_by_default() {
+        assert!(!Settings::default().inspection_audio);
+        let settings: Settings = toml::from_str("inspection_audio = true").unwrap();
+        assert!(settings.inspection_audio);
     }
 
     #[test]
@@ -81,6 +128,7 @@ mod tests {
         let settings = Settings {
             theme: ThemePreference::Dark,
             language: "es".into(),
+            start_hint_seen: true,
             ..Settings::default()
         };
         let text = toml::to_string(&settings).unwrap();

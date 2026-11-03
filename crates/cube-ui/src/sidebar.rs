@@ -225,7 +225,7 @@ impl CubeApp {
             )
             .child(
                 Button::new("session-delete")
-                    .ghost()
+                    .danger()
                     .small()
                     .icon(IconName::Trash)
                     .tooltip(strings.delete_session)

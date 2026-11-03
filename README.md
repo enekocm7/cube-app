@@ -11,7 +11,8 @@ solve history, so you can move between the terminal and the desktop without impo
 
 ## Features
 
-- Timer with WCA inspection: `+2` and DNF are applied automatically, and hold colors work like a stackmat's
+- Timer with WCA inspection that counts up to 15 seconds: `+2` and DNF are applied automatically, optional 8 s and
+  12 s audio cues warn you, and hold colors work like a stackmat's
 - Official WCA random-state scrambles for 12 events, generated with `tnoodle-rs`
 - Sessions with custom names
 - Solve history, with details, comments, penalties and edits that keep an audit trail
@@ -40,6 +41,9 @@ cargo run --release
 | `Esc` | Cancel the current attempt without recording it |
 
 Click a solve in the list to see its details or edit it.
+
+The "Press space to start" hint is only shown until you start your first solve, so the timer stays clean once you
+know the controls.
 
 Open **Settings → Data** to import a csTimer export or to export every session. Importing adds the
 file's sessions to your history, infers each solve's event from its scramble, and keeps penalties and
