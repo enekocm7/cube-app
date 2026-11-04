@@ -115,6 +115,9 @@ pub struct CubeApp {
     pub(crate) timer: Timer,
     /// Whether the timer key is physically down, to ignore key repeat.
     key_down: bool,
+    /// Whether the mouse or a touch is holding the digits, the pointer twin of
+    /// `key_down`.
+    pointer_down: bool,
     /// The key that stopped a running timer, so its held repeats do not also
     /// trigger that key's action until it is released.
     stop_repeat_key: Option<String>,
@@ -197,6 +200,7 @@ impl CubeApp {
             generating_timer: None,
             queue: ScrambleQueue::new(event),
             key_down: false,
+            pointer_down: false,
             stop_repeat_key: None,
             last_result: None,
             chart_data: None,
@@ -369,7 +373,7 @@ impl CubeApp {
         };
         cx.stop_propagation();
         if action == Action::Timer {
-            if self.key_down || event.is_held || self.screen != Screen::Timer {
+            if self.key_down || self.pointer_down || event.is_held || self.screen != Screen::Timer {
                 return;
             }
             self.key_down = true;
@@ -454,6 +458,44 @@ impl CubeApp {
             return;
         }
         self.key_down = false;
+        self.release_timer(window, cx);
+    }
+
+    /// Starts or stops the timer with the mouse or a touch on the digits, the
+    /// same way the timer key does.
+    pub(crate) fn on_pointer_down(
+        &mut self,
+        _event: &MouseDownEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if window.has_active_dialog(cx) || self.pointer_down || self.key_down {
+            return;
+        }
+        // Stopping needs no matching release, so a press that stopped the
+        // timer is not tracked and its release is ignored.
+        self.pointer_down = !matches!(self.timer.phase(), TimerPhase::Running { .. });
+        self.press_timer(window, cx);
+        // Keep keyboard shortcuts working after a click.
+        window.focus(&self.focus, cx);
+        cx.stop_propagation();
+    }
+
+    pub(crate) fn on_pointer_up(
+        &mut self,
+        _event: &MouseUpEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if !self.pointer_down {
+            return;
+        }
+        self.pointer_down = false;
+        self.release_timer(window, cx);
+    }
+
+    /// Handles the timer key or pointer going up.
+    fn release_timer(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let was_inspecting = matches!(self.timer.phase(), TimerPhase::Inspecting { .. });
         let outcome = self.timer.release(Instant::now());
         if matches!(self.timer.phase(), TimerPhase::Running { .. }) {
@@ -489,6 +531,7 @@ impl CubeApp {
     fn on_activation_changed(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if !window.is_window_active() {
             self.key_down = false;
+            self.pointer_down = false;
             self.stop_repeat_key = None;
             if matches!(self.timer.phase(), TimerPhase::Holding { .. }) {
                 self.timer.cancel();
