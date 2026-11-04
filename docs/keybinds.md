@@ -21,6 +21,7 @@ nothing is selected.
 | New scramble | `N` | |
 | Turn inspection on or off | `I` | |
 | Show or hide the scramble preview | `P` | The same switch as the setting |
+| Turn manual mode on or off | `M` | Type a time from another timer. See [Manual mode](#manual-mode) |
 | Select the newer solve | `Up` | Moves the highlight up the list |
 | Select the older solve | `Down` | Moves the highlight down the list |
 | Open the selected solve | `Enter` | Opens the details and edit dialog |
@@ -45,6 +46,23 @@ it cancels the attempt without recording it.
 
 Hold `N`, `Up` or `Down` to repeat the action until you release the key. Other
 actions fire once per press.
+
+## Manual mode
+
+Press `M` on the timer screen to type in times taken on another timer, as in
+cube-tui. The timer key is disabled and the digits show what you type:
+
+- Digits, `:` and `.` build the time (`8.98`, `1:32.49`, `12:34`), up to two
+  digits for each of minutes and seconds and three for the decimals. `Backspace`
+  deletes and `Ctrl + V` pastes.
+- `Enter` records the solve against the current scramble and moves on to the
+  next one, staying in manual mode. An invalid time such as `12:99` is kept and
+  the error is shown until you edit it.
+- With nothing typed, `Enter` still opens the selected solve's details.
+- Every other shortcut keeps working. Use `Up`/`Down` to select the entered
+  solve, then `Shift + D` for DNF or the details dialog for `+2` (the digit
+  shortcut `2` types a digit while manual mode is on).
+- Press `M` again to return to the timer.
 
 ## Keys inside dialogs
 

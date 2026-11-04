@@ -22,12 +22,13 @@ use crate::search_bar::{BAR_HEIGHT, focus_on_slash, new_search, query, search_ba
 /// uses the roomier form size rather than the narrower settings size.
 const DIALOG_SIZE: DialogSize = DialogSize::FORM;
 
-const TIMER_ACTIONS: [Action; 5] = [
+const TIMER_ACTIONS: [Action; 6] = [
     Action::Timer,
     Action::Cancel,
     Action::NextScramble,
     Action::ToggleInspection,
     Action::ToggleScramblePreview,
+    Action::ManualEntry,
 ];
 const SOLVE_ACTIONS: [Action; 6] = [
     Action::PreviousSolve,
@@ -406,6 +407,7 @@ fn action_label(strings: &'static Strings, action: Action) -> &'static str {
         Action::NextScramble => strings.new_scramble,
         Action::ToggleInspection => strings.action_toggle_inspection,
         Action::ToggleScramblePreview => strings.action_toggle_scramble_preview,
+        Action::ManualEntry => strings.action_manual_entry,
         Action::PreviousSolve => strings.action_previous_solve,
         Action::NextSolve => strings.action_next_solve,
         Action::OpenSolve => strings.action_open_solve,

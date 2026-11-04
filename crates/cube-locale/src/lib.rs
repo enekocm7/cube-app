@@ -68,6 +68,9 @@ pub struct Strings {
     pub hint_inspecting: &'static str,
     /// `{key}`: the timer's binding.
     pub hint_stop: &'static str,
+    pub manual_mode: &'static str,
+    pub manual_empty: &'static str,
+    pub manual_invalid: &'static str,
     pub generating_scramble: &'static str,
     pub new_scramble: &'static str,
     pub copy_scramble: &'static str,
@@ -188,6 +191,7 @@ pub struct Strings {
     pub action_cancel: &'static str,
     pub action_toggle_inspection: &'static str,
     pub action_toggle_scramble_preview: &'static str,
+    pub action_manual_entry: &'static str,
     pub action_previous_solve: &'static str,
     pub action_next_solve: &'static str,
     pub action_open_solve: &'static str,

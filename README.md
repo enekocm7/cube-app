@@ -48,6 +48,7 @@ for valid bindings.
 | `N` | New scramble (hold to keep generating) |
 | `I` | Turn WCA inspection on or off |
 | `P` | Show or hide the scramble preview |
+| `M` | Turn manual mode on or off |
 | `Up` / `Down` | Select a newer or older solve (hold to keep moving) |
 | `Enter` | Open the selected solve's details |
 | `D` | Delete the selected solve |
@@ -95,6 +96,7 @@ Around the shortcuts:
 
 **Solves and sessions**
 
+- Manual mode to type in times from another timer.
 - Sessions with custom names, deletable from the session dropdown.
 - A solve history whose details you can edit: time, event, scramble, penalty, date and comment. Every change is kept
   in an audit trail.

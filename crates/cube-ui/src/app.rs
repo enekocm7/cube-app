@@ -10,8 +10,9 @@ use cube_core::scramble::{self, ScrambleQueue};
 use cube_core::stats::{self, Average, SessionStats};
 use cube_core::window_state::WindowState;
 use cube_core::{
-    Action, BindingError, History, KeyBinding, KeyPress, Keybinds, Modifier, Settings, Solve,
-    SolveSnapshot, Timer, TimerOutcome, TimerPhase, WcaEvent, format::format_ms, persistence,
+    Action, BindingError, History, KeyBinding, KeyPress, Keybinds, ManualEntry, Modifier, Settings,
+    Solve, SolveSnapshot, Timer, TimerOutcome, TimerPhase, WcaEvent, format::format_ms,
+    persistence,
 };
 use cube_locale::{Language, Strings};
 use cube_updater::Release;
@@ -107,6 +108,8 @@ pub struct CubeApp {
     pub(crate) current: usize,
     pub(crate) event: WcaEvent,
     pub(crate) scramble: Option<String>,
+    /// The time being typed while manual mode is on.
+    pub(crate) manual: Option<ManualEntry>,
     /// The drawing of `scramble`, kept while the same one is on screen.
     pub(crate) preview: PreviewCache,
     /// Whether the wait for a scramble has outlasted `GENERATING_DELAY`, so
@@ -202,6 +205,7 @@ impl CubeApp {
             current: 0,
             event,
             scramble: None,
+            manual: None,
             preview: PreviewCache::default(),
             generating_visible: false,
             generating_timer: None,
@@ -405,11 +409,20 @@ impl CubeApp {
             return;
         }
 
+        if self.manual_typing(&press, &event.keystroke, event.is_held, window, cx) {
+            cx.stop_propagation();
+            return;
+        }
+
         let Some(action) = self.keybinds.action_for(&press) else {
             return;
         };
         cx.stop_propagation();
         if action == Action::Timer {
+            // Manual mode types times in instead of timing them.
+            if self.manual.is_some() {
+                return;
+            }
             if self.key_down || self.pointer_down || event.is_held || self.screen != Screen::Timer {
                 return;
             }
@@ -435,6 +448,7 @@ impl CubeApp {
             Action::NextScramble => self.skip_scramble(cx),
             Action::ToggleInspection => self.toggle_inspection(window, cx),
             Action::ToggleScramblePreview => self.toggle_scramble_preview(window, cx),
+            Action::ManualEntry => self.toggle_manual_entry(cx),
             Action::PreviousSolve => self.select_solve(true, cx),
             Action::NextSolve => self.select_solve(false, cx),
             Action::OpenSolve => {
@@ -447,16 +461,8 @@ impl CubeApp {
                     self.confirm_delete_solve(index, window, cx);
                 }
             }
-            Action::PenaltyPlusTwo => {
-                if let Some(index) = self.target_solve() {
-                    self.toggle_penalty(index, Modifier::PlusTwo, window, cx);
-                }
-            }
-            Action::PenaltyDnf => {
-                if let Some(index) = self.target_solve() {
-                    self.toggle_penalty(index, Modifier::DNF, window, cx);
-                }
-            }
+            Action::PenaltyPlusTwo => self.toggle_target_penalty(Modifier::PlusTwo, window, cx),
+            Action::PenaltyDnf => self.toggle_target_penalty(Modifier::DNF, window, cx),
             Action::NextEvent => self.cycle_event(1, cx),
             Action::PreviousEvent => self.cycle_event(-1, cx),
             Action::NextSession => self.cycle_session(1, cx),
@@ -507,7 +513,11 @@ impl CubeApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if window.has_active_dialog(cx) || self.pointer_down || self.key_down {
+        if window.has_active_dialog(cx)
+            || self.pointer_down
+            || self.key_down
+            || self.manual.is_some()
+        {
             return;
         }
         // Stopping needs no matching release, so a press that stopped the
@@ -731,6 +741,89 @@ impl CubeApp {
         });
     }
 
+    /// Turns manual mode on or off. It starts only from the idle timer
+    /// screen, and the scramble stays until a typed time is recorded.
+    pub(crate) fn toggle_manual_entry(&mut self, cx: &mut Context<Self>) {
+        if self.manual.take().is_none() {
+            if self.timer.is_active() || self.screen != Screen::Timer {
+                return;
+            }
+            self.manual = Some(ManualEntry::default());
+        }
+        cx.notify();
+    }
+
+    /// Feeds a key to the time being typed in manual mode. Returns whether the
+    /// key was used; digits, `:`, `.`, Backspace, paste and Enter (once
+    /// something is typed) are, so every other binding keeps working.
+    fn manual_typing(
+        &mut self,
+        press: &KeyPress,
+        keystroke: &Keystroke,
+        held: bool,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        let typing = self.screen == Screen::Timer && !self.timer.is_active();
+        let Some(entry) = self.manual.as_mut().filter(|_| typing) else {
+            return false;
+        };
+        if self.keybinds.action_for(press) == Some(Action::ManualEntry) {
+            return false;
+        }
+        let modifiers = keystroke.modifiers;
+        let changed = if modifiers.control || modifiers.platform || modifiers.alt {
+            if (modifiers.control || modifiers.platform) && press.key() == "v" {
+                cx.read_from_clipboard()
+                    .and_then(|item| item.text())
+                    .is_some_and(|text| entry.push_text(&text))
+            } else {
+                return false;
+            }
+        } else {
+            match press.key() {
+                "backspace" => entry.backspace(),
+                "enter" if !entry.is_empty() => {
+                    self.record_manual(window, cx);
+                    return true;
+                }
+                _ if held => return false,
+                _ => keystroke
+                    .key_char
+                    .as_deref()
+                    .is_some_and(|text| entry.push_text(text)),
+            }
+        };
+        if changed {
+            cx.notify();
+        }
+        changed
+    }
+
+    /// Records the typed time like a timed solve, and stays in manual mode for
+    /// the next one. Penalties then apply to it like to any other solve.
+    fn record_manual(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // A scramble is still being prepared: keep the text for the next Enter.
+        if self.scramble.is_none() {
+            return;
+        }
+        let Some(time_ms) = self.manual.as_mut().and_then(ManualEntry::commit) else {
+            cx.notify();
+            return;
+        };
+        self.finish_attempt(
+            TimerOutcome {
+                time_ms,
+                modifier: Modifier::None,
+            },
+            window,
+            cx,
+        );
+        if let Some(entry) = &mut self.manual {
+            entry.clear();
+        }
+    }
+
     /// Moves the solve selection one step newer (`newer`) or older.
     pub(crate) fn select_solve(&mut self, newer: bool, cx: &mut Context<Self>) {
         let count = self.session().len();
@@ -831,6 +924,18 @@ impl CubeApp {
     }
 
     /// Toggles a penalty on a solve of the current session.
+    /// Toggles a penalty on the selected solve, or the latest.
+    fn toggle_target_penalty(
+        &mut self,
+        modifier: Modifier,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if let Some(index) = self.target_solve() {
+            self.toggle_penalty(index, modifier, window, cx);
+        }
+    }
+
     pub(crate) fn toggle_penalty(
         &mut self,
         index: usize,

@@ -159,3 +159,7 @@ settings, import/export dialogs and help.
 - Update `README.md` when you add or change a user-visible feature, a
   setting, or a key binding. When a key binding changes, update
   `docs/keybinds.md` as well: it is the complete keyboard reference.
+  Keep README entries short and plain: one line per feature or shortcut,
+  saying what it is and not how it works. Do not list examples, key
+  sequences, edge cases or behaviour details there; those belong in
+  `docs/keybinds.md` or the code.
