@@ -96,8 +96,8 @@ list scrollbar** to keep it visible.
 Times use the system's monospace font. **Settings → Appearance → Font** can switch to
 [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) for the timer only, for every time, or for the whole
 interface; the font is bundled under the SIL Open Font License and stays off by default.
-**Settings → Appearance → Scramble size** makes the scramble larger (up to 40px) for reading
-from a distance; long scrambles still scroll.
+**Settings → Appearance → Scramble size** picks Small, Normal (default), Large, Largest or Custom,
+which takes an exact size in points (6 to 120). Long scrambles still scroll.
 
 ## Themes
 

@@ -2,8 +2,10 @@
 
 use cube_core::Settings;
 use cube_core::persistence;
+use cube_core::settings::parse_scramble_pt;
 use cube_core::settings::{
-    FontChoice, ScrambleSize, ThemePreference, UpdateChannel, UpdateFrequency,
+    FontChoice, InvalidScramblePt, MAX_SCRAMBLE_PT, MIN_SCRAMBLE_PT, ScrambleSize, ThemePreference,
+    UpdateChannel, UpdateFrequency,
 };
 use cube_core::theme;
 use cube_core::theme::{ThemeColor, ThemeFile};
@@ -11,6 +13,7 @@ use cube_locale::{Language, Strings};
 use gpui_kit::assets::IconName;
 use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
+use gpui_kit::component::input::{Input, InputEvent, InputState};
 use gpui_kit::component::menu::{DropdownMenu as _, PopupMenuItem};
 use gpui_kit::component::switch::Switch;
 use gpui_kit::component::{
@@ -31,6 +34,10 @@ struct SettingsView {
     /// Every valid theme in the shared `themes` folder, read when the dialog
     /// opens.
     themes: Vec<ThemeFile>,
+    /// The custom scramble size in points, blank for the preset.
+    scramble_pt: Entity<InputState>,
+    /// Whether the text in `scramble_pt` is not a valid size.
+    scramble_pt_invalid: bool,
 }
 
 impl SettingsView {
@@ -192,6 +199,7 @@ impl SettingsView {
     fn scramble_size_row(&self, settings: &Settings, strings: &'static Strings) -> AnyElement {
         let current = settings.scramble_size;
         let app = self.app.clone();
+        let input = self.scramble_pt.clone();
         row(
             strings.setting_scramble_size,
             Button::new("scramble-size")
@@ -205,18 +213,61 @@ impl SettingsView {
                         menu = menu.item(
                             PopupMenuItem::new(scramble_size_label(strings, choice))
                                 .checked(choice == current)
-                                .on_click(move |_, window, cx| {
-                                    app.update(cx, |app, cx| {
-                                        app.update_settings(window, cx, move |settings| {
-                                            settings.scramble_size = choice;
+                                .on_click({
+                                    let input = input.clone();
+                                    move |_, window, cx| {
+                                        // Start the custom size from what is shown now.
+                                        let mut start = None;
+                                        app.update(cx, |app, cx| {
+                                            app.update_settings(window, cx, |settings| {
+                                                if choice == ScrambleSize::Custom
+                                                    && settings.scramble_custom_pt.is_none()
+                                                {
+                                                    settings.scramble_custom_pt =
+                                                        Some(settings.scramble_pt());
+                                                }
+                                                settings.scramble_size = choice;
+                                                start = settings.scramble_custom_pt;
+                                            });
                                         });
-                                    });
+                                        if let Some(points) = start {
+                                            input.update(cx, |input, cx| {
+                                                input.set_value(points.to_string(), window, cx);
+                                            });
+                                        }
+                                    }
                                 }),
                         );
                     }
                     menu
                 }),
         )
+    }
+
+    /// The exact scramble size field, shown while the size is custom.
+    fn custom_scramble_rows(&self, strings: &'static Strings) -> Vec<AnyElement> {
+        let mut rows = vec![row(
+            strings.setting_scramble_custom,
+            div()
+                .w(px(96.))
+                .child(Input::new(&self.scramble_pt).small().w_full()),
+        )];
+        if self.scramble_pt_invalid {
+            let message = strings
+                .scramble_custom_invalid
+                .replace("{min}", &MIN_SCRAMBLE_PT.to_string())
+                .replace("{max}", &MAX_SCRAMBLE_PT.to_string());
+            rows.push(
+                div()
+                    .px_3()
+                    .py_2()
+                    .text_sm()
+                    .text_color(gpui_kit::red())
+                    .child(message)
+                    .into_any_element(),
+            );
+        }
+        rows
     }
 
     /// The updater's preferences and its manual check.
@@ -623,7 +674,7 @@ impl Render for SettingsView {
                 cx,
             ),
         ];
-        let appearance = [
+        let mut appearance = vec![
             self.switch(
                 "solve-list-ao5",
                 strings.setting_solve_list_ao5,
@@ -640,14 +691,17 @@ impl Render for SettingsView {
             ),
             self.font_row(&settings, strings),
             self.scramble_size_row(&settings, strings),
-            self.switch(
-                "toasts",
-                strings.setting_toasts,
-                settings.toasts,
-                |settings, value| settings.toasts = value,
-                cx,
-            ),
         ];
+        if settings.scramble_size == ScrambleSize::Custom {
+            appearance.extend(self.custom_scramble_rows(strings));
+        }
+        appearance.push(self.switch(
+            "toasts",
+            strings.setting_toasts,
+            settings.toasts,
+            |settings, value| settings.toasts = value,
+            cx,
+        ));
         let updates = self.update_rows(strings, &settings, cx);
         let language = [h_flex()
             .min_h(ROW_MIN_HEIGHT)
@@ -720,16 +774,18 @@ fn theme_hsla(color: ThemeColor) -> Hsla {
     rgb(color.rgb()).into()
 }
 
-/// The menu label for a font choice.
+/// The menu label for a scramble size.
 fn scramble_size_label(strings: &'static Strings, size: ScrambleSize) -> &'static str {
     match size {
+        ScrambleSize::Small => strings.scramble_size_small,
         ScrambleSize::Normal => strings.scramble_size_normal,
         ScrambleSize::Large => strings.scramble_size_large,
-        ScrambleSize::Larger => strings.scramble_size_larger,
         ScrambleSize::Largest => strings.scramble_size_largest,
+        ScrambleSize::Custom => strings.scramble_size_custom,
     }
 }
 
+/// The menu label for a font choice.
 fn font_label(strings: &'static Strings, choice: FontChoice) -> &'static str {
     match choice {
         FontChoice::System => strings.font_system,
@@ -760,11 +816,41 @@ impl CubeApp {
         // pick from.
         let _ = persistence::ensure_default_theme();
         let themes = persistence::list_themes().unwrap_or_default();
+        let custom = self.settings.scramble_custom_pt;
+        let scramble_pt = cx.new(|cx| {
+            InputState::new(window, cx)
+                .default_value(custom.map_or_default(|pt| pt.to_string()))
+                .placeholder("pt")
+        });
         let view = cx.new(|cx| {
-            cx.observe(&app, |_, _, cx| cx.notify()).detach();
+            cx.observe(&app, |_: &mut SettingsView, _, cx| cx.notify())
+                .detach();
+            cx.subscribe_in(
+                &scramble_pt,
+                window,
+                |view, input, event: &InputEvent, window, cx| {
+                    if !matches!(event, InputEvent::Change) {
+                        return;
+                    }
+                    let text = input.read(cx).value().to_string();
+                    match parse_scramble_pt(&text) {
+                        Ok(points) => {
+                            view.scramble_pt_invalid = false;
+                            view.change(window, cx, move |settings| {
+                                settings.scramble_custom_pt = points;
+                            });
+                        }
+                        Err(InvalidScramblePt) => view.scramble_pt_invalid = true,
+                    }
+                    cx.notify();
+                },
+            )
+            .detach();
             SettingsView {
                 app: app.clone(),
                 themes,
+                scramble_pt: scramble_pt.clone(),
+                scramble_pt_invalid: false,
             }
         });
         let strings_app = cx.entity();

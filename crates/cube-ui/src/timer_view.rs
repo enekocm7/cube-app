@@ -140,8 +140,8 @@ impl CubeApp {
     fn render_scramble_bar(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
         let strings = self.strings();
         let scramble = self.scramble.clone();
-        let size = self.settings.scramble_size;
-        let line = px(size.line_px());
+        let font_size = px(self.settings.scramble_font_px());
+        let line = px(self.settings.scramble_line_px());
         let theme = cx.theme();
         let mono = theme.mono_font_family.clone();
         let muted = theme.muted_foreground;
@@ -169,7 +169,7 @@ impl CubeApp {
                     .max_h(line * SCRAMBLE_MAX_LINES)
                     .text_center()
                     .font_family(mono)
-                    .text_size(px(size.font_px()))
+                    .text_size(font_size)
                     .line_height(line)
                     .when(scramble.is_none(), |text| text.text_color(muted))
                     .when(scramble.is_some(), |text| {

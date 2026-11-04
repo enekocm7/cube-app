@@ -74,32 +74,57 @@ impl FontChoice {
 #[serde(rename_all = "lowercase")]
 pub enum ScrambleSize {
     /// The original size.
+    Small,
     #[default]
     Normal,
     Large,
-    Larger,
     /// For reading the scramble from across the room.
     Largest,
+    /// The size in `scramble_custom_pt`.
+    Custom,
 }
 
 impl ScrambleSize {
     /// Every size, in the order the settings menu lists them.
-    pub const ALL: [Self; 4] = [Self::Normal, Self::Large, Self::Larger, Self::Largest];
+    pub const ALL: [Self; 5] = [
+        Self::Small,
+        Self::Normal,
+        Self::Large,
+        Self::Largest,
+        Self::Custom,
+    ];
 
-    /// Text size in pixels.
-    pub const fn font_px(self) -> f32 {
+    /// Text size in points. `Custom` has no fixed size and reports the default.
+    pub const fn points(self) -> u32 {
         match self {
-            Self::Normal => 16.0,
-            Self::Large => 22.0,
-            Self::Larger => 30.0,
-            Self::Largest => 40.0,
+            Self::Small => 12,
+            Self::Normal | Self::Custom => 16,
+            Self::Large => 22,
+            Self::Largest => 30,
         }
     }
+}
 
-    /// Line height in pixels: the text size plus half again, as the original
-    /// 16px text had 24px lines.
-    pub const fn line_px(self) -> f32 {
-        self.font_px() * 1.5
+/// Smallest custom scramble size, in points.
+pub const MIN_SCRAMBLE_PT: u32 = 6;
+/// Largest custom scramble size, in points.
+pub const MAX_SCRAMBLE_PT: u32 = 120;
+
+/// A custom scramble size that is not a whole number within range.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct InvalidScramblePt;
+
+/// Parses a custom scramble size typed by the user. Blank means "use the
+/// preset" (`Ok(None)`); anything else must be a whole number of points within
+/// [`MIN_SCRAMBLE_PT`]..=[`MAX_SCRAMBLE_PT`].
+pub fn parse_scramble_pt(input: &str) -> Result<Option<u32>, InvalidScramblePt> {
+    let input = input.trim().trim_end_matches("pt").trim();
+    if input.is_empty() {
+        return Ok(None);
+    }
+    match input.parse::<u32>() {
+        Ok(points) if (MIN_SCRAMBLE_PT..=MAX_SCRAMBLE_PT).contains(&points) => Ok(Some(points)),
+        _ => Err(InvalidScramblePt),
     }
 }
 
@@ -182,6 +207,9 @@ pub struct Settings {
     pub font: FontChoice,
     /// How large the scramble is drawn.
     pub scramble_size: ScrambleSize,
+    /// The scramble size in points used when `scramble_size` is `custom`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scramble_custom_pt: Option<u32>,
     /// Whether the start hint has been used, so it is no longer shown while idle.
     pub start_hint_seen: bool,
     /// Action name to keystroke overrides; see [`crate::keybind`].
@@ -211,6 +239,7 @@ impl Default for Settings {
             always_show_scrollbar: false,
             font: FontChoice::default(),
             scramble_size: ScrambleSize::default(),
+            scramble_custom_pt: None,
             start_hint_seen: false,
             keybindings: BTreeMap::new(),
             sidebar_width: DEFAULT_SIDEBAR_WIDTH,
@@ -233,6 +262,24 @@ impl Settings {
     /// Returns whether the idle timer should still show the start hint.
     pub const fn shows_start_hint(&self) -> bool {
         !self.start_hint_seen
+    }
+
+    /// Scramble text size in points: the custom size when chosen, else the preset.
+    pub fn scramble_pt(&self) -> u32 {
+        match (self.scramble_size, self.scramble_custom_pt) {
+            (ScrambleSize::Custom, Some(pt)) => pt.clamp(MIN_SCRAMBLE_PT, MAX_SCRAMBLE_PT),
+            (size, _) => size.points(),
+        }
+    }
+
+    /// Scramble text size in pixels (1pt = 4/3px).
+    pub fn scramble_font_px(&self) -> f32 {
+        self.scramble_pt() as f32 * 4.0 / 3.0
+    }
+
+    /// Scramble line height in pixels, scaled with the text.
+    pub fn scramble_line_px(&self) -> f32 {
+        self.scramble_font_px() * 1.5
     }
 
     /// Builds the effective key bindings, defaults plus configured overrides.
@@ -289,12 +336,39 @@ mod tests {
 
     #[test]
     fn scramble_size_defaults_and_scales_lines() {
-        assert_eq!(Settings::default().scramble_size, ScrambleSize::Normal);
-        assert!((ScrambleSize::Normal.line_px() - 24.0).abs() < f32::EPSILON);
-        let settings: Settings = toml::from_str("scramble_size = 'largest'").unwrap();
-        assert_eq!(settings.scramble_size, ScrambleSize::Largest);
-        let sizes = ScrambleSize::ALL.map(ScrambleSize::line_px);
+        let mut settings = Settings::default();
+        assert_eq!(settings.scramble_size, ScrambleSize::Normal);
+        assert_eq!(settings.scramble_pt(), 16);
+        let parsed: Settings = toml::from_str("scramble_size = 'largest'").unwrap();
+        assert_eq!(parsed.scramble_size, ScrambleSize::Largest);
+        let sizes: Vec<u32> = ScrambleSize::ALL[..4]
+            .iter()
+            .map(|size| size.points())
+            .collect();
         assert!(sizes.windows(2).all(|pair| pair[0] < pair[1]));
+
+        settings.scramble_custom_pt = Some(50);
+        assert_eq!(
+            settings.scramble_pt(),
+            16,
+            "ignored unless custom is chosen"
+        );
+        settings.scramble_size = ScrambleSize::Custom;
+        assert_eq!(settings.scramble_pt(), 50);
+        assert!((settings.scramble_line_px() - 100.0).abs() < 1e-3);
+        settings.scramble_custom_pt = Some(1000);
+        assert_eq!(settings.scramble_pt(), MAX_SCRAMBLE_PT);
+    }
+
+    #[test]
+    fn custom_scramble_size_is_parsed_strictly() {
+        assert_eq!(parse_scramble_pt(""), Ok(None));
+        assert_eq!(parse_scramble_pt(" 24 "), Ok(Some(24)));
+        assert_eq!(parse_scramble_pt("24pt"), Ok(Some(24)));
+        assert!(parse_scramble_pt("5").is_err());
+        assert!(parse_scramble_pt("121").is_err());
+        assert!(parse_scramble_pt("abc").is_err());
+        assert!(parse_scramble_pt("-3").is_err());
     }
 
     #[test]
