@@ -147,10 +147,13 @@ impl CubeApp {
         let mono = theme.mono_font_family.clone();
         let muted = theme.muted_foreground;
         let scramble_color = Palette::of(cx).scramble;
-        let text: SharedString = scramble
-            .clone()
-            .unwrap_or_else(|| strings.generating_scramble.to_owned())
-            .into();
+        // Blank while a scramble is prepared, so a fast one never flashes text.
+        // A no-break space keeps the line's height.
+        let text: SharedString = match &scramble {
+            Some(scramble) => scramble.clone().into(),
+            None if self.generating_visible => strings.generating_scramble.into(),
+            None => "\u{a0}".into(),
+        };
         // A new scramble is a new key, so the scroll area starts from its top.
         let scroll_id = text.clone();
 
