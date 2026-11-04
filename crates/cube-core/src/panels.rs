@@ -9,6 +9,8 @@ pub const DEFAULT_SIDEBAR_WIDTH: u32 = 300;
 pub const DEFAULT_STATS_WIDTH: u32 = 250;
 /// The narrowest either panel may be made, in pixels.
 pub const MIN_PANEL_WIDTH: u32 = 180;
+/// The widest either panel may be made, in pixels, however wide the window is.
+pub const MAX_PANEL_WIDTH: u32 = 350;
 /// Room the timer keeps free, so the panels cannot take the whole window.
 pub const MIN_TIMER_WIDTH: u32 = 320;
 
@@ -16,14 +18,14 @@ pub const MIN_TIMER_WIDTH: u32 = 320;
 /// other panel is `other_width` pixels wide.
 ///
 /// The room left for it is the window less the other panel and the timer's
-/// minimum. Never narrower than [`MIN_PANEL_WIDTH`], even when the
+/// minimum, and never more than [`MAX_PANEL_WIDTH`]. Never narrower than [`MIN_PANEL_WIDTH`], even when the
 /// window cannot fit that room: the panel keeps its minimum and the window
 /// clips instead of the panel collapsing.
 pub fn max_panel_width(window_width: u32, other_width: u32) -> u32 {
     window_width
         .saturating_sub(other_width)
         .saturating_sub(MIN_TIMER_WIDTH)
-        .max(MIN_PANEL_WIDTH)
+        .clamp(MIN_PANEL_WIDTH, MAX_PANEL_WIDTH)
 }
 
 /// Clamps `width` to the range a panel may take beside the other panel.
@@ -77,9 +79,20 @@ mod tests {
 
     #[test]
     fn the_window_limits_the_widest_panel() {
-        // 1000 px, less the other panel and the timer's room.
-        assert_eq!(max_panel_width(1000, 250), 430);
-        assert_eq!(clamp_panel_width(2000, 1000, 250), 430);
+        // 900 px, less the other panel and the timer's room.
+        assert_eq!(max_panel_width(900, 250), 330);
+        assert_eq!(clamp_panel_width(2000, 900, 250), 330);
+    }
+
+    #[test]
+    fn a_panel_never_exceeds_the_maximum() {
+        assert_eq!(max_panel_width(5000, 250), MAX_PANEL_WIDTH);
+        assert_eq!(clamp_panel_width(4000, 5000, 250), MAX_PANEL_WIDTH);
+        // A saved width above the maximum is clamped, not rejected.
+        assert_eq!(
+            fit_panels(5000, 3000, 2000),
+            (MAX_PANEL_WIDTH, MAX_PANEL_WIDTH)
+        );
     }
 
     #[test]
@@ -106,6 +119,7 @@ mod tests {
                     let (sidebar, stats) = fit_panels(window_width, sidebar, stats);
                     assert!(sidebar >= MIN_PANEL_WIDTH);
                     assert!(stats >= MIN_PANEL_WIDTH);
+                    assert!(sidebar <= MAX_PANEL_WIDTH && stats <= MAX_PANEL_WIDTH);
                     assert!(
                         window_width < 2 * MIN_PANEL_WIDTH + MIN_TIMER_WIDTH
                             || sidebar + stats + MIN_TIMER_WIDTH <= window_width,

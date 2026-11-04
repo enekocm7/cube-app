@@ -86,7 +86,7 @@ in `cube-gui.toml`; [docs/keybinds.md](docs/keybinds.md) documents every action,
 rules.
 
 Drag the inner edge of the solve list or the statistics panel to resize it. Neither panel gets
-narrower than 180 px, and double-click an edge to restore its default width. The widths are
+narrower than 180 px or wider than 350 px, and double-click an edge to restore its default width. The widths are
 remembered between launches.
 
 The start hint is only shown until you start your first solve, so the timer stays clean once you
