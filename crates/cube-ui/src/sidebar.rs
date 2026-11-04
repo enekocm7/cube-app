@@ -14,7 +14,7 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::{CubeApp, average_label, format_average_at};
-use crate::dialog_size::{DialogSize, dialog_width};
+use crate::dialog_size::{DialogSize, dialog_title, dialog_width};
 use crate::palette::Palette;
 use crate::scroll_fade::fading_scroll;
 
@@ -335,7 +335,8 @@ impl CubeApp {
             }
             let (input_for_save, entity) = (input.clone(), entity.clone());
             dialog
-                .title(strings.rename_session)
+                .title(dialog_title(strings.rename_session, strings.close))
+                .close_button(false)
                 .w(dialog_width(DialogSize::COMPACT, window))
                 .child(Input::new(&input))
                 .footer(
@@ -400,7 +401,8 @@ impl CubeApp {
         window.open_dialog(cx, move |dialog, window, _| {
             let on_confirm = std::rc::Rc::clone(&on_confirm);
             dialog
-                .title(title)
+                .title(dialog_title(title, strings.close))
+                .close_button(false)
                 .w(dialog_width(DialogSize::COMPACT, window))
                 .child(message.clone())
                 .footer(
