@@ -19,6 +19,7 @@ solve history, so you can move between the terminal and the desktop without impo
 - Current and best single, mo3, ao5, ao12, ao50 and ao100, plus mean, deviation and DNF count
 - Stats screen with charts of your times, your ao5 and their distribution
 - Light and dark themes, plus cube-tui TOML themes with a color-picker editor
+- Optional bundled JetBrains Mono for the timer digits, all times, or the whole interface
 - Import and export csTimer sessions, with file pickers, from Settings → Data
 - Checks GitHub for new releases and updates itself, verifying the download against the release's SHA-256
 - Interface in English and Spanish
@@ -53,6 +54,10 @@ Drag the inner edge of the solve list or the statistics panel to resize it. Neit
 
 The "Press space to start" hint is only shown until you start your first solve, so the timer stays clean once you
 know the controls.
+
+Times use the system's monospace font. **Settings → Appearance → Font** can switch to
+[JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) for the timer only, for every time, or for the whole
+interface; the font is bundled under the SIL Open Font License and stays off by default.
 
 ## Themes
 

@@ -12,6 +12,7 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::{CubeApp, LastResult};
+use crate::fonts;
 use crate::palette::Palette;
 
 /// Digit size of the timer.
@@ -40,7 +41,7 @@ impl CubeApp {
         let display = self.display(cx);
         let attempt = self.timer.is_active();
         let theme = cx.theme();
-        let mono = theme.mono_font_family.clone();
+        let mono = fonts::timer_digits(cx).unwrap_or_else(|| theme.mono_font_family.clone());
         let muted = theme.muted_foreground;
 
         v_flex()

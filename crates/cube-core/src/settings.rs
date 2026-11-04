@@ -45,6 +45,28 @@ pub enum UpdateFrequency {
     Weekly,
 }
 
+/// Which text uses the bundled `JetBrains Mono` instead of the system fonts.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum FontChoice {
+    /// The system fonts: the theme's interface font and the system's monospace
+    /// for times. The bundled font is not loaded.
+    #[default]
+    System,
+    /// `JetBrains Mono` for the timer's digits only.
+    Timer,
+    /// `JetBrains Mono` for every time, leaving the interface in the theme's
+    /// font.
+    Times,
+    /// `JetBrains Mono` for the whole interface.
+    Whole,
+}
+
+impl FontChoice {
+    /// Every choice, in the order the settings menu lists them.
+    pub const ALL: [Self; 4] = [Self::System, Self::Timer, Self::Times, Self::Whole];
+}
+
 /// Updater state and preferences.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
@@ -118,6 +140,8 @@ pub struct Settings {
     pub accurate_3x3: bool,
     /// Adds a rolling ao5 column to the solve list.
     pub solve_list_ao5: bool,
+    /// Which text uses the bundled `JetBrains Mono`.
+    pub font: FontChoice,
     /// Whether the start hint has been used, so it is no longer shown while idle.
     pub start_hint_seen: bool,
     /// Width of the session and solve list, in pixels. Clamped to the window
@@ -141,6 +165,7 @@ impl Default for Settings {
             toasts: true,
             accurate_3x3: false,
             solve_list_ao5: false,
+            font: FontChoice::default(),
             start_hint_seen: false,
             sidebar_width: DEFAULT_SIDEBAR_WIDTH,
             stats_panel_width: DEFAULT_STATS_WIDTH,
@@ -209,6 +234,15 @@ mod tests {
         assert!(!Settings::default().inspection_audio);
         let settings: Settings = toml::from_str("inspection_audio = true").unwrap();
         assert!(settings.inspection_audio);
+    }
+
+    #[test]
+    fn font_choices_default_to_the_system_font() {
+        assert_eq!(Settings::default().font, FontChoice::System);
+        let settings: Settings = toml::from_str("font = 'timer'").unwrap();
+        assert_eq!(settings.font, FontChoice::Timer);
+        let settings: Settings = toml::from_str("font = 'whole'").unwrap();
+        assert_eq!(settings.font, FontChoice::Whole);
     }
 
     #[test]
