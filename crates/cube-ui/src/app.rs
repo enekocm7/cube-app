@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 use cube_core::cstimer::{self, ImportReport};
 use cube_core::scramble::{self, ScrambleQueue};
 use cube_core::stats::{self, Average, SessionStats};
+use cube_core::window_state::WindowState;
 use cube_core::{
     Action, BindingError, History, KeyBinding, KeyPress, Keybinds, Modifier, Settings, Solve,
     SolveSnapshot, Timer, TimerOutcome, TimerPhase, WcaEvent, format::format_ms, persistence,
@@ -140,6 +141,8 @@ pub struct CubeApp {
     /// Whether a panel edge has been dragged since the last release, so the
     /// new widths are saved once the mouse goes up.
     pub(crate) panel_resizing: bool,
+    /// Pending save of the window bounds, replaced while the window is dragged.
+    window_save: Option<Task<()>>,
 }
 
 /// The padding `TitleBar` leaves before its content (`gpui-kit` keeps it private).
@@ -213,6 +216,7 @@ impl CubeApp {
             updating: false,
             update_ticker: None,
             panel_resizing: false,
+            window_save: None,
         };
         if let Some(error) = load_error {
             let message = app.strings().toast_load_failed.replace("{error}", &error);
@@ -227,7 +231,36 @@ impl CubeApp {
         app.startup_update_tasks(window, cx);
         cx.observe_window_activation(window, Self::on_activation_changed)
             .detach();
+        cx.observe_window_bounds(window, Self::on_window_bounds_changed)
+            .detach();
         app
+    }
+
+    /// Remembers the window's bounds. Dragging reports every frame, so the file
+    /// is written once the window has stopped changing.
+    fn on_window_bounds_changed(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let (bounds, maximized) = match window.window_bounds() {
+            WindowBounds::Windowed(bounds) | WindowBounds::Fullscreen(bounds) => (bounds, false),
+            WindowBounds::Maximized(bounds) => (bounds, true),
+        };
+        let state = WindowState {
+            x: f32::from(bounds.origin.x).round() as i32,
+            y: f32::from(bounds.origin.y).round() as i32,
+            width: f32::from(bounds.size.width).round().max(0.) as u32,
+            height: f32::from(bounds.size.height).round().max(0.) as u32,
+            maximized,
+        };
+        if self.settings.window == Some(state) {
+            return;
+        }
+        self.settings.window = Some(state);
+        self.window_save = Some(cx.spawn_in(window, async move |this, cx| {
+            cx.background_executor()
+                .timer(Duration::from_millis(500))
+                .await;
+            this.update_in(cx, |this, window, cx| this.save_settings(window, cx))
+                .ok();
+        }));
     }
 
     /// Returns the active language's strings.

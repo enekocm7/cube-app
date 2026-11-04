@@ -21,6 +21,7 @@ pub mod stats;
 pub mod theme;
 pub mod timer;
 pub mod validation;
+pub mod window_state;
 
 pub use event::WcaEvent;
 pub use history::History;
