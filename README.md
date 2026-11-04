@@ -43,7 +43,7 @@ for valid bindings.
 |---|---|
 | `Space` | Start inspection, hold and release to start the solve, press to stop |
 | Any other key | Stop a running solve |
-| Left mouse button or touch on the digits | Same as the timer key: hold and release to start, click to stop |
+| Left mouse button or touch on the digits | Same as the timer key when **Timer → Touch the digits** is on (off by default) |
 | `Esc` | Cancel the current attempt without recording it, or leave the stats or charts screen |
 | `N` | New scramble (hold to keep generating) |
 | `I` | Turn WCA inspection on or off |
@@ -92,7 +92,7 @@ Around the shortcuts:
 - WCA inspection that counts up to 15 seconds. `+2` and DNF are applied automatically.
 - Optional audio cues at 8 s and 12 s of inspection.
 - Hold colors that work like a stackmat's.
-- Start and stop with the keyboard, the mouse or touch.
+- Start and stop with the keyboard, optionally with the mouse or touch.
 - GAN Bluetooth timers: connect one and its solves are recorded on their own.
 
 **Scrambles**
@@ -142,7 +142,7 @@ Open settings with `Ctrl + ,`. They are saved to `cube-gui.toml` (see [Your data
 
 | Section | What you can change |
 |---|---|
-| **Timer** | WCA inspection, its 8 s and 12 s audio cues, and shorter 3x3x3 scrambles (slower to generate) |
+| **Timer** | WCA inspection, its 8 s and 12 s audio cues, touching the digits to start or stop, and shorter 3x3x3 scrambles (slower to generate) |
 | **Theme** | Light, dark or system, and your theme files. See [Themes](#themes) |
 | **Appearance** | Font, scramble size, scramble preview, ao5 in the solve list, an always-visible solve list scrollbar, notifications, and confirmation before deleting |
 | **Updates** | Automatic checks, release channel and check frequency. See [Updates](#updates) |

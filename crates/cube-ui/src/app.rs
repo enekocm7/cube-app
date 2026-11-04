@@ -615,13 +615,19 @@ impl CubeApp {
     }
 
     /// Starts or stops the timer with the mouse or a touch on the digits, the
-    /// same way the timer key does.
+    /// same way the timer key does. Only when `touch_to_start` is on.
     pub(crate) fn on_pointer_down(
         &mut self,
         _event: &MouseDownEvent,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        // Keep keyboard shortcuts working after a click, even while touching
+        // the digits does nothing.
+        if !self.settings.touch_to_start {
+            window.focus(&self.focus, cx);
+            return;
+        }
         if window.has_active_dialog(cx)
             || self.pointer_down
             || self.key_down
@@ -645,6 +651,8 @@ impl CubeApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        // `pointer_down` only becomes true while `touch_to_start` is on, so a
+        // release always finishes its own hold even if the setting changed.
         if !self.pointer_down {
             return;
         }

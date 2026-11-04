@@ -100,6 +100,7 @@ pub const STRINGS: Strings = Strings {
     settings_data: "Data",
     setting_inspection: "WCA inspection",
     setting_inspection_audio: "Inspection audio cues (8 s and 12 s)",
+    setting_touch_to_start: "Touch the digits to start or stop the timer",
     setting_toasts: "Show notifications",
     setting_accurate: "Shorter 3x3x3 scrambles (slower to generate)",
     setting_solve_list_ao5: "Show ao5 in the solve list",

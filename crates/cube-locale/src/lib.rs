@@ -163,6 +163,7 @@ pub struct Strings {
     pub settings_data: &'static str,
     pub setting_inspection: &'static str,
     pub setting_inspection_audio: &'static str,
+    pub setting_touch_to_start: &'static str,
     pub setting_toasts: &'static str,
     pub setting_accurate: &'static str,
     pub setting_solve_list_ao5: &'static str,
