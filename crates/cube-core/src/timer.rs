@@ -37,10 +37,33 @@ pub enum TimerPhase {
         /// Whether the 12-second warning has already played.
         twelve_cue_played: bool,
     },
+    /// Hands are on a hardware timer; `ready` once lifting them starts it.
+    Armed {
+        ready: bool,
+    },
     Running {
         started: Instant,
         modifier: Modifier,
     },
+}
+
+/// What a hardware timer reports. It does the timing itself, so these replace
+/// the timer key and the app only follows along.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HardwareState {
+    /// The timer was reset.
+    Idle,
+    /// Hands are on the timer, but not for long enough to start.
+    HandsOn,
+    /// Lifting the hands now starts the timer.
+    GetSet,
+    /// Hands left the timer before it was ready.
+    HandsOff,
+    Running,
+    /// The timer stopped; [`Self::Finished`] carries the time.
+    Stopped,
+    /// The attempt is over, with its time in milliseconds.
+    Finished(u64),
 }
 
 /// A finished attempt, ready to be recorded.
@@ -113,7 +136,7 @@ impl Timer {
                 self.phase = TimerPhase::Holding { since: now };
                 None
             }
-            TimerPhase::Holding { .. } => None,
+            TimerPhase::Holding { .. } | TimerPhase::Armed { .. } => None,
             TimerPhase::Inspecting {
                 started,
                 eight_cue_played,
@@ -181,7 +204,10 @@ impl Timer {
                     }
                 }
             }
-            TimerPhase::Idle | TimerPhase::Inspecting { .. } | TimerPhase::Running { .. } => None,
+            TimerPhase::Idle
+            | TimerPhase::Armed { .. }
+            | TimerPhase::Inspecting { .. }
+            | TimerPhase::Running { .. } => None,
         }
     }
 
@@ -197,6 +223,41 @@ impl Timer {
         }
     }
 
+    /// Follows a hardware timer, returning the attempt it just finished.
+    ///
+    /// Only an attempt seen running is reported, so one cancelled here stays
+    /// cancelled when the hardware finishes it. A running attempt ends only by
+    /// finishing or a reset: hands go back on the timer to stop it, and that
+    /// must not lose the time still on its way.
+    pub fn apply_hardware(&mut self, state: HardwareState, now: Instant) -> Option<TimerOutcome> {
+        let running = matches!(self.phase, TimerPhase::Running { .. });
+        match state {
+            HardwareState::Finished(time_ms) => {
+                let outcome = match self.phase {
+                    TimerPhase::Running { modifier, .. } => {
+                        Some(TimerOutcome { time_ms, modifier })
+                    }
+                    _ => None,
+                };
+                self.phase = TimerPhase::Idle;
+                return outcome;
+            }
+            HardwareState::Idle => self.phase = TimerPhase::Idle,
+            HardwareState::Stopped => {}
+            _ if running => {}
+            HardwareState::HandsOff => self.phase = TimerPhase::Idle,
+            HardwareState::HandsOn => self.phase = TimerPhase::Armed { ready: false },
+            HardwareState::GetSet => self.phase = TimerPhase::Armed { ready: true },
+            HardwareState::Running => {
+                self.phase = TimerPhase::Running {
+                    started: now,
+                    modifier: Modifier::None,
+                };
+            }
+        }
+        None
+    }
+
     /// Abandons the attempt without recording anything.
     pub const fn cancel(&mut self) {
         self.phase = TimerPhase::Idle;
@@ -208,7 +269,9 @@ impl Timer {
             TimerPhase::Inspecting { started, .. } | TimerPhase::Running { started, .. } => {
                 now.duration_since(started)
             }
-            TimerPhase::Idle | TimerPhase::Holding { .. } => Duration::ZERO,
+            TimerPhase::Idle | TimerPhase::Holding { .. } | TimerPhase::Armed { .. } => {
+                Duration::ZERO
+            }
         }
     }
 
@@ -253,6 +316,13 @@ impl Timer {
 
     /// Returns whether the key is held, and for long enough to start the solve.
     pub fn readiness(&self, now: Instant) -> Readiness {
+        if let TimerPhase::Armed { ready } = self.phase {
+            return if ready {
+                Readiness::Ready
+            } else {
+                Readiness::Waiting
+            };
+        }
         let (TimerPhase::Holding { since }
         | TimerPhase::Inspecting {
             held_since: Some(since),
@@ -296,6 +366,97 @@ mod tests {
         assert_eq!(timer.inspection_modifier(ms(15_000)), Modifier::PlusTwo);
         assert_eq!(timer.inspection_modifier(ms(16_999)), Modifier::PlusTwo);
         assert_eq!(timer.inspection_modifier(ms(17_000)), Modifier::DNF);
+    }
+
+    fn hardware_timer() -> Timer {
+        Timer::new(false, LIMIT, HOLD)
+    }
+
+    #[test]
+    fn a_hardware_attempt_follows_the_timer_and_keeps_its_time() {
+        let mut timer = hardware_timer();
+        let now = Instant::now();
+        assert_eq!(timer.apply_hardware(HardwareState::HandsOn, now), None);
+        assert_eq!(timer.readiness(now), Readiness::Waiting);
+        assert_eq!(timer.apply_hardware(HardwareState::GetSet, now), None);
+        assert_eq!(timer.readiness(now), Readiness::Ready);
+        assert_eq!(timer.apply_hardware(HardwareState::Running, now), None);
+        assert!(matches!(timer.phase(), TimerPhase::Running { .. }));
+
+        let outcome = timer.apply_hardware(HardwareState::Finished(8_980), now + ms(9_000));
+        assert_eq!(
+            outcome,
+            Some(TimerOutcome {
+                time_ms: 8_980,
+                modifier: Modifier::None
+            })
+        );
+        assert_eq!(timer.phase(), TimerPhase::Idle);
+    }
+
+    #[test]
+    fn hands_back_on_a_running_hardware_timer_do_not_lose_the_solve() {
+        let mut timer = hardware_timer();
+        let now = Instant::now();
+        timer.apply_hardware(HardwareState::Running, now);
+        for state in [
+            HardwareState::Stopped,
+            HardwareState::HandsOn,
+            HardwareState::GetSet,
+            HardwareState::HandsOff,
+        ] {
+            assert_eq!(timer.apply_hardware(state, now), None);
+            assert!(matches!(timer.phase(), TimerPhase::Running { .. }));
+        }
+        assert!(
+            timer
+                .apply_hardware(HardwareState::Finished(1_000), now)
+                .is_some()
+        );
+    }
+
+    #[test]
+    fn a_repeated_running_report_keeps_the_start() {
+        let mut timer = hardware_timer();
+        let now = Instant::now();
+        timer.apply_hardware(HardwareState::Running, now);
+        timer.apply_hardware(HardwareState::Running, now + ms(500));
+        assert_eq!(timer.elapsed(now + ms(1_000)), ms(1_000));
+    }
+
+    #[test]
+    fn a_cancelled_hardware_attempt_is_not_recorded_when_it_finishes() {
+        let mut timer = hardware_timer();
+        let now = Instant::now();
+        timer.apply_hardware(HardwareState::Running, now);
+        timer.cancel();
+        assert_eq!(
+            timer.apply_hardware(HardwareState::Finished(1_000), now),
+            None
+        );
+    }
+
+    #[test]
+    fn hands_off_and_a_reset_end_a_hardware_attempt_without_a_result() {
+        let mut timer = hardware_timer();
+        let now = Instant::now();
+        timer.apply_hardware(HardwareState::HandsOn, now);
+        assert_eq!(timer.apply_hardware(HardwareState::HandsOff, now), None);
+        assert_eq!(timer.phase(), TimerPhase::Idle);
+
+        timer.apply_hardware(HardwareState::Running, now);
+        assert_eq!(timer.apply_hardware(HardwareState::Idle, now), None);
+        assert_eq!(timer.phase(), TimerPhase::Idle);
+    }
+
+    #[test]
+    fn the_timer_key_does_nothing_while_hands_are_on_the_hardware() {
+        let mut timer = hardware_timer();
+        let now = Instant::now();
+        timer.apply_hardware(HardwareState::GetSet, now);
+        assert_eq!(timer.press(now), None);
+        assert_eq!(timer.release(now + ms(1_000)), None);
+        assert_eq!(timer.phase(), TimerPhase::Armed { ready: true });
     }
 
     #[test]

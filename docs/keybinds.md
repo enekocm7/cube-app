@@ -44,6 +44,7 @@ nothing is selected.
 | Copy the selected average as text | `C` | Copies the result and every attempt with its scramble. The average's dialog has the same action on a button |
 | Show stats or the timer | `A` | Toggles the table of every solve's averages |
 | Show charts or the timer | `G` | |
+| Connect a Bluetooth timer | `B` | Also the Bluetooth icon in the title bar. See [Bluetooth timers](#bluetooth-timers) |
 | Open settings | `Ctrl + ,` | |
 | Open the shortcuts panel | `F1` | |
 
@@ -72,6 +73,22 @@ cube-tui. The timer key is disabled and the digits show what you type:
   solve, then `Shift + D` for DNF or the details dialog for `+2` (the digit
   shortcut `2` types a digit while manual mode is on).
 - Press `M` again to return to the timer.
+
+## Bluetooth timers
+
+Press `B` to look for GAN timers. Turn yours on and it appears in the list:
+
+- `Up` and `Down` select a timer and `Enter` connects to it. Each timer is also
+  a button, reachable with `Tab` and pressed with `Enter` or `Space`.
+- The dialog closes once the timer is connected. Closing it while connecting
+  leaves the connection going, and the title bar icon shows how it went.
+- `B` again shows the connected timer, and `Enter` disconnects it. While
+  connecting, `Enter` cancels.
+
+While a timer is connected or connecting, the timer key and the digits do
+nothing: the solve starts and stops on the timer, and the digits follow it.
+`Esc` still cancels an attempt, so it is not recorded when the timer finishes.
+Inspection is not used. Every other shortcut works as usual.
 
 ## Keys inside dialogs
 

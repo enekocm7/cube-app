@@ -1,0 +1,18 @@
+[package]
+name = "cube-bluetooth"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "GAN Bluetooth timer discovery and connection for cube"
+
+[dependencies]
+btleplug.workspace = true
+cube-core.workspace = true
+flume.workspace = true
+futures-util.workspace = true
+tokio.workspace = true
+uuid.workspace = true
+
+[lints]
+workspace = true

@@ -35,6 +35,7 @@ pub enum Action {
     RedoDelete,
     OpenStats,
     OpenCharts,
+    OpenBluetooth,
     PreviousAverage,
     NextAverage,
     OpenAverage,
@@ -46,7 +47,7 @@ pub enum Action {
 
 impl Action {
     /// Every action, in the order the help dialog lists them.
-    pub const ALL: [Self; 30] = [
+    pub const ALL: [Self; 31] = [
         Self::Timer,
         Self::Cancel,
         Self::NextScramble,
@@ -70,6 +71,7 @@ impl Action {
         Self::RedoDelete,
         Self::OpenStats,
         Self::OpenCharts,
+        Self::OpenBluetooth,
         Self::PreviousAverage,
         Self::NextAverage,
         Self::OpenAverage,
@@ -105,6 +107,7 @@ impl Action {
             Self::RedoDelete => "redo_delete",
             Self::OpenStats => "open_stats",
             Self::OpenCharts => "open_charts",
+            Self::OpenBluetooth => "open_bluetooth",
             Self::PreviousAverage => "previous_average",
             Self::NextAverage => "next_average",
             Self::OpenAverage => "open_average",
@@ -299,6 +302,7 @@ impl Default for Keybinds {
             (Action::RedoDelete, "Ctrl+Y"),
             (Action::OpenStats, "a"),
             (Action::OpenCharts, "g"),
+            (Action::OpenBluetooth, "b"),
             (Action::PreviousAverage, "Left"),
             (Action::NextAverage, "Right"),
             (Action::OpenAverage, "o"),
@@ -757,6 +761,15 @@ mod tests {
             Some(Action::Cancel)
         );
         assert_eq!(keybinds.action_for(&press("n", true, false, false)), None);
+    }
+
+    #[test]
+    fn b_opens_the_bluetooth_dialog() {
+        let press = KeyPress::new("b", false, false, false).unwrap();
+        assert_eq!(
+            Keybinds::default().action_for(&press),
+            Some(Action::OpenBluetooth)
+        );
     }
 
     #[test]

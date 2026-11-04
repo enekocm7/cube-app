@@ -136,15 +136,20 @@ impl CubeApp {
                 if let Some(entry) = &self.manual {
                     return self.manual_display(entry, text, color, [foreground, colors.red]);
                 }
-                Display {
-                    text,
-                    color,
-                    hint: self
-                        .settings
+                let hint = if self.hardware_timing() {
+                    None
+                } else {
+                    self.settings
                         .shows_start_hint()
-                        .then(|| strings.hint_start.replace("{key}", &timer_key)),
-                }
+                        .then(|| strings.hint_start.replace("{key}", &timer_key))
+                };
+                Display { text, color, hint }
             }
+            TimerPhase::Armed { ready } => Display {
+                text: format_ms(0),
+                color: if ready { colors.green } else { colors.red },
+                hint: None,
+            },
             TimerPhase::Holding { .. } => Display {
                 text: format_ms(0),
                 color: held.map_or(foreground, |(color, _)| color),
@@ -172,7 +177,8 @@ impl CubeApp {
             TimerPhase::Running { .. } => Display {
                 text: format_ms(self.timer.elapsed(now).as_millis() as u64),
                 color: foreground,
-                hint: Some(strings.hint_stop.replace("{key}", &timer_key)),
+                hint: (!self.hardware_timing())
+                    .then(|| strings.hint_stop.replace("{key}", &timer_key)),
             },
         }
     }

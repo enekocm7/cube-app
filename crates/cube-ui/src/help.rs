@@ -56,9 +56,10 @@ const AVERAGE_ACTIONS: [Action; 5] = [
     Action::OpenBestAverage,
     Action::CopyAverage,
 ];
-const SCREEN_ACTIONS: [Action; 4] = [
+const SCREEN_ACTIONS: [Action; 5] = [
     Action::OpenStats,
     Action::OpenCharts,
+    Action::OpenBluetooth,
     Action::OpenSettings,
     Action::ShowHelp,
 ];
@@ -438,6 +439,7 @@ fn action_label(strings: &'static Strings, action: Action) -> &'static str {
         Action::RedoDelete => strings.action_redo_delete,
         Action::OpenStats => strings.action_open_stats,
         Action::OpenCharts => strings.action_open_charts,
+        Action::OpenBluetooth => strings.action_open_bluetooth,
         Action::PreviousAverage => strings.action_previous_average,
         Action::NextAverage => strings.action_next_average,
         Action::OpenAverage => strings.action_open_average,

@@ -5,6 +5,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use cube_bluetooth::Client;
 use cube_core::cstimer::{self, ImportReport};
 use cube_core::scramble::{self, ScrambleQueue};
 use cube_core::stats::{self, Average, AverageTable, SessionStats};
@@ -26,6 +27,7 @@ use gpui_kit::component::{ActiveTheme as _, Icon, TitleBar, WindowExt as _, h_fl
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
+use crate::bluetooth::TimerLink;
 use crate::palette;
 use crate::panel_resize::{PanelSide, render_grab};
 use crate::preview::PreviewCache;
@@ -122,6 +124,9 @@ pub struct CubeApp {
     generating_timer: Option<Task<()>>,
     queue: ScrambleQueue,
     pub(crate) timer: Timer,
+    pub(crate) bluetooth: Client,
+    /// The Bluetooth timer doing the timing, once one is chosen.
+    pub(crate) timer_link: Option<TimerLink>,
     /// Whether the timer key is physically down, to ignore key repeat.
     key_down: bool,
     /// Whether the mouse or a touch is holding the digits, the pointer twin of
@@ -206,6 +211,8 @@ impl CubeApp {
             focus,
             screen: Screen::Timer,
             timer: settings.timer(),
+            bluetooth: Client::default(),
+            timer_link: None,
             stats: SessionStats::compute(sessions[0].solves()),
             settings,
             sessions,
@@ -433,7 +440,9 @@ impl CubeApp {
             self.stop_repeat_key = Some(press.key().to_owned());
             if self.keybinds.action_for(&press) == Some(Action::Cancel) {
                 self.cancel(window, cx);
-            } else if let Some(outcome) = self.timer.press(Instant::now()) {
+            } else if !self.hardware_timing()
+                && let Some(outcome) = self.timer.press(Instant::now())
+            {
                 self.finish_attempt(outcome, window, cx);
             }
             return;
@@ -449,8 +458,9 @@ impl CubeApp {
         };
         cx.stop_propagation();
         if action == Action::Timer {
-            // Manual mode types times in instead of timing them.
-            if self.manual.is_some() {
+            // Manual mode types times in instead of timing them, and a
+            // Bluetooth timer is started and stopped by hand.
+            if self.manual.is_some() || self.hardware_timing() {
                 return;
             }
             if self.key_down || self.pointer_down || event.is_held || self.screen != Screen::Timer {
@@ -511,6 +521,7 @@ impl CubeApp {
             Action::RedoDelete => self.redo_delete(window, cx),
             Action::OpenStats => self.toggle_screen(Screen::Stats, cx),
             Action::OpenCharts => self.toggle_screen(Screen::Charts, cx),
+            Action::OpenBluetooth => self.open_bluetooth(window, cx),
             Action::PreviousAverage => self.step_selected_average(false, cx),
             Action::NextAverage => self.step_selected_average(true, cx),
             Action::OpenAverage => self.open_selected_average(window, cx),
@@ -553,6 +564,7 @@ impl CubeApp {
             || self.pointer_down
             || self.key_down
             || self.manual.is_some()
+            || self.hardware_timing()
         {
             return;
         }
@@ -639,7 +651,7 @@ impl CubeApp {
     }
 
     /// Records a finished attempt and moves on to the next scramble.
-    fn finish_attempt(
+    pub(crate) fn finish_attempt(
         &mut self,
         outcome: TimerOutcome,
         window: &mut Window,
@@ -776,7 +788,7 @@ impl CubeApp {
     }
 
     /// Shows `screen`, keeping the target solve in view on the stats table.
-    fn show_screen(&mut self, screen: Screen, cx: &mut Context<Self>) {
+    pub(crate) fn show_screen(&mut self, screen: Screen, cx: &mut Context<Self>) {
         self.screen = screen;
         if screen == Screen::Stats
             && let Some(index) = self.target_solve()
@@ -1555,6 +1567,7 @@ impl CubeApp {
                         .occlude()
                         .mr_2()
                         .gap_1()
+                        .child(self.render_bluetooth_button(cx))
                         .child(
                             Button::new("open-help")
                                 .ghost()

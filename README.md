@@ -66,6 +66,7 @@ for valid bindings.
 | `C` | Copy the selected average as text |
 | `A` | Show stats, or return to the timer |
 | `G` | Show charts, or return to the timer |
+| `B` | Connect or disconnect a Bluetooth timer |
 | `Ctrl + ,` | Open settings |
 | `F1` | Open the keyboard shortcuts |
 
@@ -92,6 +93,7 @@ Around the shortcuts:
 - Optional audio cues at 8 s and 12 s of inspection.
 - Hold colors that work like a stackmat's.
 - Start and stop with the keyboard, the mouse or touch.
+- GAN Bluetooth timers: connect one and its solves are recorded on their own.
 
 **Scrambles**
 
