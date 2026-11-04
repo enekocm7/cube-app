@@ -947,9 +947,13 @@ impl CubeApp {
 
         // The picker alone is centered; the scramble button hangs off its right edge
         // so it does not pull the picker off the middle.
-        div()
+        // Full bar height, so the scramble button centers on the bar and not on the
+        // picker's own box.
+        h_flex()
             .relative()
             .flex_none()
+            .h_full()
+            .items_center()
             .child(
                 div().occlude().flex_none().child(
                     Button::new("event")
