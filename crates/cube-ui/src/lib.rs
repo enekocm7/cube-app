@@ -11,6 +11,7 @@ mod app;
 mod audio;
 mod details;
 mod palette;
+mod panel_resize;
 mod settings_view;
 mod sidebar;
 mod stats_panel;

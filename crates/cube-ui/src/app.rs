@@ -21,6 +21,7 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::palette;
+use crate::panel_resize::{PanelSide, render_grab_column};
 use crate::stats_screen::ChartData;
 
 /// The most sessions cube-tui can display.
@@ -117,6 +118,9 @@ pub struct CubeApp {
     pub(crate) update_checking: bool,
     pub(crate) updating: bool,
     pub(crate) update_ticker: Option<Task<()>>,
+    /// Whether a panel edge has been dragged since the last release, so the
+    /// new widths are saved once the mouse goes up.
+    pub(crate) panel_resizing: bool,
 }
 
 impl CubeApp {
@@ -159,6 +163,7 @@ impl CubeApp {
             update_checking: false,
             updating: false,
             update_ticker: None,
+            panel_resizing: false,
         };
         if let Some(error) = load_error {
             let message = app.strings().toast_load_failed.replace("{error}", &error);
@@ -783,16 +788,30 @@ impl CubeApp {
 }
 
 impl Render for CubeApp {
-    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let attempt = self.timer.is_active();
         let body = match self.screen {
-            Screen::Timer => h_flex()
-                .flex_1()
-                .min_h_0()
-                .when(!attempt, |row| row.child(self.render_sidebar(cx)))
-                .child(self.render_timer(cx))
-                .when(!attempt, |row| row.child(self.render_stats_panel(cx)))
-                .into_any_element(),
+            Screen::Timer => {
+                let (sidebar_width, stats_width) = self.panel_widths(window);
+                h_flex()
+                    .flex_1()
+                    .min_h_0()
+                    // A panel's edge can be dragged past the body, so the body hears the
+                    // drag and the release wherever they happen.
+                    .on_drag_move(cx.listener(Self::on_panel_drag))
+                    .on_mouse_up(MouseButton::Left, cx.listener(Self::on_panel_release))
+                    .on_mouse_up_out(MouseButton::Left, cx.listener(Self::on_panel_release))
+                    .when(!attempt, |row| {
+                        row.child(self.render_sidebar(sidebar_width, cx))
+                            .child(render_grab_column(PanelSide::Sidebar, cx))
+                    })
+                    .child(self.render_timer(cx))
+                    .when(!attempt, |row| {
+                        row.child(render_grab_column(PanelSide::Stats, cx))
+                            .child(self.render_stats_panel(stats_width, cx))
+                    })
+                    .into_any_element()
+            }
             Screen::Stats => self.render_stats_screen(cx).into_any_element(),
         };
         let theme = cx.theme();

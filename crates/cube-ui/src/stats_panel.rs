@@ -7,10 +7,12 @@ use gpui_kit::*;
 
 use crate::app::{CubeApp, average_label, format_average};
 
-const PANEL_WIDTH: Pixels = px(250.);
-
 impl CubeApp {
-    pub(crate) fn render_stats_panel(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
+    pub(crate) fn render_stats_panel(
+        &self,
+        width: Pixels,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement + use<> {
         let strings = self.strings();
         let stats = &self.stats;
         let theme = cx.theme();
@@ -64,7 +66,7 @@ impl CubeApp {
         });
 
         v_flex()
-            .w(PANEL_WIDTH)
+            .w(width)
             .flex_shrink_0()
             .h_full()
             .py_2()
