@@ -346,6 +346,7 @@ impl CubeApp {
                 .placeholder(placeholder)
         });
         let entity = cx.entity().downgrade();
+        let blur = cx.focus_handle();
         let first_build = std::cell::Cell::new(true);
         window.open_dialog(cx, move |dialog, window, cx| {
             if first_build.replace(false) {
@@ -367,7 +368,24 @@ impl CubeApp {
                 .close_button(false)
                 .w(dialog_width(DialogSize::COMPACT, window))
                 .submit_on_enter(&save)
-                .child(Input::new(&input))
+                .child(
+                    div()
+                        .id("rename-body")
+                        .track_focus(&blur)
+                        .py_2()
+                        // Clicking the dialog's empty space moves focus off the
+                        // field; presses inside the field stop below.
+                        .on_mouse_down(MouseButton::Left, {
+                            let blur = blur.clone();
+                            move |_, window, cx| blur.focus(window, cx)
+                        })
+                        .child(
+                            div()
+                                .id("rename-field")
+                                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                                .child(Input::new(&input).focus_bordered(false)),
+                        ),
+                )
                 .footer(
                     h_flex()
                         .w_full()
