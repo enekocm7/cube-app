@@ -405,8 +405,24 @@ impl CubeApp {
             let editing = view.read(cx).editing;
             let edit_view = view.clone();
             let content_view = view.clone();
+            let title = h_flex()
+                .w_full()
+                .items_center()
+                .justify_between()
+                .pb_3()
+                .child(strings.help_title)
+                .child(
+                    Button::new("help-close-icon")
+                        .ghost()
+                        .large()
+                        .icon(IconName::Close)
+                        .tooltip(strings.close)
+                        .accessibility_label(strings.close)
+                        .on_click(|_, window, cx| window.close_dialog(cx)),
+                );
             dialog
-                .title(strings.help_title)
+                .title(title)
+                .close_button(false)
                 .w(dialog_width(DIALOG_SIZE, window))
                 .content(move |content, _, cx| {
                     content
