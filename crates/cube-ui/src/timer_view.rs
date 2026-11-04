@@ -3,7 +3,7 @@
 use std::time::Instant;
 
 use cube_core::format::format_ms;
-use cube_core::{Action, Modifier, Readiness, TimerPhase};
+use cube_core::{Action, ManualEntry, ManualError, Modifier, Readiness, TimerPhase};
 use gpui_kit::component::tooltip::Tooltip;
 use gpui_kit::component::{ActiveTheme as _, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
@@ -68,6 +68,15 @@ impl CubeApp {
                     .on_mouse_down(MouseButton::Left, cx.listener(Self::on_pointer_down))
                     .on_mouse_up(MouseButton::Left, cx.listener(Self::on_pointer_up))
                     .on_mouse_up_out(MouseButton::Left, cx.listener(Self::on_pointer_up))
+                    .when(self.manual.is_some() && !attempt, |column| {
+                        column.child(
+                            div()
+                                .text_sm()
+                                .font_weight(FontWeight::SEMIBOLD)
+                                .text_color(muted)
+                                .child(self.strings().manual_mode),
+                        )
+                    })
                     .child(
                         div()
                             .font_family(mono)
@@ -124,6 +133,9 @@ impl CubeApp {
                     Some(Modifier::PlusTwo) => colors.yellow,
                     _ => foreground,
                 };
+                if let Some(entry) = &self.manual {
+                    return self.manual_display(entry, text, color, [foreground, colors.red]);
+                }
                 Display {
                     text,
                     color,
@@ -162,6 +174,33 @@ impl CubeApp {
                 color: foreground,
                 hint: Some(strings.hint_stop.replace("{key}", &timer_key)),
             },
+        }
+    }
+
+    /// The digits and hint while a time is being typed in manual mode: the
+    /// typed text, or the last result until typing starts.
+    fn manual_display(
+        &self,
+        entry: &ManualEntry,
+        last: String,
+        last_color: Hsla,
+        [foreground, error_color]: [Hsla; 2],
+    ) -> Display {
+        let strings = self.strings();
+        let (text, color) = if entry.is_empty() {
+            (last, last_color)
+        } else {
+            (entry.text().to_owned(), foreground)
+        };
+        let (color, hint) = match entry.error() {
+            Some(ManualError::Empty) => (color, Some(strings.manual_empty)),
+            Some(ManualError::Invalid) => (error_color, Some(strings.manual_invalid)),
+            None => (color, None),
+        };
+        Display {
+            text,
+            color,
+            hint: hint.map(str::to_owned),
         }
     }
 

@@ -54,6 +54,9 @@ Notes:
   faster GPUI-sized links; leave it alone.
 - Scramble solvers are slow unoptimized, so the dev profile raises opt-levels
   (`tnoodle-rs` at 3, other deps at 2). Don't "simplify" those profiles away.
+- When a change affects scramble speed, rerun
+  `cargo run --release -p cube-core --example scramble_bench` and update
+  `docs/scramble-performance.md`.
 - Tests must never touch real user data: `CUBE_DATA_DIR` overrides the data
   directory, and debug builds use a `debug` subfolder automatically. Follow
   the existing `temporary_path()` pattern in `persistence.rs` tests.
@@ -159,3 +162,7 @@ settings, import/export dialogs and help.
 - Update `README.md` when you add or change a user-visible feature, a
   setting, or a key binding. When a key binding changes, update
   `docs/keybinds.md` as well: it is the complete keyboard reference.
+  Keep README entries short and plain: one line per feature or shortcut,
+  saying what it is and not how it works. Do not list examples, key
+  sequences, edge cases or behaviour details there; those belong in
+  `docs/keybinds.md` or the code.

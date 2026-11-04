@@ -6,62 +6,50 @@
 
 ![cube's timer screen](docs/screenshot.png)
 
-cube is the graphical sibling of [cube-tui](https://github.com/enekocm7/cube-tui). Both apps read and write the same
+cube times your solves with WCA inspection, generates official scrambles, and keeps a history you can search, edit and
+chart. It is fully usable from the keyboard.
+
+It is the graphical sibling of [cube-tui](https://github.com/enekocm7/cube-tui). Both apps read and write the same
 solve history, so you can move between the terminal and the desktop without importing anything.
 
-## Features
+**Contents:** [Get started](#get-started) · [Keyboard shortcuts](#keyboard-shortcuts) · [Features](#features) ·
+[Settings](#settings) · [Themes](#themes) · [Your data](#your-data) · [Updates](#updates) ·
+[Build from source](#build-from-source) · [Contributing](#contributing)
 
-- Timer with WCA inspection that counts up to 15 seconds: `+2` and DNF are applied automatically, optional 8 s and
-  12 s audio cues warn you, and hold colors work like a stackmat's
-- Official WCA random-state scrambles for 12 events, generated with `tnoodle-rs`, each drawn as a picture of the scrambled puzzle on the timer and in the
-  solve details
-- Sessions with custom names, deletable straight from the session dropdown
-- Solve history, with details you can edit (time, event, scramble, penalty, date and comment) and a full audit trail of every change
-- Current and best single, mo3, ao5, ao12, ao50 and ao100, plus mean, deviation and DNF count
-- Stats screen with a heat-mapped table of every solve's rolling averages
-- Charts screen with your times, your ao5 and their distribution
-- Open any average from the table or the stats panel to see how far each solve landed from it, with the trimmed ones marked, and copy it as text to share
-- Light and dark themes, plus cube-tui TOML themes with a color-picker editor
-- Fully keyboard-controllable: every timer, solve, event, session and screen action has a rebindable shortcut, any
-  key stops the timer, and `F1` lists the bindings
-- Optional bundled JetBrains Mono for the timer digits, all times, or the whole interface
-- Import and export csTimer sessions, with file pickers, from Settings → Data
-- Checks GitHub for new releases and updates itself, verifying the download against the release's SHA-256
-- Interface in English and Spanish
+## Get started
 
-Features still on the way are tracked in the [issues](https://github.com/enekocm7/cube-gui/issues).
+1. Download the build for your system from the [releases](https://github.com/enekocm7/cube-gui/releases) page.
 
-## Install
+   | System | Download |
+   |---|---|
+   | Windows x64 | The installer, or the portable `.zip` |
+   | Linux x64 | The `linux-x64` `.tar.gz` |
+   | macOS (Apple silicon) | The `macos-arm64` `.tar.gz` |
 
-Download the installer or a portable build from the [releases](https://github.com/enekocm7/cube-gui/releases) page.
-Installed builds update themselves silently; portable builds swap the executable and restart. Both wait for you to
-accept an update, and the download is checked against the release's `SHA256SUMS` file before anything is installed.
-Turn the automatic check off, change its frequency or release channel, or check manually from
-**Settings → Updates**.
+2. Start cube. On Windows, run the installer and open cube from the Start menu. On Linux and macOS, unpack the archive and run `cube`.
+3. Press and hold `Space` until the timer turns green, then release to start the solve. Press any key to stop it.
+   With inspection on (the default), the first `Space` starts the 15 second inspection and the next hold starts the solve.
+4. Your solve appears in the list on the left. Press `N` for a new scramble and keep going.
 
-To build from source, install [Rust](https://rustup.rs/) and run:
+Press `F1` at any time to see every shortcut.
 
-```sh
-cargo run --release
-```
+## Keyboard shortcuts
 
-## How to use it
-
-cube is designed to be fully usable from the keyboard: every action below has a shortcut, dialogs stay reachable
-with `Tab`, `Enter` and `Space`, `Enter` runs a dialog's primary action while `Esc` closes it, and the **Edit** button on the `F1` shortcuts panel rebinds or removes them. See
-[docs/keybinds.md](docs/keybinds.md) for the full reference, the key name syntax, and how to change bindings from
-`cube-gui.toml`.
+cube is designed to be fully usable from the keyboard. Every action below has a shortcut, and any of them can be
+changed or removed. [docs/keybinds.md](docs/keybinds.md) is the full reference, with the key name syntax and the rules
+for valid bindings.
 
 | Key | Action |
 |---|---|
-| `Space` | Start inspection, or hold and release to start the solve, and press to stop |
+| `Space` | Start inspection, hold and release to start the solve, press to stop |
 | Any other key | Stop a running solve |
 | Left mouse button or touch on the digits | Same as the timer key: hold and release to start, click to stop |
 | `Esc` | Cancel the current attempt without recording it, or leave the stats or charts screen |
-| `N` | New scramble |
+| `N` | New scramble (hold to keep generating) |
 | `I` | Turn WCA inspection on or off |
 | `P` | Show or hide the scramble preview |
-| `Up` / `Down` | Select a newer or older solve |
+| `M` | Turn manual mode on or off |
+| `Up` / `Down` | Select a newer or older solve (hold to keep moving) |
 | `Enter` | Open the selected solve's details |
 | `D` | Delete the selected solve |
 | `2` | Toggle `+2` on the selected solve |
@@ -81,56 +69,105 @@ with `Tab`, `Enter` and `Space`, `Enter` runs a dialog's primary action while `E
 | `Ctrl + ,` | Open settings |
 | `F1` | Open the keyboard shortcuts |
 
-Actions that need a solve use the keyboard selection, or the latest solve when nothing is
-selected. Click a solve in the list, or a single in the stats panel, to see its details or edit it.
+Actions that need a solve use the keyboard selection, or the latest solve when nothing is selected. You can also click
+a solve in the list, or a single in the stats panel, to see its details or edit it.
 
-Hold `N`, `Up` or `Down` to repeat: scrambles keep coming and navigation keeps moving until you release the key.
+Around the shortcuts:
 
-Dialogs size themselves to the window: settings, solve details and the theme editor get wider and taller on a large
-screen, and scroll their bodies when the window is too small to show everything.
+- **Dialogs.** They are reachable with `Tab`, `Enter` and `Space`. `Enter` runs a dialog's primary action and `Esc`
+  closes it.
+- **Rebinding.** In the `F1` panel, **Edit** (opposite **Close**) shows a pencil to rebind an action and a trash can to
+  remove its shortcut. You can also edit the `[keybindings]` table in `cube-gui.toml` by hand.
+- **Search.** The shortcuts panel and the settings dialog both start with a search field. Press `/` to jump to it, or
+  reach it with `Tab`. Type to filter rows by label or current value, such as `space`, `ctrl` or `unassigned` for
+  shortcuts, or `dark` or `off` for settings. Matching ignores case and uses the interface language.
+- **Start hint.** The "press to start" hint is shown only until your first solve, and names whichever key the timer is
+  bound to.
 
-`F1` opens the shortcuts panel. Its **Edit** button (opposite **Close**) shows a pencil to rebind an action and a
-danger-coloured trash can to remove its shortcut. Bindings can also be edited by hand in the `[keybindings]` table
-in `cube-gui.toml`; [docs/keybinds.md](docs/keybinds.md) documents every action, the key syntax and the validation
-rules.
+## Features
 
-The shortcuts panel and the settings dialog both start with a search field. Press `/` to jump straight to it (or reach it with `Tab`). Type to
-filter rows by label or current value, such as `space`, `ctrl` or `unassigned` for shortcuts, or `dark` or `off` for
-settings; matching ignores case and uses the interface language. Sections with no match are hidden.
+**Timing**
 
-Drag the inner edge of the solve list or the statistics panel to resize it. Neither panel gets
-narrower than 180 px or wider than 350 px, and double-click an edge to restore its default width. The widths are
-remembered between launches.
+- WCA inspection that counts up to 15 seconds. `+2` and DNF are applied automatically.
+- Optional audio cues at 8 s and 12 s of inspection.
+- Hold colors that work like a stackmat's.
+- Start and stop with the keyboard, the mouse or touch.
 
-The window's size, position and maximized state are remembered too. If the monitor it was on is gone, cube
-opens centered at the default size instead.
+**Scrambles**
 
-The start hint is only shown until you start your first solve, so the timer stays clean once you
-know the controls. It names whichever key the timer is bound to.
+- Official WCA random-state scrambles for 12 events, generated with `tnoodle-rs`.
+- A picture of the scrambled puzzle on the timer and in the solve details. Turn it off with `P`.
 
-The solve list scrollbar only appears while you scroll; turn on **Settings → Appearance → Always show the solve
-list scrollbar** to keep it visible.
+**Solves and sessions**
 
-Times use the system's monospace font. **Settings → Appearance → Font** can switch to
-[JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) for the timer only, for every time, or for the whole
-interface; the font is bundled under the SIL Open Font License and stays off by default.
-**Settings → Appearance → Scramble size** picks Small, Normal (default), Large, Largest or Custom,
-which takes an exact size in points (6 to 120). Long scrambles still scroll.
+- Manual mode to type in times from another timer.
+- Sessions with custom names, deletable from the session dropdown.
+- A solve history whose details you can edit: time, event, scramble, penalty, date and comment. Every change is kept
+  in an audit trail.
+- Undo and redo for deleted solves and sessions.
 
-The scramble preview draws the puzzle as the scramble leaves it, under the timer and in the solve details (where it
-follows the scramble you are editing). Turn it off with **Settings → Appearance → Show the scramble preview**, or
-toggle it with `P`.
+**Statistics**
+
+- Current and best single, mo3, ao5, ao12, ao50 and ao100, plus mean, deviation and DNF count.
+- A stats screen with a heat-mapped table of every solve's rolling averages. Click a value, in the table or the stats
+  panel, to see the solves behind it and how far each landed from the average, with the trimmed ones marked. Copy an
+  average as text to share it.
+- A charts screen with your times, your ao5 and their distribution.
+
+**Interface**
+
+- Light and dark themes, plus cube-tui TOML themes with a color-picker editor. See [Themes](#themes).
+- Optional bundled [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) for the timer digits, all times, or
+  the whole interface.
+- English and Spanish.
+- Resizable solve list and statistics panels. Drag the inner edge of a panel to resize it (180 to 350 px) and
+  double-click the edge to restore its default width.
+- Dialogs size themselves to the window. Settings, solve details and the theme editor grow on a large screen and
+  scroll their bodies when the window is small.
+- The window's size, position and maximized state are remembered. If the monitor it was on is gone, cube opens
+  centered at the default size.
+
+**Data**
+
+- Import and export csTimer sessions with file pickers. See [Import and export](#import-and-export).
+- The history is shared with cube-tui. See [Your data](#your-data).
+
+Features still on the way are tracked in the [issues](https://github.com/enekocm7/cube-gui/issues).
+
+## Settings
+
+Open settings with `Ctrl + ,`. They are saved to `cube-gui.toml` (see [Your data](#your-data)).
+
+| Section | What you can change |
+|---|---|
+| **Timer** | WCA inspection, its 8 s and 12 s audio cues, and shorter 3x3x3 scrambles (slower to generate) |
+| **Theme** | Light, dark or system, and your theme files. See [Themes](#themes) |
+| **Appearance** | Font, scramble size, scramble preview, ao5 in the solve list, an always-visible solve list scrollbar, notifications, and confirmation before deleting |
+| **Updates** | Automatic checks, release channel and check frequency. See [Updates](#updates) |
+| **Language** | English or Spanish |
+| **Data** | Import and export csTimer sessions. See [Import and export](#import-and-export) |
+
+Shortcuts are rebound from the `F1` panel instead. See [Keyboard shortcuts](#keyboard-shortcuts).
+
+Details worth knowing:
+
+- **Font.** Times use the system's monospace font by default. **Appearance → Font** can switch to JetBrains Mono for
+  the timer only, for every time, or for the whole interface. The font is bundled under the SIL Open Font License.
+- **Scramble size.** **Appearance → Scramble size** picks Small, Normal (default), Large, Largest or Custom, which takes
+  an exact size in points (6 to 120). Long scrambles still scroll.
+- **Scramble preview.** The preview draws the puzzle as the scramble leaves it, under the timer and in the solve
+  details, where it follows the scramble you are editing. Turn it off with **Appearance → Show the scramble preview**,
+  or toggle it with `P`.
+- **Scrollbar.** The solve list scrollbar appears only while you scroll. Turn on **Appearance → Always show the solve
+  list scrollbar** to keep it visible.
 
 ## Themes
 
-cube reads the same theme files as [cube-tui](https://github.com/enekocm7/cube-tui) from the `themes` folder in your
-data folder, so a theme works in both apps. Settings → Theme lists every valid theme: pick one to apply it, use the
-pencil to edit it, the trash can to delete it, or **New theme** to create one. Themes added to the folder appear the
-next time the settings dialog opens.
+cube reads the same theme files as [cube-tui](https://github.com/enekocm7/cube-tui), so a theme works in both apps.
+They live in the `themes` folder inside your [data folder](#your-data).
 
-The editor has a color picker for each of the seven colors, a text field that can switch between Hex, RGB, RGBA, HSL
-and HSLA, and a live preview. Rename a theme by changing its name; cube saves it as `<name>.toml`. Theme files store
-opaque colors, so an alpha value typed into an RGBA or HSLA field is ignored when saving.
+In **Settings → Theme**, every valid theme is listed. Pick one to apply it, use the pencil to edit it, the trash can
+to delete it, or **New theme** to create one. Themes you add to the folder appear the next time the dialog opens.
 
 A theme is a TOML file of six-digit colors:
 
@@ -144,24 +181,78 @@ text = "#FFFFFF"
 accent = "#FFD700"
 ```
 
-`accent` is optional and defaults to gold, so older cube-tui themes keep working. cube creates `default.toml` the
-first time it makes the themes folder; a deleted theme is not recreated.
-
-Open **Settings → Data** to import a csTimer export or to export every session. Importing adds the
-file's sessions to your history, infers each solve's event from its scramble, and keeps penalties and
-comments; solves that can't be read are skipped and counted in the notification.
+- `accent` is optional and defaults to gold, so older cube-tui themes keep working.
+- cube creates `default.toml` the first time it makes the themes folder. A deleted theme is not recreated.
+- The editor has a color picker for each of the seven colors, a text field that switches between Hex, RGB, RGBA, HSL
+  and HSLA, and a live preview.
+- Rename a theme by changing its name. cube saves it as `<name>.toml`.
+- Theme files store opaque colors, so an alpha value typed into an RGBA or HSLA field is ignored when saving.
 
 ## Your data
 
-Solves are stored in cube-tui's `times.json`, in your user data folder (`%APPDATA%\cube-tui` on Windows). Settings for
-this app are in `cube-gui.toml` in the same folder. Debug builds use a `debug` subfolder, and the `CUBE_DATA_DIR`
-environment variable overrides the location.
+| What | File | Shared with cube-tui |
+|---|---|---|
+| Solves and sessions | `times.json` | Yes |
+| This app's settings | `cube-gui.toml` | No (cube-tui uses `config.toml`) |
+| Themes | `themes/` | Yes |
 
-If `times.json` can't be read, cube says so and turns saving off, so the file is never overwritten.
+All three are in the same folder, cube-tui's data folder:
 
-Don't keep cube and cube-tui open at the same time: each one overwrites the file with what it has in memory.
+| System | Data folder |
+|---|---|
+| Windows | `%APPDATA%\cube-tui` |
+| Linux | `~/.local/share/cube-tui` |
+| macOS | `~/Library/Application Support/cube-tui` |
 
-## Project layout
+Debug builds use a `debug` subfolder. The `CUBE_DATA_DIR` environment variable replaces the location entirely.
+
+> **Don't keep cube and cube-tui open at the same time.** Each one overwrites `times.json` with what it has in
+> memory, so the one that saves last wins and solves from the other can be lost. Close one before you open the other.
+
+If `times.json` exists but can't be read, cube says so and turns saving off, so the file is never overwritten.
+
+### Import and export
+
+Open **Settings → Data** to import a csTimer export or to export every session.
+
+- Importing adds the file's sessions to your history, infers each solve's event from its scramble, and keeps
+  penalties and comments.
+- Solves that can't be read are skipped and counted in the notification.
+
+## Updates
+
+cube checks GitHub for new releases and can update itself. It waits for you to accept an update, and checks the
+download against the release's SHA-256 checksums before installing anything.
+
+- **Installed builds** (Windows installer) update silently.
+- **Portable builds** swap the executable and restart.
+
+Under **Settings → Updates** you can turn the automatic check off, set how often it runs (every start, daily or
+weekly), choose the stable or pre-release channel, check manually, and clear a version you chose to skip.
+
+## Build from source
+
+You need [Rust](https://rustup.rs/) (stable). Then, from the repository root:
+
+```sh
+cargo run --release
+```
+
+On Linux you also need GPUI's system libraries. The package list for Ubuntu 24.04 is in the
+[release workflow](.github/workflows/release.yml), and comes from the
+[GPUI Kit install guide](https://gpui-kit.com/docs/).
+
+## Contributing
+
+```sh
+cargo test --workspace
+cargo check --workspace --all-targets
+cargo fmt --all
+cargo clippy --workspace --all-targets -- -D warnings
+```
+
+[AGENTS.md](AGENTS.md) describes the conventions, including the keyboard rules, the shared save format and how to
+open a pull request.
 
 | Crate | Contents |
 |---|---|
@@ -170,6 +261,8 @@ Don't keep cube and cube-tui open at the same time: each one overwrites the file
 | `crates/cube-locale` | Translated strings |
 | `crates/cube-updater` | GitHub release check, verified download and self-update |
 | `crates/cube-ui` | The GPUI interface |
+
+Scramble timings and the reasoning behind the queue are in [docs/scramble-performance.md](docs/scramble-performance.md).
 
 ## License
 

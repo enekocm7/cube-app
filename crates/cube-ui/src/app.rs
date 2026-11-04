@@ -10,8 +10,9 @@ use cube_core::scramble::{self, ScrambleQueue};
 use cube_core::stats::{self, Average, AverageTable, SessionStats};
 use cube_core::window_state::WindowState;
 use cube_core::{
-    Action, BindingError, History, KeyBinding, KeyPress, Keybinds, Modifier, Settings, Solve,
-    SolveSnapshot, Timer, TimerOutcome, TimerPhase, WcaEvent, format::format_ms, persistence,
+    Action, BindingError, History, KeyBinding, KeyPress, Keybinds, ManualEntry, Modifier, Settings,
+    Solve, SolveSnapshot, Timer, TimerOutcome, TimerPhase, WcaEvent, format::format_ms,
+    persistence,
 };
 use cube_locale::{Language, Strings};
 use cube_updater::Release;
@@ -35,7 +36,8 @@ pub const MAX_SESSIONS: usize = 99;
 
 /// How often the display refreshes during an attempt.
 const ACTIVE_TICK: Duration = Duration::from_millis(16);
-/// How often background work is polled otherwise.
+/// How often time-based state is checked otherwise. Scrambles do not wait for
+/// this: they arrive through `ScrambleSignal`.
 const IDLE_TICK: Duration = Duration::from_millis(100);
 /// How long a scramble may take before the placeholder message shows.
 const GENERATING_DELAY: Duration = Duration::from_millis(500);
@@ -108,6 +110,8 @@ pub struct CubeApp {
     pub(crate) current: usize,
     pub(crate) event: WcaEvent,
     pub(crate) scramble: Option<String>,
+    /// The time being typed while manual mode is on.
+    pub(crate) manual: Option<ManualEntry>,
     /// The drawing of `scramble`, kept while the same one is on screen.
     pub(crate) preview: PreviewCache,
     /// Whether the wait for a scramble has outlasted `GENERATING_DELAY`, so
@@ -208,6 +212,7 @@ impl CubeApp {
             current: 0,
             event,
             scramble: None,
+            manual: None,
             preview: PreviewCache::default(),
             generating_visible: false,
             generating_timer: None,
@@ -243,7 +248,8 @@ impl CubeApp {
                 window.push_notification(Notification::error(message).autohide(false), cx);
             });
         }
-        app.await_scramble(cx);
+        app.next_scramble(cx);
+        app.listen_for_scrambles(cx);
         app.start_ticking(window, cx);
         app.startup_update_tasks(window, cx);
         cx.observe_window_activation(window, Self::on_activation_changed)
@@ -308,7 +314,7 @@ impl CubeApp {
         }
     }
 
-    /// Drives time-based state: inspection expiry, display updates and scrambles.
+    /// Drives time-based state: inspection expiry and display updates.
     fn start_ticking(&self, window: &mut Window, cx: &mut Context<Self>) {
         cx.spawn_in(window, async move |this, cx| {
             let mut delay = IDLE_TICK;
@@ -330,14 +336,6 @@ impl CubeApp {
         if let Some(outcome) = self.timer.tick(now) {
             self.finish_attempt(outcome, window, cx);
         }
-        if self.scramble.is_none()
-            && let Some(scramble) = self.queue.try_next()
-        {
-            self.scramble = Some(scramble);
-            self.generating_visible = false;
-            self.generating_timer = None;
-            cx.notify();
-        }
         if self.timer.is_active() {
             cx.notify();
             ACTIVE_TICK
@@ -346,20 +344,47 @@ impl CubeApp {
         }
     }
 
-    /// Starts waiting for a scramble: the line stays blank, and only if none
-    /// arrives within `GENERATING_DELAY` does the placeholder appear.
-    fn await_scramble(&mut self, cx: &mut Context<Self>) {
-        self.generating_visible = false;
-        self.generating_timer = Some(cx.spawn(async move |this, cx| {
-            cx.background_executor().timer(GENERATING_DELAY).await;
-            this.update(cx, |app, cx| {
-                if app.scramble.is_none() {
-                    app.generating_visible = true;
-                    cx.notify();
+    /// Shows a scramble the moment the worker delivers one, if none is showing.
+    fn listen_for_scrambles(&self, cx: &mut Context<Self>) {
+        let mut signal = self.queue.signal();
+        cx.spawn(async move |this, cx| {
+            while signal.changed().await {
+                let updated = this.update(cx, |app, cx| {
+                    if app.scramble.is_none()
+                        && let Some(scramble) = app.queue.try_next()
+                    {
+                        app.scramble = Some(scramble);
+                        app.generating_visible = false;
+                        app.generating_timer = None;
+                        cx.notify();
+                    }
+                });
+                if updated.is_err() {
+                    break;
                 }
+            }
+        })
+        .detach();
+    }
+
+    /// Moves to the next scramble, right away if one is prepared. Otherwise the
+    /// line stays blank until `listen_for_scrambles` delivers one, and only if
+    /// none arrives within `GENERATING_DELAY` does the placeholder appear.
+    fn next_scramble(&mut self, cx: &mut Context<Self>) {
+        self.scramble = self.queue.try_next();
+        self.generating_visible = false;
+        self.generating_timer = self.scramble.is_none().then(|| {
+            cx.spawn(async move |this, cx| {
+                cx.background_executor().timer(GENERATING_DELAY).await;
+                this.update(cx, |app, cx| {
+                    if app.scramble.is_none() {
+                        app.generating_visible = true;
+                        cx.notify();
+                    }
+                })
+                .ok();
             })
-            .ok();
-        }));
+        });
     }
 
     /// Plays any inspection warnings whose time has come, without interrupting
@@ -414,11 +439,20 @@ impl CubeApp {
             return;
         }
 
+        if self.manual_typing(&press, &event.keystroke, event.is_held, window, cx) {
+            cx.stop_propagation();
+            return;
+        }
+
         let Some(action) = self.keybinds.action_for(&press) else {
             return;
         };
         cx.stop_propagation();
         if action == Action::Timer {
+            // Manual mode types times in instead of timing them.
+            if self.manual.is_some() {
+                return;
+            }
             if self.key_down || self.pointer_down || event.is_held || self.screen != Screen::Timer {
                 return;
             }
@@ -451,6 +485,7 @@ impl CubeApp {
             Action::NextScramble => self.skip_scramble(cx),
             Action::ToggleInspection => self.toggle_inspection(window, cx),
             Action::ToggleScramblePreview => self.toggle_scramble_preview(window, cx),
+            Action::ManualEntry => self.toggle_manual_entry(cx),
             Action::PreviousSolve => self.select_solve(true, cx),
             Action::NextSolve => self.select_solve(false, cx),
             Action::OpenSolve => {
@@ -463,16 +498,8 @@ impl CubeApp {
                     self.confirm_delete_solve(index, window, cx);
                 }
             }
-            Action::PenaltyPlusTwo => {
-                if let Some(index) = self.target_solve() {
-                    self.toggle_penalty(index, Modifier::PlusTwo, window, cx);
-                }
-            }
-            Action::PenaltyDnf => {
-                if let Some(index) = self.target_solve() {
-                    self.toggle_penalty(index, Modifier::DNF, window, cx);
-                }
-            }
+            Action::PenaltyPlusTwo => self.toggle_target_penalty(Modifier::PlusTwo, window, cx),
+            Action::PenaltyDnf => self.toggle_target_penalty(Modifier::DNF, window, cx),
             Action::NextEvent => self.cycle_event(1, cx),
             Action::PreviousEvent => self.cycle_event(-1, cx),
             Action::NextSession => self.cycle_session(1, cx),
@@ -522,7 +549,11 @@ impl CubeApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if window.has_active_dialog(cx) || self.pointer_down || self.key_down {
+        if window.has_active_dialog(cx)
+            || self.pointer_down
+            || self.key_down
+            || self.manual.is_some()
+        {
             return;
         }
         // Stopping needs no matching release, so a press that stopped the
@@ -618,7 +649,7 @@ impl CubeApp {
         let scramble = self.scramble.take().unwrap_or_default();
         let solve = Solve::new(time_ms, self.event, scramble, modifier);
         self.sessions[self.current].push(solve);
-        self.await_scramble(cx);
+        self.next_scramble(cx);
         self.last_result = Some(LastResult { time_ms, modifier });
         self.selected_solve = None;
         self.solves_changed(window, cx);
@@ -679,19 +710,17 @@ impl CubeApp {
     /// Replaces the scramble without recording anything.
     pub(crate) fn skip_scramble(&mut self, cx: &mut Context<Self>) {
         if !self.timer.is_active() {
-            self.scramble = None;
-            self.await_scramble(cx);
+            self.next_scramble(cx);
             cx.notify();
         }
     }
 
-    /// Switches event, discarding scrambles for the previous one.
+    /// Switches event, keeping the previous one's scramble for coming back.
     pub(crate) fn set_event(&mut self, event: WcaEvent, cx: &mut Context<Self>) {
         if event != self.event && !self.timer.is_active() {
             self.event = event;
-            self.scramble = None;
-            self.await_scramble(cx);
-            self.queue = ScrambleQueue::new(event);
+            self.queue.switch_event(event, self.scramble.take());
+            self.next_scramble(cx);
             cx.notify();
         }
     }
@@ -766,6 +795,89 @@ impl CubeApp {
             screen
         };
         self.show_screen(next, cx);
+    }
+
+    /// Turns manual mode on or off. It starts only from the idle timer
+    /// screen, and the scramble stays until a typed time is recorded.
+    pub(crate) fn toggle_manual_entry(&mut self, cx: &mut Context<Self>) {
+        if self.manual.take().is_none() {
+            if self.timer.is_active() || self.screen != Screen::Timer {
+                return;
+            }
+            self.manual = Some(ManualEntry::default());
+        }
+        cx.notify();
+    }
+
+    /// Feeds a key to the time being typed in manual mode. Returns whether the
+    /// key was used; digits, `:`, `.`, Backspace, paste and Enter (once
+    /// something is typed) are, so every other binding keeps working.
+    fn manual_typing(
+        &mut self,
+        press: &KeyPress,
+        keystroke: &Keystroke,
+        held: bool,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        let typing = self.screen == Screen::Timer && !self.timer.is_active();
+        let Some(entry) = self.manual.as_mut().filter(|_| typing) else {
+            return false;
+        };
+        if self.keybinds.action_for(press) == Some(Action::ManualEntry) {
+            return false;
+        }
+        let modifiers = keystroke.modifiers;
+        let changed = if modifiers.control || modifiers.platform || modifiers.alt {
+            if (modifiers.control || modifiers.platform) && press.key() == "v" {
+                cx.read_from_clipboard()
+                    .and_then(|item| item.text())
+                    .is_some_and(|text| entry.push_text(&text))
+            } else {
+                return false;
+            }
+        } else {
+            match press.key() {
+                "backspace" => entry.backspace(),
+                "enter" if !entry.is_empty() => {
+                    self.record_manual(window, cx);
+                    return true;
+                }
+                _ if held => return false,
+                _ => keystroke
+                    .key_char
+                    .as_deref()
+                    .is_some_and(|text| entry.push_text(text)),
+            }
+        };
+        if changed {
+            cx.notify();
+        }
+        changed
+    }
+
+    /// Records the typed time like a timed solve, and stays in manual mode for
+    /// the next one. Penalties then apply to it like to any other solve.
+    fn record_manual(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // A scramble is still being prepared: keep the text for the next Enter.
+        if self.scramble.is_none() {
+            return;
+        }
+        let Some(time_ms) = self.manual.as_mut().and_then(ManualEntry::commit) else {
+            cx.notify();
+            return;
+        };
+        self.finish_attempt(
+            TimerOutcome {
+                time_ms,
+                modifier: Modifier::None,
+            },
+            window,
+            cx,
+        );
+        if let Some(entry) = &mut self.manual {
+            entry.clear();
+        }
     }
 
     /// Moves the solve selection one step newer (`newer`) or older.
@@ -870,6 +982,18 @@ impl CubeApp {
     }
 
     /// Toggles a penalty on a solve of the current session.
+    /// Toggles a penalty on the selected solve, or the latest.
+    fn toggle_target_penalty(
+        &mut self,
+        modifier: Modifier,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if let Some(index) = self.target_solve() {
+            self.toggle_penalty(index, modifier, window, cx);
+        }
+    }
+
     pub(crate) fn toggle_penalty(
         &mut self,
         index: usize,
@@ -1204,12 +1328,16 @@ impl CubeApp {
         cx: &mut Context<Self>,
         change: impl FnOnce(&mut Settings),
     ) {
+        let accurate_3x3 = self.settings.accurate_3x3;
         change(&mut self.settings);
         self.keybinds = self.settings.keybinds();
         if !self.timer.is_active() {
             self.timer = self.settings.timer();
         }
-        scramble::set_accurate_3x3(self.settings.accurate_3x3);
+        if self.settings.accurate_3x3 != accurate_3x3 {
+            scramble::set_accurate_3x3(self.settings.accurate_3x3);
+            self.queue.discard(WcaEvent::Cube3x3);
+        }
         palette::apply(&self.settings, cx);
         self.save_settings(window, cx);
         window.refresh();
