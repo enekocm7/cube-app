@@ -19,12 +19,8 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::CubeApp;
+use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
 
-/// The tallest the scrolling body gets, however large the window is.
-const BODY_MAX_HEIGHT: Pixels = px(460.);
-/// The height the dialog needs around the body: its title, its footer and the
-/// margins it keeps from the window edges.
-const DIALOG_CHROME_HEIGHT: Pixels = px(170.);
 const ROW_MIN_HEIGHT: Pixels = px(44.);
 
 /// A view of the app's settings; re-renders whenever the app changes.
@@ -443,12 +439,13 @@ impl SettingsView {
         let app = self.app.clone();
         let file = file.to_owned();
         let display = display.to_owned();
-        window.open_dialog(cx, move |dialog, _, _| {
+        window.open_dialog(cx, move |dialog, window, _| {
             let app = app.clone();
             let file = file.clone();
             let display = display.clone();
             dialog
                 .title(strings.delete_theme)
+                .w(dialog_width(DialogSize::COMPACT, window))
                 .child(message.clone())
                 .footer(
                     h_flex()
@@ -618,8 +615,7 @@ impl Render for SettingsView {
             .into_any_element()];
         let data = self.data_rows(strings, cx);
 
-        let max_height =
-            (window.viewport_size().height - DIALOG_CHROME_HEIGHT).min(BODY_MAX_HEIGHT);
+        let max_height = dialog_body_height(DialogSize::STANDARD, window);
 
         v_flex()
             .id("settings-body")
@@ -721,12 +717,12 @@ impl CubeApp {
             }
         });
         let strings_app = cx.entity();
-        window.open_dialog(cx, move |dialog, _, cx| {
+        window.open_dialog(cx, move |dialog, window, cx| {
             let strings = strings_app.read(cx).strings();
             let view = view.clone();
             dialog
                 .title(div().text_lg().pb_2().child(strings.settings))
-                .w(px(480.))
+                .w(dialog_width(DialogSize::STANDARD, window))
                 .content(move |content, _, cx| {
                     content
                         .px_0()

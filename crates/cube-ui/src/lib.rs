@@ -10,6 +10,7 @@ use gpui_kit::*;
 mod app;
 mod audio;
 mod details;
+mod dialog_size;
 mod fonts;
 mod palette;
 mod panel_resize;

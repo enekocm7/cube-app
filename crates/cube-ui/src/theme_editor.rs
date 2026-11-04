@@ -19,10 +19,9 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::CubeApp;
+use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
 
 const ROW_MIN_HEIGHT: Pixels = px(44.);
-const BODY_MAX_HEIGHT: Pixels = px(620.);
-const DIALOG_CHROME_HEIGHT: Pixels = px(190.);
 
 /// The seven colors a cube-tui theme stores.
 #[derive(Clone, Copy)]
@@ -422,8 +421,7 @@ impl Render for ThemeEditor {
             .enumerate()
             .map(|(index, slot)| self.render_color_row(index, *slot, strings, cx))
             .collect();
-        let max_height =
-            (window.viewport_size().height - DIALOG_CHROME_HEIGHT).min(BODY_MAX_HEIGHT);
+        let max_height = dialog_body_height(DialogSize::WIDE, window);
 
         v_flex()
             .id("theme-editor")
@@ -573,7 +571,7 @@ impl CubeApp {
         let strings_app = cx.entity();
         let content_view = view.clone();
         let save_view = view.clone();
-        window.open_dialog(cx, move |dialog, _, cx| {
+        window.open_dialog(cx, move |dialog, window, cx| {
             let strings = strings_app.read(cx).strings();
             let content_view = content_view.clone();
             let save_view = save_view.clone();
@@ -583,7 +581,7 @@ impl CubeApp {
                 } else {
                     strings.edit_theme
                 }))
-                .w(px(760.))
+                .w(dialog_width(DialogSize::WIDE, window))
                 .content(move |content, _, cx| {
                     content
                         .px_0()
