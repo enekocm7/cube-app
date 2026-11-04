@@ -168,6 +168,8 @@ pub struct Strings {
 
     pub settings_keybindings: &'static str,
     pub keybind_hint: &'static str,
+    pub keybind_edit: &'static str,
+    pub keybind_done: &'static str,
     pub keybind_capture: &'static str,
     /// `{action}`: the action whose shortcut is being captured.
     pub keybind_capture_hint: &'static str,

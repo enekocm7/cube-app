@@ -37,16 +37,20 @@ nothing is selected.
 While a solve is running, **any key stops the timer**. `Esc` is the exception:
 it cancels the attempt without recording it.
 
+Hold `N`, `Up` or `Down` to repeat the action until you release the key. Other
+actions fire once per press.
+
 ## Changing shortcuts in the app
 
-Open **Settings → Keyboard shortcuts**. Every action has its current key and two
-controls:
+Press `F1` (or use the keyboard icon in the title bar) to open the shortcuts
+panel. Its **Edit** button, opposite **Close**, shows a pencil on every row and
+a trash can wherever the shortcut can be removed:
 
-- **Change** starts listening for a key. Press the new combination. `Esc` or the
-  **Cancel** button stops listening. Because `Esc` cancels the capture, assign
-  `Esc` itself through the file instead.
-- **Remove** deletes the shortcut. The action remains available from the mouse
-  and can be given a new key at any time.
+- The pencil starts listening for a key. Press the new combination. `Esc` or the
+  **X** button cancels. Because `Esc` cancels the capture, assign `Esc` itself
+  through the file instead.
+- The danger-coloured trash can removes the shortcut. The action remains
+  available from the mouse and can be given a new key at any time.
 
 The key is checked before it is saved:
 
@@ -112,7 +116,7 @@ an invalid or conflicting override usually keeps its default; if another
 override has claimed that default key, the action is left unassigned so two
 actions never share a key. This also covers unknown action names, keys the
 application does not understand, a timer key with modifiers, and two actions
-asking for the same key. The settings dialog shows the effective bindings, so
+asking for the same key. The shortcuts panel shows the effective bindings, so
 `F1` is always the quickest way to check what is really active.
 
 ## Where the settings live

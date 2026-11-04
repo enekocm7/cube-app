@@ -43,10 +43,10 @@ cargo run --release
 
 ## How to use it
 
-cube is designed to be fully usable from the keyboard: every action below has a shortcut, every shortcut can be
-changed in **Settings → Keyboard shortcuts**, and dialogs stay reachable with `Tab`, `Enter` and `Space`. See
-[docs/keybinds.md](docs/keybinds.md) for the full reference, the key name syntax, and how to change or remove
-bindings from `cube-gui.toml`.
+cube is designed to be fully usable from the keyboard: every action below has a shortcut, dialogs stay reachable
+with `Tab`, `Enter` and `Space`, and the **Edit** button on the `F1` shortcuts panel rebinds or removes them. See
+[docs/keybinds.md](docs/keybinds.md) for the full reference, the key name syntax, and how to change bindings from
+`cube-gui.toml`.
 
 | Key | Action |
 |---|---|
@@ -72,9 +72,12 @@ bindings from `cube-gui.toml`.
 Actions that need a solve use the keyboard selection, or the latest solve when nothing is
 selected. Click a solve in the list to see its details or edit it.
 
-`F1` opens the shortcut reference from inside the app. Bindings can also be edited by hand in
-the `[keybindings]` table in `cube-gui.toml`; [docs/keybinds.md](docs/keybinds.md) documents every
-action, the key syntax and the validation rules.
+Hold `N`, `Up` or `Down` to repeat: scrambles keep coming and navigation keeps moving until you release the key.
+
+`F1` opens the shortcuts panel. Its **Edit** button (opposite **Close**) shows a pencil to rebind an action and a
+danger-coloured trash can to remove its shortcut. Bindings can also be edited by hand in the `[keybindings]` table
+in `cube-gui.toml`; [docs/keybinds.md](docs/keybinds.md) documents every action, the key syntax and the validation
+rules.
 
 Drag the inner edge of the solve list or the statistics panel to resize it. Neither panel gets
 narrower than 180 px, and double-click an edge to restore its default width. The widths are

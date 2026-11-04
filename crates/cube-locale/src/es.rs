@@ -82,7 +82,7 @@ pub const STRINGS: Strings = Strings {
     theme_dark: "Oscuro",
 
     help_title: "Atajos de teclado",
-    help_hint: "Cámbialos en Ajustes o en [keybindings], dentro de cube-gui.toml.",
+    help_hint: "Usa Editar para cambiar un atajo, o edita [keybindings] en cube-gui.toml.",
     help_any_key_stops: "Cualquier tecla detiene el cronómetro; Escape lo cancela sin registrarlo.",
     help_section_timer: "Temporizador",
     help_section_solves: "Solves",
@@ -105,7 +105,9 @@ pub const STRINGS: Strings = Strings {
     unassigned: "Sin asignar",
 
     settings_keybindings: "Atajos de teclado",
-    keybind_hint: "Elige Cambiar y pulsa la nueva combinación de teclas. La tecla del cronómetro no se puede quitar ni usar modificadores.",
+    keybind_hint: "Usa el lápiz para cambiar un atajo y la papelera para quitarlo. La tecla del cronómetro no se puede quitar ni usar modificadores.",
+    keybind_edit: "Editar",
+    keybind_done: "Listo",
     keybind_capture: "Pulsa una tecla…",
     keybind_capture_hint: "Pulsa una tecla para «{action}». Escape cancela.",
     keybind_change: "Cambiar",

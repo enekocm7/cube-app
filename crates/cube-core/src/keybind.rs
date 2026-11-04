@@ -91,6 +91,18 @@ impl Action {
             .into_iter()
             .find(|action| action.name().eq_ignore_ascii_case(name.trim()))
     }
+
+    /// Returns whether holding the key should repeat the action.
+    ///
+    /// Solve navigation and new scrambles feel natural when held; opening
+    /// dialogs, deleting solves or switching events and sessions must not
+    /// repeat.
+    pub const fn repeats(self) -> bool {
+        matches!(
+            self,
+            Self::NextScramble | Self::PreviousSolve | Self::NextSolve
+        )
+    }
 }
 
 /// A key press as the application sees it, normalized so that bindings compare
@@ -674,6 +686,18 @@ mod tests {
             Some(Action::NextScramble)
         );
         assert_eq!(Action::from_name("nope"), None);
+    }
+
+    #[test]
+    fn only_navigation_repeats_when_held() {
+        assert!(Action::PreviousSolve.repeats());
+        assert!(Action::NextSolve.repeats());
+        assert!(Action::NextScramble.repeats());
+        assert!(!Action::Timer.repeats());
+        assert!(!Action::DeleteSolve.repeats());
+        assert!(!Action::OpenSettings.repeats());
+        assert!(!Action::NextEvent.repeats());
+        assert!(!Action::NextSession.repeats());
     }
 
     #[test]

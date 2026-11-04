@@ -82,7 +82,7 @@ pub const STRINGS: Strings = Strings {
     theme_dark: "Dark",
 
     help_title: "Keyboard shortcuts",
-    help_hint: "Change these in Settings, or under [keybindings] in cube-gui.toml.",
+    help_hint: "Use Edit to change a shortcut, or edit [keybindings] in cube-gui.toml.",
     help_any_key_stops: "Any key stops a running timer; Escape cancels it without recording.",
     help_section_timer: "Timer",
     help_section_solves: "Solves",
@@ -105,7 +105,9 @@ pub const STRINGS: Strings = Strings {
     unassigned: "Unassigned",
 
     settings_keybindings: "Keyboard shortcuts",
-    keybind_hint: "Choose Change, then press the new key combination. The timer key can't be removed or use modifiers.",
+    keybind_hint: "Use the pencil to change a shortcut and the trash to remove it. The timer key can't be removed or use modifiers.",
+    keybind_edit: "Edit",
+    keybind_done: "Done",
     keybind_capture: "Press a key…",
     keybind_capture_hint: "Press a key for “{action}”. Escape cancels.",
     keybind_change: "Change",

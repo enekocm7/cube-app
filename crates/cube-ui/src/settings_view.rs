@@ -1,15 +1,14 @@
 //! The settings dialog.
 
+use cube_core::Settings;
 use cube_core::persistence;
 use cube_core::settings::{ThemePreference, UpdateChannel, UpdateFrequency};
 use cube_core::theme;
 use cube_core::theme::{ThemeColor, ThemeFile};
-use cube_core::{Action, BindingError, KeyBinding, Keybinds, Settings};
 use cube_locale::{Language, Strings};
 use gpui_kit::assets::IconName;
 use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
-use gpui_kit::component::notification::Notification;
 use gpui_kit::component::scroll::ScrollableElement as _;
 use gpui_kit::component::switch::Switch;
 use gpui_kit::component::{
@@ -18,9 +17,7 @@ use gpui_kit::component::{
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
-use crate::app::{CubeApp, key_press};
-use crate::help::action_label;
-use crate::palette::Palette;
+use crate::app::CubeApp;
 
 /// The tallest the scrolling body gets, however large the window is.
 const BODY_MAX_HEIGHT: Pixels = px(460.);
@@ -35,11 +32,6 @@ struct SettingsView {
     /// Every valid theme in the shared `themes` folder, read when the dialog
     /// opens.
     themes: Vec<ThemeFile>,
-    focus: FocusHandle,
-    /// The action waiting for the user to press its new key.
-    capturing: Option<Action>,
-    /// Why the last captured key was rejected.
-    error: Option<String>,
 }
 
 impl SettingsView {
@@ -105,181 +97,6 @@ impl SettingsView {
         self.app.update(cx, |app, cx| {
             app.update_settings(window, cx, change);
         });
-    }
-
-    /// Shows a rejected key change inline and as a notification.
-    fn report_binding_error(
-        &mut self,
-        message: String,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        window.push_notification(Notification::error(message.clone()), cx);
-        self.error = Some(message);
-        cx.notify();
-    }
-
-    /// Starts waiting for the key that will replace `action`'s binding.
-    fn start_capture(&mut self, action: Action, window: &mut Window, cx: &mut Context<Self>) {
-        self.capturing = Some(action);
-        self.error = None;
-        self.focus.focus(window, cx);
-        cx.notify();
-    }
-
-    /// Removes an action's binding and saves the change.
-    fn remove_binding(&mut self, action: Action, window: &mut Window, cx: &mut Context<Self>) {
-        let strings = self.app.read(cx).strings();
-        match self
-            .app
-            .update(cx, |app, cx| app.set_keybinding(action, None, window, cx))
-        {
-            Ok(()) => self.error = None,
-            Err(error) => {
-                self.report_binding_error(binding_error_message(strings, error), window, cx);
-            }
-        }
-        self.capturing = None;
-        self.focus.focus(window, cx);
-        cx.notify();
-    }
-
-    fn cancel_capture(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        self.capturing = None;
-        self.error = None;
-        self.focus.focus(window, cx);
-        cx.notify();
-    }
-
-    /// Captures the next key while an action is being rebound.
-    fn on_key_down(&mut self, event: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(action) = self.capturing else {
-            return;
-        };
-        cx.stop_propagation();
-        if event.is_held {
-            return;
-        }
-        // Escape backs out; the dialog itself would otherwise close.
-        if event.keystroke.key == "escape" {
-            self.cancel_capture(window, cx);
-            return;
-        }
-        let Some(press) = key_press(&event.keystroke) else {
-            let message = self.app.read(cx).strings().keybind_error_invalid.to_owned();
-            self.report_binding_error(message, window, cx);
-            return;
-        };
-        let binding = KeyBinding::from_press(&press);
-        let strings = self.app.read(cx).strings();
-        match self.app.update(cx, |app, cx| {
-            app.set_keybinding(action, Some(binding), window, cx)
-        }) {
-            Ok(()) => {
-                self.capturing = None;
-                self.error = None;
-                self.focus.focus(window, cx);
-                cx.notify();
-            }
-            Err(error) => {
-                self.report_binding_error(binding_error_message(strings, error), window, cx);
-            }
-        }
-    }
-
-    /// One row per action: its current key, a Change button and, when allowed,
-    /// a Remove button.
-    fn keybind_rows(
-        &self,
-        keybinds: &Keybinds,
-        strings: &'static Strings,
-        cx: &mut Context<Self>,
-    ) -> Vec<AnyElement> {
-        let colors = Palette::of(cx);
-        let theme = cx.theme();
-        let mono = theme.mono_font_family.clone();
-        Action::ALL
-            .into_iter()
-            .map(|action| {
-                let capturing = self.capturing == Some(action);
-                let binding = keybinds.label(action);
-                let bound = binding.is_some();
-                let can_remove = action != Action::Timer && bound;
-                let text = if capturing {
-                    strings.keybind_capture.to_owned()
-                } else {
-                    binding.unwrap_or_else(|| strings.unassigned.to_owned())
-                };
-                let text_color = if capturing {
-                    colors.yellow
-                } else if bound {
-                    theme.foreground
-                } else {
-                    theme.muted_foreground
-                };
-                h_flex()
-                    .min_h(ROW_MIN_HEIGHT)
-                    .px_3()
-                    .py_2()
-                    .gap_3()
-                    .justify_between()
-                    .text_sm()
-                    .child(
-                        div()
-                            .flex_1()
-                            .min_w_0()
-                            .child(action_label(strings, action)),
-                    )
-                    .child(
-                        h_flex()
-                            .flex_none()
-                            .gap_2()
-                            .child(
-                                div()
-                                    .min_w(px(110.))
-                                    .text_center()
-                                    .font_family(mono.clone())
-                                    .text_xs()
-                                    .text_color(text_color)
-                                    .child(text),
-                            )
-                            .when(!capturing, |row| {
-                                row.child(
-                                    Button::new(format!("keybind-change-{}", action.name()))
-                                        .small()
-                                        .outline()
-                                        .label(strings.keybind_change)
-                                        .on_click(cx.listener(move |view, _, window, cx| {
-                                            view.start_capture(action, window, cx);
-                                        })),
-                                )
-                            })
-                            .when(can_remove, |row| {
-                                row.child(
-                                    Button::new(format!("keybind-remove-{}", action.name()))
-                                        .small()
-                                        .ghost()
-                                        .label(strings.keybind_remove)
-                                        .on_click(cx.listener(move |view, _, window, cx| {
-                                            view.remove_binding(action, window, cx);
-                                        })),
-                                )
-                            })
-                            .when(capturing, |row| {
-                                row.child(
-                                    Button::new(format!("keybind-cancel-{}", action.name()))
-                                        .small()
-                                        .outline()
-                                        .label(strings.cancel)
-                                        .on_click(cx.listener(|view, _, window, cx| {
-                                            view.cancel_capture(window, cx);
-                                        })),
-                                )
-                            }),
-                    )
-                    .into_any_element()
-            })
-            .collect()
     }
 
     /// The csTimer import and export actions.
@@ -705,7 +522,6 @@ impl SettingsView {
 }
 
 impl Render for SettingsView {
-    #[allow(clippy::too_many_lines, reason = "one section per settings group")]
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         // Theme files can be added, renamed or deleted while the dialog is
         // open, so read them again on every render.
@@ -713,45 +529,6 @@ impl Render for SettingsView {
         let app = self.app.read(cx);
         let strings = app.strings();
         let settings = app.settings.clone();
-        let keybinds = app.keybinds().clone();
-        let colors = Palette::of(cx);
-
-        let mut keybind_rows = vec![
-            h_flex()
-                .px_3()
-                .py_2()
-                .text_xs()
-                .text_color(cx.theme().muted_foreground)
-                .child(strings.keybind_hint)
-                .into_any_element(),
-        ];
-        if let Some(action) = self.capturing {
-            keybind_rows.push(
-                h_flex()
-                    .px_3()
-                    .py_2()
-                    .text_xs()
-                    .text_color(colors.yellow)
-                    .child(
-                        strings
-                            .keybind_capture_hint
-                            .replace("{action}", action_label(strings, action)),
-                    )
-                    .into_any_element(),
-            );
-        }
-        if let Some(error) = self.error.clone() {
-            keybind_rows.push(
-                h_flex()
-                    .px_3()
-                    .py_2()
-                    .text_xs()
-                    .text_color(colors.red)
-                    .child(error)
-                    .into_any_element(),
-            );
-        }
-        keybind_rows.extend(self.keybind_rows(&keybinds, strings, cx));
 
         let languages = self.languages(&settings.language, cx);
         let mut theme_rows = vec![
@@ -813,15 +590,12 @@ impl Render for SettingsView {
 
         v_flex()
             .id("settings-body")
-            .track_focus(&self.focus)
-            .on_key_down(cx.listener(Self::on_key_down))
             .max_h(max_height)
             .p_4()
             .gap_5()
             .child(section(strings.settings_timer, timer, cx))
             .child(section(strings.settings_theme, theme_rows, cx))
             .child(section(strings.settings_appearance, appearance, cx))
-            .child(section(strings.settings_keybindings, keybind_rows, cx))
             .child(section(strings.settings_updates, updates, cx))
             .child(section(strings.setting_language, language, cx))
             .child(section(strings.settings_data, data, cx))
@@ -870,17 +644,6 @@ fn choice(id: impl Into<ElementId>, label: impl Into<SharedString>, selected: bo
     }
 }
 
-/// Turns a rejected key change into the message shown in Settings.
-fn binding_error_message(strings: &'static Strings, error: BindingError) -> String {
-    match error {
-        BindingError::TimerModified => strings.keybind_error_timer_modified.to_owned(),
-        BindingError::Conflict(action) => strings
-            .keybind_error_conflict
-            .replace("{action}", action_label(strings, action)),
-        BindingError::TimerRequired => strings.keybind_error_timer_required.to_owned(),
-    }
-}
-
 /// Converts a theme file color for use in the interface.
 fn theme_hsla(color: ThemeColor) -> Hsla {
     rgb(color.rgb()).into()
@@ -912,9 +675,6 @@ impl CubeApp {
             SettingsView {
                 app: app.clone(),
                 themes,
-                focus: cx.focus_handle(),
-                capturing: None,
-                error: None,
             }
         });
         let strings_app = cx.entity();
@@ -923,7 +683,7 @@ impl CubeApp {
             let view = view.clone();
             dialog
                 .title(div().text_lg().pb_2().child(strings.settings))
-                .w(px(620.))
+                .w(px(480.))
                 .content(move |content, _, cx| {
                     content
                         .px_0()

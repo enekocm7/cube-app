@@ -80,10 +80,10 @@ scrambles, solve navigation and editing, penalties, events, sessions, stats,
 settings, import/export dialogs and help.
 
 - Every primary action needs an `Action` in `cube-core::keybind`, a default in
-  `Keybinds::default`, a row in Settings → Keyboard shortcuts, and an entry in
-  the help dialog and `docs/keybinds.md`. Dialogs must keep their controls
-  reachable with `Tab` and activatable with `Enter` or `Space`; do not make the
-  mouse the only way to reach a control.
+  `Keybinds::default`, a row in the `F1` keyboard shortcuts panel, and an entry
+  in `docs/keybinds.md`. That panel is also the editor: keep its pencil, trash
+  and capture controls reachable with `Tab` and activatable with `Enter` or
+  `Space`; do not make the mouse the only way to reach a control.
 - Bindings are validated before they are saved: the key must be understood, it
   must not already belong to another action, the timer key must be unmodified,
   and the timer key cannot be removed. Show the user a specific error rather

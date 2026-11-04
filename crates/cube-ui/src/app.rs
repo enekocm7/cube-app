@@ -103,6 +103,9 @@ pub struct CubeApp {
     pub(crate) timer: Timer,
     /// Whether the timer key is physically down, to ignore key repeat.
     key_down: bool,
+    /// The key that stopped a running timer, so its held repeats do not also
+    /// trigger that key's action until it is released.
+    stop_repeat_key: Option<String>,
     pub(crate) last_result: Option<LastResult>,
     pub(crate) stats: SessionStats,
     chart_data: Option<Rc<ChartData>>,
@@ -154,6 +157,7 @@ impl CubeApp {
             scramble: None,
             queue: ScrambleQueue::new(event),
             key_down: false,
+            stop_repeat_key: None,
             last_result: None,
             chart_data: None,
             solves_scroll: UniformListScrollHandle::new(),
@@ -271,21 +275,26 @@ impl CubeApp {
         cx: &mut Context<Self>,
     ) {
         // Dialogs handle their own keys, including ones typed into inputs.
-        if event.is_held || window.has_active_dialog(cx) {
+        if window.has_active_dialog(cx) {
             return;
         }
         let Some(press) = key_press(&event.keystroke) else {
             return;
         };
+        // Holding the key that stopped the timer must not trigger its action.
+        if event.is_held && self.stop_repeat_key.as_deref() == Some(press.key()) {
+            return;
+        }
 
         // Many cubers expect any key to stop the timer, not just the one that
         // started it. Modifiers alone are ignored so the stop is deliberate.
         if matches!(self.timer.phase(), TimerPhase::Running { .. }) {
-            if event.keystroke.is_modifier_key() {
+            if event.keystroke.is_modifier_key() || event.is_held {
                 return;
             }
             cx.stop_propagation();
             self.key_down = false;
+            self.stop_repeat_key = Some(press.key().to_owned());
             if self.keybinds.action_for(&press) == Some(Action::Cancel) {
                 self.cancel(window, cx);
             } else if let Some(outcome) = self.timer.press(Instant::now()) {
@@ -299,7 +308,7 @@ impl CubeApp {
         };
         cx.stop_propagation();
         if action == Action::Timer {
-            if self.key_down || self.screen != Screen::Timer {
+            if self.key_down || event.is_held || self.screen != Screen::Timer {
                 return;
             }
             self.key_down = true;
@@ -310,7 +319,7 @@ impl CubeApp {
             self.cancel(window, cx);
             return;
         }
-        if self.timer.is_active() {
+        if self.timer.is_active() || (event.is_held && !action.repeats()) {
             return;
         }
         match action {
@@ -375,6 +384,9 @@ impl CubeApp {
         let Some(press) = key_press(&event.keystroke) else {
             return;
         };
+        if self.stop_repeat_key.as_deref() == Some(press.key()) {
+            self.stop_repeat_key = None;
+        }
         if self.keybinds.action_for(&press) != Some(Action::Timer) {
             return;
         }
@@ -414,6 +426,7 @@ impl CubeApp {
     fn on_activation_changed(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if !window.is_window_active() {
             self.key_down = false;
+            self.stop_repeat_key = None;
             if matches!(self.timer.phase(), TimerPhase::Holding { .. }) {
                 self.timer.cancel();
                 cx.notify();
