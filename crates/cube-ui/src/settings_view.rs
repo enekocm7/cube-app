@@ -18,7 +18,7 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::CubeApp;
-use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
+use crate::dialog_size::{DialogSize, dialog_body_height, dialog_title, dialog_width};
 use crate::scroll_fade::FadeScroll;
 
 const ROW_MIN_HEIGHT: Pixels = px(44.);
@@ -444,7 +444,8 @@ impl SettingsView {
             let file = file.clone();
             let display = display.clone();
             dialog
-                .title(strings.delete_theme)
+                .title(dialog_title(strings.delete_theme, strings.close))
+                .close_button(false)
                 .w(dialog_width(DialogSize::COMPACT, window))
                 .child(message.clone())
                 .footer(
@@ -719,7 +720,11 @@ impl CubeApp {
             let strings = strings_app.read(cx).strings();
             let view = view.clone();
             dialog
-                .title(div().text_lg().pb_2().child(strings.settings))
+                .title(dialog_title(
+                    div().text_lg().child(strings.settings),
+                    strings.close,
+                ))
+                .close_button(false)
                 .w(dialog_width(DialogSize::STANDARD, window))
                 .content(move |content, _, cx| {
                     content

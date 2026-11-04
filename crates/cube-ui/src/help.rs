@@ -3,7 +3,6 @@
 use cube_core::{Action, BindingError, KeyBinding, Keybinds};
 use cube_locale::Strings;
 use gpui_kit::assets::IconName;
-use gpui_kit::component::Size as ComponentSize;
 use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::notification::Notification;
@@ -12,7 +11,7 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::{CubeApp, key_press};
-use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
+use crate::dialog_size::{DialogSize, dialog_body_height, dialog_title, dialog_width};
 use crate::palette::Palette;
 use crate::scroll_fade::FadeScroll;
 
@@ -404,21 +403,7 @@ impl CubeApp {
             let editing = view.read(cx).editing;
             let edit_view = view.clone();
             let content_view = view.clone();
-            let title = h_flex()
-                .w_full()
-                .items_center()
-                .justify_between()
-                .pb_2()
-                .child(strings.help_title)
-                .child(
-                    Button::new("help-close-icon")
-                        .ghost()
-                        .with_size(ComponentSize::Size(px(36.)))
-                        .icon(IconName::Close)
-                        .tooltip(strings.close)
-                        .accessibility_label(strings.close)
-                        .on_click(|_, window, cx| window.close_dialog(cx)),
-                );
+            let title = dialog_title(strings.help_title, strings.close);
             dialog
                 .title(title)
                 .close_button(false)
