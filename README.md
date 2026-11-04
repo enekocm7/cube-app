@@ -255,6 +255,8 @@ open a pull request.
 | `crates/cube-updater` | GitHub release check, verified download and self-update |
 | `crates/cube-ui` | The GPUI interface |
 
+Scramble timings and the reasoning behind the queue are in [docs/scramble-performance.md](docs/scramble-performance.md).
+
 ## License
 
 [GPL-3.0-or-later](LICENSE).
