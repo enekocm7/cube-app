@@ -1,6 +1,7 @@
 //! The keyboard shortcut reference.
 
 use cube_core::Action;
+use cube_locale::Strings;
 use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::Button;
 use gpui_kit::component::scroll::ScrollableElement as _;
@@ -21,56 +22,60 @@ impl CubeApp {
     pub(crate) fn open_help(&self, window: &mut Window, cx: &mut Context<Self>) {
         let strings = self.strings();
         let keybinds = self.keybinds();
-        let label = |action: Action| keybinds.label(action);
+        let label = |action: Action| {
+            keybinds
+                .label(action)
+                .unwrap_or_else(|| strings.unassigned.to_owned())
+        };
+        let row = |action: Action| (action_label(strings, action), label(action));
         let sections: Vec<(&'static str, Vec<(&'static str, String)>)> = vec![
             (
                 strings.help_section_timer,
-                vec![
-                    (strings.action_timer, label(Action::Timer)),
-                    (strings.action_cancel, label(Action::Cancel)),
-                    (strings.new_scramble, label(Action::NextScramble)),
-                    (
-                        strings.action_toggle_inspection,
-                        label(Action::ToggleInspection),
-                    ),
-                ],
+                [
+                    Action::Timer,
+                    Action::Cancel,
+                    Action::NextScramble,
+                    Action::ToggleInspection,
+                ]
+                .into_iter()
+                .map(row)
+                .collect(),
             ),
             (
                 strings.help_section_solves,
-                vec![
-                    (strings.action_previous_solve, label(Action::PreviousSolve)),
-                    (strings.action_next_solve, label(Action::NextSolve)),
-                    (strings.action_open_solve, label(Action::OpenSolve)),
-                    (strings.delete_solve, label(Action::DeleteSolve)),
-                    (
-                        strings.action_penalty_plus_two,
-                        label(Action::PenaltyPlusTwo),
-                    ),
-                    (strings.action_penalty_dnf, label(Action::PenaltyDnf)),
-                ],
+                [
+                    Action::PreviousSolve,
+                    Action::NextSolve,
+                    Action::OpenSolve,
+                    Action::DeleteSolve,
+                    Action::PenaltyPlusTwo,
+                    Action::PenaltyDnf,
+                ]
+                .into_iter()
+                .map(row)
+                .collect(),
             ),
             (
                 strings.help_section_events_sessions,
-                vec![
-                    (strings.action_next_event, label(Action::NextEvent)),
-                    (strings.action_previous_event, label(Action::PreviousEvent)),
-                    (strings.action_next_session, label(Action::NextSession)),
-                    (
-                        strings.action_previous_session,
-                        label(Action::PreviousSession),
-                    ),
-                    (strings.new_session, label(Action::NewSession)),
-                    (strings.rename_session, label(Action::RenameSession)),
-                    (strings.delete_session, label(Action::DeleteSession)),
-                ],
+                [
+                    Action::NextEvent,
+                    Action::PreviousEvent,
+                    Action::NextSession,
+                    Action::PreviousSession,
+                    Action::NewSession,
+                    Action::RenameSession,
+                    Action::DeleteSession,
+                ]
+                .into_iter()
+                .map(row)
+                .collect(),
             ),
             (
                 strings.help_section_screens,
-                vec![
-                    (strings.action_open_stats, label(Action::OpenStats)),
-                    (strings.settings, label(Action::OpenSettings)),
-                    (strings.action_show_help, label(Action::ShowHelp)),
-                ],
+                [Action::OpenStats, Action::OpenSettings, Action::ShowHelp]
+                    .into_iter()
+                    .map(row)
+                    .collect(),
             ),
         ];
 
@@ -115,6 +120,33 @@ impl CubeApp {
                     ),
                 )
         });
+    }
+}
+
+/// Returns the translated description of an action, shared by help and
+/// settings.
+pub(crate) fn action_label(strings: &'static Strings, action: Action) -> &'static str {
+    match action {
+        Action::Timer => strings.action_timer,
+        Action::Cancel => strings.action_cancel,
+        Action::NextScramble => strings.new_scramble,
+        Action::ToggleInspection => strings.action_toggle_inspection,
+        Action::PreviousSolve => strings.action_previous_solve,
+        Action::NextSolve => strings.action_next_solve,
+        Action::OpenSolve => strings.action_open_solve,
+        Action::DeleteSolve => strings.delete_solve,
+        Action::PenaltyPlusTwo => strings.action_penalty_plus_two,
+        Action::PenaltyDnf => strings.action_penalty_dnf,
+        Action::NextEvent => strings.action_next_event,
+        Action::PreviousEvent => strings.action_previous_event,
+        Action::NextSession => strings.action_next_session,
+        Action::PreviousSession => strings.action_previous_session,
+        Action::NewSession => strings.new_session,
+        Action::RenameSession => strings.rename_session,
+        Action::DeleteSession => strings.delete_session,
+        Action::OpenStats => strings.action_open_stats,
+        Action::OpenSettings => strings.settings,
+        Action::ShowHelp => strings.action_show_help,
     }
 }
 

@@ -2,16 +2,18 @@
 
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use cube_core::cstimer::{self, ImportReport};
 use cube_core::scramble::{self, ScrambleQueue};
 use cube_core::stats::{self, Average, SessionStats};
 use cube_core::{
-    Action, History, KeyPress, Keybinds, Modifier, Settings, Solve, SolveSnapshot, Timer,
-    TimerOutcome, TimerPhase, WcaEvent, format::format_ms, persistence,
+    Action, BindingError, History, KeyBinding, KeyPress, Keybinds, Modifier, Settings, Solve,
+    SolveSnapshot, Timer, TimerOutcome, TimerPhase, WcaEvent, format::format_ms, persistence,
 };
 use cube_locale::{Language, Strings};
+use cube_updater::Release;
 use gpui_kit::assets::IconName;
 use gpui_kit::component::notification::Notification;
 use gpui_kit::component::{ActiveTheme as _, TitleBar, WindowExt as _, h_flex, v_flex};
@@ -51,6 +53,9 @@ impl Loaded {
     pub fn load() -> Self {
         let history_path = persistence::history_file().ok();
         let settings_path = persistence::settings_file().ok();
+        // cube-tui keeps its themes here; creating the default one gives both
+        // apps a theme to start from.
+        let _ = persistence::ensure_default_theme();
         let (sessions, load_error) = match history_path.as_deref().map(persistence::load_history) {
             Some(Ok(sessions)) => (sessions.unwrap_or_default(), None),
             Some(Err(error)) => (Vec::new(), Some(format!("{error:#}"))),
@@ -81,6 +86,10 @@ pub struct LastResult {
 }
 
 /// The application window's root view.
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "independent timer, saving and update states"
+)]
 pub struct CubeApp {
     pub(crate) focus: FocusHandle,
     pub(crate) screen: Screen,
@@ -103,6 +112,11 @@ pub struct CubeApp {
     history_path: Option<PathBuf>,
     settings_path: Option<PathBuf>,
     saving_blocked: bool,
+    /// The newer release the update notification offers, if any.
+    pub(crate) available: Option<Arc<Release>>,
+    pub(crate) update_checking: bool,
+    pub(crate) updating: bool,
+    pub(crate) update_ticker: Option<Task<()>>,
 }
 
 impl CubeApp {
@@ -124,7 +138,7 @@ impl CubeApp {
         let event = session_event(&sessions[0]);
         let focus = cx.focus_handle();
         focus.focus(window, cx);
-        let app = Self {
+        let mut app = Self {
             focus,
             screen: Screen::Timer,
             timer: settings.timer(),
@@ -144,6 +158,10 @@ impl CubeApp {
             history_path,
             settings_path,
             saving_blocked: load_error.is_some(),
+            available: None,
+            update_checking: false,
+            updating: false,
+            update_ticker: None,
         };
         if let Some(error) = load_error {
             let message = app.strings().toast_load_failed.replace("{error}", &error);
@@ -154,6 +172,7 @@ impl CubeApp {
             });
         }
         app.start_ticking(window, cx);
+        app.startup_update_tasks(window, cx);
         cx.observe_window_activation(window, Self::on_activation_changed)
             .detach();
         app
@@ -791,6 +810,28 @@ impl CubeApp {
         }
     }
 
+    /// Replaces an action's keyboard binding, or removes it when `None`.
+    ///
+    /// The change is validated first, so a conflicting or unusable key is
+    /// rejected before anything is saved.
+    pub(crate) fn set_keybinding(
+        &mut self,
+        action: Action,
+        binding: Option<KeyBinding>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Result<(), BindingError> {
+        match &binding {
+            Some(binding) => self.keybinds.validate(action, binding)?,
+            None => self.keybinds.validate_removal(action)?,
+        }
+        let text = binding.map_or_else(String::new, |binding| binding.to_string());
+        self.update_settings(window, cx, |settings| {
+            settings.keybindings.insert(action.name().to_owned(), text);
+        });
+        Ok(())
+    }
+
     /// Changes settings, then applies and saves them.
     pub(crate) fn update_settings(
         &mut self,
@@ -804,14 +845,19 @@ impl CubeApp {
             self.timer = self.settings.timer();
         }
         scramble::set_accurate_3x3(self.settings.accurate_3x3);
-        palette::apply(self.settings.theme, cx);
+        palette::apply(&self.settings, cx);
+        self.save_settings(window, cx);
+        window.refresh();
+        cx.notify();
+    }
+
+    /// Writes the current settings to disk.
+    pub(crate) fn save_settings(&self, window: &mut Window, cx: &mut Context<Self>) {
         if let Some(path) = &self.settings_path
             && let Err(error) = persistence::save_settings(path, &self.settings)
         {
             self.report_save_error(&error, window, cx);
         }
-        window.refresh();
-        cx.notify();
     }
 
     fn solves_changed(&mut self, window: &mut Window, cx: &mut Context<Self>) {
@@ -1004,7 +1050,7 @@ pub(crate) fn format_average_at(solves: &[Solve], index: usize, size: usize) -> 
 }
 
 /// Converts a platform keystroke into the shared, normalized model.
-fn key_press(keystroke: &Keystroke) -> Option<KeyPress> {
+pub(crate) fn key_press(keystroke: &Keystroke) -> Option<KeyPress> {
     KeyPress::new(
         &keystroke.key,
         keystroke.modifiers.control || keystroke.modifiers.platform,

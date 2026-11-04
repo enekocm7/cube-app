@@ -14,11 +14,12 @@ pub mod scramble;
 pub mod settings;
 pub mod solve;
 pub mod stats;
+pub mod theme;
 pub mod timer;
 
 pub use event::WcaEvent;
 pub use history::History;
-pub use keybind::{Action, KeyBinding, KeyPress, Keybinds};
-pub use settings::Settings;
+pub use keybind::{Action, BindingError, KeyBinding, KeyPress, Keybinds};
+pub use settings::{Settings, UpdateChannel, UpdateFrequency, UpdateSettings};
 pub use solve::{Modifier, Solve, SolveChange, SolveSnapshot};
 pub use timer::{InspectionCue, Readiness, Timer, TimerOutcome, TimerPhase};

@@ -176,6 +176,17 @@ impl KeyBinding {
         Some(binding)
     }
 
+    /// Builds a binding from a normalized press, such as one captured in the
+    /// settings dialog.
+    pub fn from_press(press: &KeyPress) -> Self {
+        Self {
+            key: press.key.clone(),
+            ctrl: press.ctrl,
+            alt: press.alt,
+            shift: press.shift,
+        }
+    }
+
     /// Returns whether any modifier is required.
     pub const fn is_modified(&self) -> bool {
         self.ctrl || self.alt || self.shift
@@ -205,9 +216,20 @@ impl fmt::Display for KeyBinding {
     }
 }
 
-/// Every action's effective binding.
+/// Why a binding cannot be assigned.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BindingError {
+    /// The timer key must work without modifiers.
+    TimerModified,
+    /// Another action already owns the key.
+    Conflict(Action),
+    /// The timer must always keep a key.
+    TimerRequired,
+}
+
+/// Every action's effective binding. An action may have none.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Keybinds(BTreeMap<Action, KeyBinding>);
+pub struct Keybinds(BTreeMap<Action, Option<KeyBinding>>);
 
 impl Default for Keybinds {
     fn default() -> Self {
@@ -239,7 +261,7 @@ impl Default for Keybinds {
                 .map(|(action, binding)| {
                     (
                         action,
-                        KeyBinding::parse(binding).expect("default keybindings are valid"),
+                        Some(KeyBinding::parse(binding).expect("default keybindings are valid")),
                     )
                 })
                 .collect(),
@@ -250,47 +272,96 @@ impl Default for Keybinds {
 impl Keybinds {
     /// Merges configured overrides with the defaults.
     ///
-    /// Unknown action names, unreadable keys, a modified timer key and
-    /// bindings that would collide with another action are ignored.
+    /// Unknown action names, unreadable keys, a modified or removed timer key
+    /// and bindings that would collide with another action are ignored.
     pub fn from_overrides(overrides: &BTreeMap<String, String>) -> Self {
         let mut bindings = Self::default();
-        for (name, text) in overrides {
-            let Some(action) = Action::from_name(name) else {
-                continue;
-            };
-            let Some(binding) = KeyBinding::parse(text) else {
+        let parsed: Vec<(Action, Option<KeyBinding>)> = overrides
+            .iter()
+            .filter_map(|(name, text)| {
+                let action = Action::from_name(name)?;
+                let text = text.trim();
+                let binding = if text.is_empty() || text.eq_ignore_ascii_case("none") {
+                    None
+                } else {
+                    Some(KeyBinding::parse(text)?)
+                };
+                Some((action, binding))
+            })
+            .collect();
+
+        // Removals go first so a key freed here can be reused by another
+        // action in the same settings file.
+        for (action, binding) in &parsed {
+            if binding.is_none() && *action != Action::Timer {
+                bindings.0.insert(*action, None);
+            }
+        }
+        for (action, binding) in parsed {
+            let Some(binding) = binding else {
                 continue;
             };
             if action == Action::Timer && binding.is_modified() {
                 continue;
             }
-            if bindings
-                .0
-                .iter()
-                .any(|(other, current)| *other != action && *current == binding)
-            {
+            if bindings.conflict(action, &binding).is_some() {
                 continue;
             }
-            bindings.0.insert(action, binding);
+            bindings.0.insert(action, Some(binding));
         }
         bindings
     }
 
-    /// Returns an action's binding, which always exists.
-    pub fn get(&self, action: Action) -> &KeyBinding {
-        &self.0[&action]
+    /// Returns an action's binding, which may have been removed.
+    pub fn get(&self, action: Action) -> Option<&KeyBinding> {
+        self.0.get(&action).and_then(Option::as_ref)
     }
 
     /// Returns an action's binding as it should be shown to the user.
-    pub fn label(&self, action: Action) -> String {
-        self.get(action).to_string()
+    pub fn label(&self, action: Action) -> Option<String> {
+        self.get(action).map(ToString::to_string)
+    }
+
+    /// Returns whether an action has a binding.
+    pub fn is_bound(&self, action: Action) -> bool {
+        self.get(action).is_some()
+    }
+
+    /// Returns the other action that already uses `binding`, if any.
+    pub fn conflict(&self, action: Action, binding: &KeyBinding) -> Option<Action> {
+        self.0.iter().find_map(|(other, current)| {
+            (*other != action && current.as_ref() == Some(binding)).then_some(*other)
+        })
+    }
+
+    /// Checks whether `binding` may be assigned to `action`.
+    pub fn validate(&self, action: Action, binding: &KeyBinding) -> Result<(), BindingError> {
+        if action == Action::Timer && binding.is_modified() {
+            return Err(BindingError::TimerModified);
+        }
+        if let Some(conflict) = self.conflict(action, binding) {
+            return Err(BindingError::Conflict(conflict));
+        }
+        Ok(())
+    }
+
+    /// Checks whether `action` may be left without a binding.
+    pub fn validate_removal(&self, action: Action) -> Result<(), BindingError> {
+        if action == Action::Timer {
+            Err(BindingError::TimerRequired)
+        } else {
+            Ok(())
+        }
     }
 
     /// Finds the action bound to a press.
     pub fn action_for(&self, press: &KeyPress) -> Option<Action> {
-        self.0
-            .iter()
-            .find_map(|(action, binding)| binding.matches(press).then_some(*action))
+        self.0.iter().find_map(|(action, binding)| {
+            binding
+                .as_ref()
+                .is_some_and(|binding| binding.matches(press))
+                .then_some(*action)
+        })
     }
 }
 
@@ -377,12 +448,12 @@ mod tests {
         let mut seen = std::collections::HashSet::new();
         for action in Action::ALL {
             assert!(
-                seen.insert(keybinds.label(action)),
+                seen.insert(keybinds.label(action).unwrap()),
                 "{action:?} shares a binding with another action"
             );
         }
         assert_eq!(seen.len(), Action::ALL.len());
-        assert!(!keybinds.get(Action::Timer).is_modified());
+        assert!(!keybinds.get(Action::Timer).unwrap().is_modified());
     }
 
     #[test]
@@ -410,8 +481,11 @@ mod tests {
     fn partial_overrides_keep_the_other_defaults() {
         let overrides = BTreeMap::from([("next_scramble".to_owned(), "Ctrl+N".to_owned())]);
         let keybinds = Keybinds::from_overrides(&overrides);
-        assert_eq!(keybinds.label(Action::NextScramble), "Ctrl+N");
-        assert_eq!(keybinds.label(Action::Timer), "Space");
+        assert_eq!(
+            keybinds.label(Action::NextScramble).as_deref(),
+            Some("Ctrl+N")
+        );
+        assert_eq!(keybinds.label(Action::Timer).as_deref(), Some("Space"));
     }
 
     #[test]
@@ -421,21 +495,88 @@ mod tests {
             ("next_scramble".to_owned(), "Ctrl+NotAKey".to_owned()),
         ]);
         let keybinds = Keybinds::from_overrides(&overrides);
-        assert_eq!(keybinds.label(Action::NextScramble), "N");
+        assert_eq!(keybinds.label(Action::NextScramble).as_deref(), Some("N"));
     }
 
     #[test]
     fn a_modified_timer_key_is_rejected() {
         let overrides = BTreeMap::from([("timer".to_owned(), "Ctrl+Space".to_owned())]);
         let keybinds = Keybinds::from_overrides(&overrides);
-        assert_eq!(keybinds.label(Action::Timer), "Space");
+        assert_eq!(keybinds.label(Action::Timer).as_deref(), Some("Space"));
     }
 
     #[test]
     fn a_duplicate_binding_is_rejected() {
         let overrides = BTreeMap::from([("next_scramble".to_owned(), "space".to_owned())]);
         let keybinds = Keybinds::from_overrides(&overrides);
-        assert_eq!(keybinds.label(Action::NextScramble), "N");
+        assert_eq!(keybinds.label(Action::NextScramble).as_deref(), Some("N"));
+        assert_eq!(
+            keybinds.action_for(&KeyPress::new("space", false, false, false).unwrap()),
+            Some(Action::Timer)
+        );
+    }
+
+    #[test]
+    fn an_empty_override_removes_a_binding() {
+        for text in ["", "  ", "none", "NONE"] {
+            let overrides = BTreeMap::from([("next_scramble".to_owned(), text.to_owned())]);
+            let keybinds = Keybinds::from_overrides(&overrides);
+            assert!(!keybinds.is_bound(Action::NextScramble), "{text:?}");
+            assert_eq!(keybinds.label(Action::NextScramble), None);
+        }
+    }
+
+    #[test]
+    fn the_timer_binding_cannot_be_removed() {
+        let overrides = BTreeMap::from([("timer".to_owned(), String::new())]);
+        let keybinds = Keybinds::from_overrides(&overrides);
+        assert_eq!(keybinds.label(Action::Timer).as_deref(), Some("Space"));
+    }
+
+    #[test]
+    fn a_removed_binding_frees_its_key_for_another_action() {
+        let overrides = BTreeMap::from([
+            ("next_scramble".to_owned(), String::new()),
+            ("delete_solve".to_owned(), "n".to_owned()),
+        ]);
+        let keybinds = Keybinds::from_overrides(&overrides);
+        assert!(!keybinds.is_bound(Action::NextScramble));
+        assert_eq!(keybinds.label(Action::DeleteSolve).as_deref(), Some("N"));
+    }
+
+    #[test]
+    fn conflicts_report_the_action_that_owns_the_key() {
+        let keybinds = Keybinds::default();
+        let space = KeyBinding::parse("Space").unwrap();
+        assert_eq!(
+            keybinds.conflict(Action::NextScramble, &space),
+            Some(Action::Timer)
+        );
+        assert_eq!(keybinds.conflict(Action::Timer, &space), None);
+        let free = KeyBinding::parse("Ctrl+J").unwrap();
+        assert_eq!(keybinds.conflict(Action::Timer, &free), None);
+    }
+
+    #[test]
+    fn validation_rejects_conflicts_and_timer_modifiers() {
+        let keybinds = Keybinds::default();
+        let space = KeyBinding::parse("Space").unwrap();
+        assert_eq!(
+            keybinds.validate(Action::NextScramble, &space),
+            Err(BindingError::Conflict(Action::Timer))
+        );
+        let modified = KeyBinding::parse("Ctrl+Space").unwrap();
+        assert_eq!(
+            keybinds.validate(Action::Timer, &modified),
+            Err(BindingError::TimerModified)
+        );
+        let free = KeyBinding::parse("j").unwrap();
+        assert_eq!(keybinds.validate(Action::Timer, &free), Ok(()));
+        assert_eq!(
+            keybinds.validate_removal(Action::Timer),
+            Err(BindingError::TimerRequired)
+        );
+        assert_eq!(keybinds.validate_removal(Action::NextScramble), Ok(()));
     }
 
     #[test]

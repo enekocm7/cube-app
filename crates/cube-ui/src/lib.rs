@@ -16,7 +16,9 @@ mod settings_view;
 mod sidebar;
 mod stats_panel;
 mod stats_screen;
+mod theme_editor;
 mod timer_view;
+mod update_ui;
 
 /// Starts the application and blocks until the last window closes.
 pub fn run() {
@@ -25,7 +27,7 @@ pub fn run() {
         .run(|cx| {
             gpui_kit::init(cx);
             let state = app::Loaded::load();
-            palette::apply(state.settings.theme, cx);
+            palette::apply(&state.settings, cx);
 
             let bounds = Bounds::centered(None, size(px(1180.), px(760.)), cx);
             let options = WindowOptions {

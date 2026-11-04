@@ -18,14 +18,22 @@ solve history, so you can move between the terminal and the desktop without impo
 - Solve history, with details, comments, penalties and edits that keep an audit trail
 - Current and best single, mo3, ao5, ao12, ao50 and ao100, plus mean, deviation and DNF count
 - Stats screen with charts of your times, your ao5 and their distribution
+- Light and dark themes, plus cube-tui TOML themes with a color-picker editor
+- Fully keyboard-controllable: every timer, solve, event, session and screen action has a rebindable shortcut, any
+  key stops the timer, and `F1` lists the bindings
 - Import and export csTimer sessions, with file pickers, from Settings → Data
-- Light and dark themes, in English and Spanish
+- Checks GitHub for new releases and updates itself, verifying the download against the release's SHA-256
+- Interface in English and Spanish
 
 Features still on the way are tracked in the [issues](https://github.com/enekocm7/cube-gui/issues).
 
 ## Install
 
 Download the installer or a portable build from the [releases](https://github.com/enekocm7/cube-gui/releases) page.
+Installed builds update themselves silently; portable builds swap the executable and restart. Both wait for you to
+accept an update, and the download is checked against the release's `SHA256SUMS` file before anything is installed.
+Turn the automatic check off, change its frequency or release channel, or check manually from
+**Settings → Updates**.
 
 To build from source, install [Rust](https://rustup.rs/) and run:
 
@@ -34,6 +42,11 @@ cargo run --release
 ```
 
 ## How to use it
+
+cube is designed to be fully usable from the keyboard: every action below has a shortcut, every shortcut can be
+changed in **Settings → Keyboard shortcuts**, and dialogs stay reachable with `Tab`, `Enter` and `Space`. See
+[docs/keybinds.md](docs/keybinds.md) for the full reference, the key name syntax, and how to change or remove
+bindings from `cube-gui.toml`.
 
 | Key | Action |
 |---|---|
@@ -59,36 +72,38 @@ cargo run --release
 Actions that need a solve use the keyboard selection, or the latest solve when nothing is
 selected. Click a solve in the list to see its details or edit it.
 
-Every binding above can be changed with a `[keybindings]` table in `cube-gui.toml` (see below
-for the file's location). Anything you leave out keeps its default, and a broken entry or a
-duplicate is ignored rather than breaking the app. `F1` always shows the shortcuts in effect.
-
-```toml
-[keybindings]
-timer = "Space"             # must be an unmodified key
-cancel = "Escape"
-next_scramble = "N"
-toggle_inspection = "I"
-previous_solve = "Up"
-next_solve = "Down"
-open_solve = "Enter"
-delete_solve = "D"
-penalty_plus_two = "2"
-penalty_dnf = "Shift+D"
-next_event = "E"
-previous_event = "Shift+E"
-next_session = "]"
-previous_session = "["
-new_session = "S"
-rename_session = "F2"
-delete_session = "Shift+S"
-open_stats = "A"
-open_settings = "Ctrl+,"
-show_help = "F1"
-```
+`F1` opens the shortcut reference from inside the app. Bindings can also be edited by hand in
+the `[keybindings]` table in `cube-gui.toml`; [docs/keybinds.md](docs/keybinds.md) documents every action, the key
+syntax and the validation rules.
 
 The start hint is only shown until you start your first solve, so the timer stays clean once you know the
 controls. It names whichever key the timer is bound to.
+
+## Themes
+
+cube reads the same theme files as [cube-tui](https://github.com/enekocm7/cube-tui) from the `themes` folder in your
+data folder, so a theme works in both apps. Settings → Theme lists every valid theme: pick one to apply it, use the
+pencil to edit it, the trash can to delete it, or **New theme** to create one. Themes added to the folder appear the
+next time the settings dialog opens.
+
+The editor has a color picker for each of the seven colors, a text field that can switch between Hex, RGB, RGBA, HSL
+and HSLA, and a live preview. Rename a theme by changing its name; cube saves it as `<name>.toml`. Theme files store
+opaque colors, so an alpha value typed into an RGBA or HSLA field is ignored when saving.
+
+A theme is a TOML file of six-digit colors:
+
+```toml
+background = "#000000"
+border = "#FFFFFF"
+scramble = "#FFFFFF"
+selection = "#3399FF"
+selection_text = "#000000"
+text = "#FFFFFF"
+accent = "#FFD700"
+```
+
+`accent` is optional and defaults to gold, so older cube-tui themes keep working. cube creates `default.toml` the
+first time it makes the themes folder; a deleted theme is not recreated.
 
 Open **Settings → Data** to import a csTimer export or to export every session. Importing adds the
 file's sessions to your history, infers each solve's event from its scramble, and keeps penalties and
@@ -111,6 +126,7 @@ Don't keep cube and cube-tui open at the same time: each one overwrites the file
 | `cube-gui` (root) | The `cube` binary and icon embedding |
 | `crates/cube-core` | Solves, statistics, the timer state machine, scrambles and persistence, with no GUI dependency |
 | `crates/cube-locale` | Translated strings |
+| `crates/cube-updater` | GitHub release check, verified download and self-update |
 | `crates/cube-ui` | The GPUI interface |
 
 ## License

@@ -17,11 +17,12 @@ same solve history, so a save from one must keep working in the other. See
 | `cube-gui` (root) | The `cube` binary (`src/main.rs`) and icon embedding (`build.rs`) |
 | `crates/cube-core` | Solves, statistics, the timer state machine, scrambles and persistence, with no GUI dependency |
 | `crates/cube-locale` | Translated strings (`en.rs`, `es.rs`) |
+| `crates/cube-updater` | GitHub release check, verified download and self-update |
 | `crates/cube-ui` | The GPUI interface |
 
-Dependency direction: `ui -> core`, `ui -> locale`. **Only `cube-ui` may
-depend on GPUI / `gpui-kit`**; keep everything else GUI-free so it builds and
-tests quickly. Put reusable logic in `cube-core`, not in the UI.
+Dependency direction: `ui -> core`, `ui -> locale`, `ui -> updater`. **Only
+`cube-ui` may depend on GPUI / `gpui-kit`**; keep everything else GUI-free so
+it builds and tests quickly. Put reusable logic in `cube-core`, not in the UI.
 
 ## Building, running and testing
 
@@ -29,8 +30,8 @@ Run commands from the repo root. This repo uses plain `cargo` (there are no
 cargo aliases). CI builds on stable, so do not use nightly-only features.
 
 ```sh
-# Fast GUI-free tests (core logic, locales)
-cargo test -p cube-core -p cube-locale
+# Fast GUI-free tests (core logic, locales, updater)
+cargo test -p cube-core -p cube-locale -p cube-updater
 
 # Full test suite
 cargo test --workspace
@@ -71,6 +72,29 @@ Notes:
   commands you ran and their result).
 - Branch off `main`; never commit directly to `main`.
 
+## Keyboard support
+
+**cube must stay fully controllable from the keyboard.** The mouse is a
+convenience, never the only way to do something. That includes the timer,
+scrambles, solve navigation and editing, penalties, events, sessions, stats,
+settings, import/export dialogs and help.
+
+- Every primary action needs an `Action` in `cube-core::keybind`, a default in
+  `Keybinds::default`, a row in Settings → Keyboard shortcuts, and an entry in
+  the help dialog and `docs/keybinds.md`. Dialogs must keep their controls
+  reachable with `Tab` and activatable with `Enter` or `Space`; do not make the
+  mouse the only way to reach a control.
+- Bindings are validated before they are saved: the key must be understood, it
+  must not already belong to another action, the timer key must be unmodified,
+  and the timer key cannot be removed. Show the user a specific error rather
+  than silently ignoring an invalid change.
+- All actions except the timer can be unbound. Persist a removal explicitly
+  (`""` or `"none"` in `[keybindings]`) so a copied default does not return.
+- Keep `docs/keybinds.md` and the README shortcut table in sync with the
+  defaults whenever you add or change a binding.
+- Parsing, matching and validation belong in `cube-core::keybind` and need
+  tests there. `cube-ui` only captures a key and renders the result.
+
 ## Code conventions
 
 - **Shared save format.** `times.json` is cube-tui's file and this app reads
@@ -104,4 +128,5 @@ Notes:
 - Add tests for new logic in the GUI-free crates (`cube-core`,
   `cube-locale`); `cube-ui` has no test harness, so keep logic out of it.
 - Update `README.md` when you add or change a user-visible feature, a
-  setting, or a key binding.
+  setting, or a key binding. When a key binding changes, update
+  `docs/keybinds.md` as well: it is the complete keyboard reference.
