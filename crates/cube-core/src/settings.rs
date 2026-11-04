@@ -12,6 +12,7 @@ use crate::history::History;
 use crate::keybind::Keybinds;
 use crate::panels::{DEFAULT_SIDEBAR_WIDTH, DEFAULT_STATS_WIDTH};
 use crate::timer::{DEFAULT_HOLD, Timer};
+use crate::window_state::WindowState;
 
 /// The color scheme to use.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -222,6 +223,9 @@ pub struct Settings {
     pub sidebar_width: u32,
     /// Width of the statistics panel, in pixels. Clamped to the window when drawn.
     pub stats_panel_width: u32,
+    /// Where the main window was when it last changed; unset opens it centered.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub window: Option<WindowState>,
     pub updates: UpdateSettings,
 }
 
@@ -247,6 +251,7 @@ impl Default for Settings {
             keybindings: BTreeMap::new(),
             sidebar_width: DEFAULT_SIDEBAR_WIDTH,
             stats_panel_width: DEFAULT_STATS_WIDTH,
+            window: None,
             updates: UpdateSettings::default(),
         }
     }
@@ -492,6 +497,30 @@ mod tests {
         let loaded: Settings = toml::from_str(&text).unwrap();
         assert_eq!(loaded.sidebar_width, 420);
         assert_eq!(loaded.stats_panel_width, 310);
+    }
+
+    #[test]
+    fn the_window_state_round_trips_and_is_optional() {
+        assert_eq!(Settings::default().window, None);
+        let window = WindowState {
+            x: -20,
+            y: 40,
+            width: 1000,
+            height: 700,
+            maximized: true,
+        };
+        let settings = Settings {
+            window: Some(window),
+            ..Settings::default()
+        };
+        let text = toml::to_string(&settings).unwrap();
+        let loaded: Settings = toml::from_str(&text).unwrap();
+        assert_eq!(loaded.window, Some(window));
+        assert!(
+            !toml::to_string(&Settings::default())
+                .unwrap()
+                .contains("window")
+        );
     }
 
     #[test]
