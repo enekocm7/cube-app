@@ -281,7 +281,7 @@ mod tests {
         let keybinds = settings.keybinds();
         assert_eq!(
             keybinds.label(crate::Action::NextScramble).as_deref(),
-            Some("Ctrl+N")
+            Some("Ctrl + N")
         );
         assert_eq!(
             keybinds.label(crate::Action::Timer).as_deref(),

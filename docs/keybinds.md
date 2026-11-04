@@ -22,16 +22,16 @@ nothing is selected.
 | Open the selected solve | `Enter` | Opens the details and edit dialog |
 | Delete the selected solve | `D` | Asks for confirmation |
 | Toggle `+2` on the selected solve | `2` | |
-| Toggle DNF on the selected solve | `Shift+D` | |
+| Toggle DNF on the selected solve | `Shift + D` | |
 | Next event | `E` | |
-| Previous event | `Shift+E` | |
+| Previous event | `Shift + E` | |
 | Next session | `]` | |
 | Previous session | `[` | |
 | New session | `S` | |
 | Rename session | `F2` | |
-| Delete session | `Shift+S` | Asks for confirmation |
+| Delete session | `Shift + S` | Asks for confirmation |
 | Show stats or the timer | `A` | Toggles between the two screens |
-| Open settings | `Ctrl+,` | |
+| Open settings | `Ctrl + ,` | |
 | Open the shortcuts panel | `F1` | |
 
 While a solve is running, **any key stops the timer**. `Esc` is the exception:
@@ -79,16 +79,17 @@ Hand edits are read when the app starts.
 
 ```toml
 [keybindings]
-next_scramble = "Ctrl+N"
+next_scramble = "Ctrl + N"
 next_session = "]"
-delete_session = "Shift+S"
+delete_session = "Shift + S"
 timer = "Enter"          # must not use Ctrl, Alt or Shift
 ```
 
 ### Syntax
 
 - Modifiers come first, separated by `+`: `Ctrl`, `Alt`, `Shift` (or `Cmd`,
-  `Super` and `Win`, which are treated as `Ctrl`).
+  `Super` and `Win`, which are treated as `Ctrl`). Spaces around `+` are
+  optional, so `Shift + E` and `Shift+E` are the same binding.
 - The key comes last: `A`, `5`, `Space`, `Enter`, `Escape`, `Up`, `F2`, and so
   on.
 - Names and modifiers are case-insensitive. `Ctrl+N` and `ctrl-n` are the same

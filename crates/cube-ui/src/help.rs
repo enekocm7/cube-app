@@ -267,7 +267,6 @@ impl KeybindsView {
                                                 action.name()
                                             ))
                                             .ghost()
-                                            .small()
                                             .icon(IconName::X)
                                             .tooltip(strings.cancel)
                                             .accessibility_label(strings.cancel)
@@ -340,6 +339,8 @@ impl Render for KeybindsView {
             .children(sections)
             .child(
                 div()
+                    .px_2()
+                    .pt_2()
                     .text_xs()
                     .text_color(cx.theme().muted_foreground)
                     .child(strings.help_hint),
@@ -420,6 +421,12 @@ impl CubeApp {
                         .w_full()
                         .justify_between()
                         .child(
+                            Button::new("help-close")
+                                .outline()
+                                .label(strings.close)
+                                .on_click(|_, window, cx| window.close_dialog(cx)),
+                        )
+                        .child(
                             Button::new("keybind-edit")
                                 .outline()
                                 .label(if editing {
@@ -432,12 +439,6 @@ impl CubeApp {
                                         view.toggle_editing(window, cx);
                                     });
                                 }),
-                        )
-                        .child(
-                            Button::new("help-close")
-                                .outline()
-                                .label(strings.close)
-                                .on_click(|_, window, cx| window.close_dialog(cx)),
                         ),
                 )
         });

@@ -60,14 +60,14 @@ with `Tab`, `Enter` and `Space`, and the **Edit** button on the `F1` shortcuts p
 | `Enter` | Open the selected solve's details |
 | `D` | Delete the selected solve |
 | `2` | Toggle `+2` on the selected solve |
-| `Shift+D` | Toggle DNF on the selected solve |
-| `E` / `Shift+E` | Next / previous event |
+| `Shift + D` | Toggle DNF on the selected solve |
+| `E` / `Shift + E` | Next / previous event |
 | `]` / `[` | Next / previous session |
 | `S` | New session |
 | `F2` | Rename session |
-| `Shift+S` | Delete session |
+| `Shift + S` | Delete session |
 | `A` | Show stats, or return to the timer |
-| `Ctrl+,` | Open settings |
+| `Ctrl + ,` | Open settings |
 | `F1` | Open the keyboard shortcuts |
 
 Actions that need a solve use the keyboard selection, or the latest solve when nothing is

@@ -216,13 +216,13 @@ impl KeyBinding {
 impl fmt::Display for KeyBinding {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.ctrl {
-            formatter.write_str("Ctrl+")?;
+            formatter.write_str("Ctrl + ")?;
         }
         if self.alt {
-            formatter.write_str("Alt+")?;
+            formatter.write_str("Alt + ")?;
         }
         if self.shift {
-            formatter.write_str("Shift+")?;
+            formatter.write_str("Shift + ")?;
         }
         formatter.write_str(&display_key(&self.key))
     }
@@ -513,7 +513,7 @@ mod tests {
         let keybinds = Keybinds::from_overrides(&overrides);
         assert_eq!(
             keybinds.label(Action::NextScramble).as_deref(),
-            Some("Ctrl+N")
+            Some("Ctrl + N")
         );
         assert_eq!(keybinds.label(Action::Timer).as_deref(), Some("Space"));
     }
@@ -583,7 +583,7 @@ mod tests {
         let keybinds = Keybinds::from_overrides(&overrides);
         assert_eq!(
             keybinds.label(Action::NextScramble).as_deref(),
-            Some("Ctrl+J")
+            Some("Ctrl + J")
         );
         assert_eq!(keybinds.label(Action::DeleteSolve).as_deref(), Some("N"));
     }
@@ -651,7 +651,7 @@ mod tests {
     fn shifted_letters_are_normalized() {
         let binding = KeyBinding::parse("Shift+E").unwrap();
         let press = KeyPress::new("E", false, false, false).unwrap();
-        assert_eq!(binding.to_string(), "Shift+E");
+        assert_eq!(binding.to_string(), "Shift + E");
         assert!(binding.matches(&press));
         assert_eq!(KeyBinding::from_press(&press), binding);
     }
