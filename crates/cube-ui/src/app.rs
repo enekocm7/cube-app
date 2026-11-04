@@ -31,6 +31,8 @@ pub const MAX_SESSIONS: usize = 99;
 const ACTIVE_TICK: Duration = Duration::from_millis(16);
 /// How often background work is polled otherwise.
 const IDLE_TICK: Duration = Duration::from_millis(100);
+/// How long a scramble may take before the placeholder message shows.
+const GENERATING_DELAY: Duration = Duration::from_millis(500);
 
 /// The top-level screens.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -99,6 +101,12 @@ pub struct CubeApp {
     pub(crate) current: usize,
     pub(crate) event: WcaEvent,
     pub(crate) scramble: Option<String>,
+    /// Whether the wait for a scramble has outlasted `GENERATING_DELAY`, so
+    /// the placeholder message may show.
+    pub(crate) generating_visible: bool,
+    /// Reveals the placeholder after the delay. Replacing or dropping it
+    /// cancels the pending reveal, so an older wait cannot outlive a newer one.
+    generating_timer: Option<Task<()>>,
     queue: ScrambleQueue,
     pub(crate) timer: Timer,
     /// Whether the timer key is physically down, to ignore key repeat.
@@ -155,6 +163,8 @@ impl CubeApp {
             current: 0,
             event,
             scramble: None,
+            generating_visible: false,
+            generating_timer: None,
             queue: ScrambleQueue::new(event),
             key_down: false,
             stop_repeat_key: None,
@@ -180,6 +190,7 @@ impl CubeApp {
                 window.push_notification(Notification::error(message).autohide(false), cx);
             });
         }
+        app.await_scramble(cx);
         app.start_ticking(window, cx);
         app.startup_update_tasks(window, cx);
         cx.observe_window_activation(window, Self::on_activation_changed)
@@ -241,6 +252,8 @@ impl CubeApp {
             && let Some(scramble) = self.queue.try_next()
         {
             self.scramble = Some(scramble);
+            self.generating_visible = false;
+            self.generating_timer = None;
             cx.notify();
         }
         if self.timer.is_active() {
@@ -249,6 +262,22 @@ impl CubeApp {
         } else {
             IDLE_TICK
         }
+    }
+
+    /// Starts waiting for a scramble: the line stays blank, and only if none
+    /// arrives within `GENERATING_DELAY` does the placeholder appear.
+    fn await_scramble(&mut self, cx: &mut Context<Self>) {
+        self.generating_visible = false;
+        self.generating_timer = Some(cx.spawn(async move |this, cx| {
+            cx.background_executor().timer(GENERATING_DELAY).await;
+            this.update(cx, |app, cx| {
+                if app.scramble.is_none() {
+                    app.generating_visible = true;
+                    cx.notify();
+                }
+            })
+            .ok();
+        }));
     }
 
     /// Plays any inspection warnings whose time has come, without interrupting
@@ -459,6 +488,7 @@ impl CubeApp {
         let scramble = self.scramble.take().unwrap_or_default();
         let solve = Solve::new(time_ms, self.event, scramble, modifier);
         self.sessions[self.current].push(solve);
+        self.await_scramble(cx);
         self.last_result = Some(LastResult { time_ms, modifier });
         self.selected_solve = None;
         self.solves_changed(window, cx);
@@ -520,6 +550,7 @@ impl CubeApp {
     pub(crate) fn skip_scramble(&mut self, cx: &mut Context<Self>) {
         if !self.timer.is_active() {
             self.scramble = None;
+            self.await_scramble(cx);
             cx.notify();
         }
     }
@@ -529,6 +560,7 @@ impl CubeApp {
         if event != self.event && !self.timer.is_active() {
             self.event = event;
             self.scramble = None;
+            self.await_scramble(cx);
             self.queue = ScrambleQueue::new(event);
             cx.notify();
         }
