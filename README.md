@@ -15,6 +15,7 @@ solve history, so you can move between the terminal and the desktop without impo
   12 s audio cues warn you, and hold colors work like a stackmat's
 - Official WCA random-state scrambles for 12 events, generated with `tnoodle-rs`, each drawn as a picture of the scrambled puzzle on the timer and in the
   solve details
+- Manual mode (`M`) to type in times from another timer, such as `8.98` or `1:32.49`, with `+2` and DNF applied afterwards
 - Sessions with custom names, deletable straight from the session dropdown
 - Solve history, with details you can edit (time, event, scramble, penalty, date and comment) and a full audit trail of every change
 - Current and best single, mo3, ao5, ao12, ao50 and ao100, plus mean, deviation and DNF count
@@ -59,6 +60,7 @@ with `Tab`, `Enter` and `Space`, `Enter` runs a dialog's primary action while `E
 | `N` | New scramble |
 | `I` | Turn WCA inspection on or off |
 | `P` | Show or hide the scramble preview |
+| `M` | Turn manual mode on or off, to type in a time from another timer |
 | `Up` / `Down` | Select a newer or older solve |
 | `Enter` | Open the selected solve's details |
 | `D` | Delete the selected solve |
