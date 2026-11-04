@@ -624,9 +624,9 @@ impl Render for SettingsView {
             .child(section(strings.settings_timer, timer, cx))
             .child(section(strings.settings_theme, theme_rows, cx))
             .child(section(strings.settings_appearance, appearance, cx))
-            .child(section(strings.settings_updates, updates, cx))
-            .child(section(strings.setting_language, language, cx))
             .child(section(strings.settings_data, data, cx))
+            .child(section(strings.setting_language, language, cx))
+            .child(section(strings.settings_updates, updates, cx))
     }
 }
 
