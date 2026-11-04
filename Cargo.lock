@@ -1331,6 +1331,9 @@ dependencies = [
 [[package]]
 name = "cube-locale"
 version = "0.1.0"
+dependencies = [
+ "chrono",
+]
 
 [[package]]
 name = "cube-ui"

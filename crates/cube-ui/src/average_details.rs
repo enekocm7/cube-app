@@ -3,7 +3,7 @@
 
 use cube_core::format::format_delta;
 use cube_core::stats::{self, AVERAGE_SIZES, Average, AverageDetail, DEFAULT_AVERAGE, Trim};
-use cube_locale::Strings;
+use cube_locale::{Language, Strings};
 use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::{ActiveTheme as _, WindowExt as _, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
@@ -29,13 +29,13 @@ const DOT_SIZE: Pixels = px(10.);
 const STEM_HEIGHT: Pixels = px(2.);
 
 /// Returns the full name of an average: `Mean of 3` or `Average of 5`.
-fn average_title(strings: &Strings, size: usize) -> String {
+fn average_title(strings: &Strings, language: Language, size: usize) -> String {
     let template = if size == 3 {
         strings.mean_of
     } else {
         strings.average_of
     };
-    template.replace("{size}", &size.to_string())
+    template.replace("{size}", &language.format_count(size as u64))
 }
 
 impl CubeApp {
@@ -78,7 +78,7 @@ impl CubeApp {
             self.warn_missing_average(size, window, cx);
             return;
         };
-        let text = detail.share_text(&average_title(strings, size));
+        let text = detail.share_text(&average_title(strings, self.language(), size));
         cx.write_to_clipboard(ClipboardItem::new_string(text));
         self.toast(strings.average_copied, window, cx);
     }
@@ -108,8 +108,9 @@ impl CubeApp {
         }
         let app = cx.entity();
         window.open_dialog(cx, move |dialog, window, cx| {
-            let strings = app.read(cx).strings();
-            let title = average_title(strings, size);
+            let state = app.read(cx);
+            let strings = state.strings();
+            let title = average_title(strings, state.language(), size);
             let max_height = dialog_body_height(DIALOG_SIZE, window);
             let body = render_body(&app, end, size, max_height, cx);
             let copy_app = app.clone();
@@ -154,6 +155,7 @@ fn render_body(
 ) -> AnyElement {
     let state = app.read(cx);
     let strings = state.strings();
+    let language = state.language();
     let theme = cx.theme();
     let (background, muted) = (theme.background, theme.muted_foreground);
     let mono = theme.mono_font_family.clone();
@@ -167,10 +169,13 @@ fn render_body(
     let is_dnf = detail.average() == Average::Dnf;
     let range = strings
         .average_range
-        .replace("{first}", &(detail.first() + 1).to_string())
-        .replace("{last}", &(end + 1).to_string());
+        .replace(
+            "{first}",
+            &language.format_count((detail.first() + 1) as u64),
+        )
+        .replace("{last}", &language.format_count((end + 1) as u64));
     let rows: Vec<_> = (0..detail.attempts().len())
-        .map(|position| render_attempt(app, &detail, position, strings, cx))
+        .map(|position| render_attempt(app, &detail, position, strings, language, cx))
         .collect();
 
     dialog_body(
@@ -227,6 +232,7 @@ fn render_attempt(
     detail: &AverageDetail<'_>,
     position: usize,
     strings: &Strings,
+    language: Language,
     cx: &App,
 ) -> impl IntoElement + use<> {
     let theme = cx.theme();
@@ -292,7 +298,7 @@ fn render_attempt(
                         .text_xs()
                         .text_right()
                         .text_color(muted)
-                        .child((index + 1).to_string()),
+                        .child(language.format_count((index + 1) as u64)),
                 )
                 .child(
                     div()

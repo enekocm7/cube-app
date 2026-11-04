@@ -258,20 +258,28 @@ impl SettingsView {
         )
     }
 
-    fn languages(&self, current: &str, cx: &mut Context<Self>) -> Vec<Button> {
+    /// The language choices, wrapped into short rows so sixteen languages fit.
+    fn languages(&self, current: &str, cx: &mut Context<Self>) -> Vec<AnyElement> {
         Language::ALL
-            .into_iter()
-            .map(|language| {
-                choice(
-                    language.code(),
-                    language.native_name(),
-                    Language::from_code(current) == Some(language),
-                )
-                .on_click(cx.listener(move |view, _, window, cx| {
-                    view.change(window, cx, move |settings| {
-                        language.code().clone_into(&mut settings.language);
-                    });
-                }))
+            .chunks(4)
+            .map(|row| {
+                h_flex()
+                    .gap_2()
+                    .children(row.iter().copied().map(|language| {
+                        choice(
+                            language.code(),
+                            language.native_name(),
+                            Language::from_code(current) == Some(language),
+                        )
+                        .on_click(cx.listener(
+                            move |view, _, window, cx| {
+                                view.change(window, cx, move |settings| {
+                                    language.code().clone_into(&mut settings.language);
+                                });
+                            },
+                        ))
+                    }))
+                    .into_any_element()
             })
             .collect()
     }
@@ -935,9 +943,10 @@ impl Render for SettingsView {
             });
         let language = tagged(
             [language_text],
-            [h_flex()
+            [v_flex()
                 .min_h(ROW_MIN_HEIGHT)
                 .px_3()
+                .py_2()
                 .gap_2()
                 .children(languages)
                 .into_any_element()],

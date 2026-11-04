@@ -53,16 +53,16 @@ pub struct ChartData {
 }
 
 impl ChartData {
-    pub fn new(solves: &[Solve]) -> Self {
+    pub fn new(solves: &[Solve], language: cube_locale::Language) -> Self {
         let times: Vec<Point> = solves
             .iter()
             .enumerate()
-            .filter_map(|(index, solve)| Some(point(index, solve.effective_ms()?)))
+            .filter_map(|(index, solve)| Some(point(index, solve.effective_ms()?, language)))
             .collect();
         let averages = stats::rolling(solves, 5)
             .into_iter()
             .filter_map(|(index, average)| match average {
-                Average::Time(ms) => Some(point(index, ms)),
+                Average::Time(ms) => Some(point(index, ms, language)),
                 Average::Dnf => None,
             })
             .collect();
@@ -81,9 +81,9 @@ impl ChartData {
     }
 }
 
-fn point(index: usize, ms: u64) -> Point {
+fn point(index: usize, ms: u64, language: cube_locale::Language) -> Point {
     Point {
-        x: (index + 1).to_string(),
+        x: language.format_count((index + 1) as u64),
         seconds: ms as f64 / 1000.0,
     }
 }
@@ -254,7 +254,7 @@ impl CubeApp {
                                 .text_color(muted)
                                 .text_right()
                                 .pr_2()
-                                .child((index + 1).to_string()),
+                                .child(self.language().format_count((index + 1) as u64)),
                         )
                         .child(
                             tile(("stats-time", index), false, ring)
@@ -281,6 +281,7 @@ impl CubeApp {
 
     pub(crate) fn render_charts(&mut self, cx: &mut Context<Self>) -> AnyElement {
         let strings = self.strings();
+        let language = self.language();
         let data = self.chart_data();
         let colors = Palette::of(cx);
         let muted = cx.theme().muted_foreground;
@@ -290,11 +291,11 @@ impl CubeApp {
         }
 
         let mean = self.stats.mean.map(|ms| ms as f64 / 1000.0);
-        let mut times = line_chart(data.times.clone(), colors.blue);
+        let mut times = line_chart(data.times.clone(), colors.blue, language);
         if let Some(mean) = mean {
             times = times.reference_line(mean);
         }
-        let averages = line_chart(data.averages.clone(), colors.green);
+        let averages = line_chart(data.averages.clone(), colors.green, language);
         let distribution = BarChart::new(data.distribution.clone())
             .band(|bucket: &Bucket| bucket.label.clone())
             .value(|bucket: &Bucket| bucket.count)
@@ -394,7 +395,11 @@ fn empty_message(message: &'static str, color: Hsla) -> AnyElement {
         .into_any_element()
 }
 
-fn line_chart(points: Vec<Point>, color: Hsla) -> LineChart<Point, String, f64> {
+fn line_chart(
+    points: Vec<Point>,
+    color: Hsla,
+    language: cube_locale::Language,
+) -> LineChart<Point, String, f64> {
     let tick_margin = (points.len() / 8).max(1);
     LineChart::new(points)
         .x(|point: &Point| point.x.clone())
@@ -403,7 +408,7 @@ fn line_chart(points: Vec<Point>, color: Hsla) -> LineChart<Point, String, f64> 
         .linear()
         .tick_margin(tick_margin)
         .y_axis(true)
-        .y_tick_format(|seconds| format!("{seconds:.1}"))
+        .y_tick_format(move |seconds| language.format_decimal(seconds, 1))
 }
 
 fn section(title: &'static str, chart: impl IntoElement, cx: &App) -> impl IntoElement {
