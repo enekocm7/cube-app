@@ -598,6 +598,13 @@ impl Render for SettingsView {
                 |settings, value| settings.solve_list_ao5 = value,
                 cx,
             ),
+            self.switch(
+                "always-show-scrollbar",
+                strings.setting_always_show_scrollbar,
+                settings.always_show_scrollbar,
+                |settings, value| settings.always_show_scrollbar = value,
+                cx,
+            ),
             self.font_row(&settings, strings),
             self.switch(
                 "toasts",
