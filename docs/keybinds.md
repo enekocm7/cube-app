@@ -32,7 +32,7 @@ nothing is selected.
 | Delete session | `Shift+S` | Asks for confirmation |
 | Show stats or the timer | `A` | Toggles between the two screens |
 | Open settings | `Ctrl+,` | |
-| Show the shortcut reference | `F1` | |
+| Open the shortcuts panel | `F1` | |
 
 While a solve is running, **any key stops the timer**. `Esc` is the exception:
 it cancels the attempt without recording it.

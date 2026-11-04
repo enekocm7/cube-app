@@ -68,7 +68,7 @@ with `Tab`, `Enter` and `Space`, and the **Edit** button on the `F1` shortcuts p
 | `Shift+S` | Delete session |
 | `A` | Show stats, or return to the timer |
 | `Ctrl+,` | Open settings |
-| `F1` | Show the keyboard shortcuts |
+| `F1` | Open the keyboard shortcuts |
 
 Actions that need a solve use the keyboard selection, or the latest solve when nothing is
 selected. Click a solve in the list to see its details or edit it.
