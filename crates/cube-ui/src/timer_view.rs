@@ -145,7 +145,7 @@ impl CubeApp {
         // Blank while a scramble is prepared, so a fast one never flashes text.
         // A no-break space keeps the line's height.
         let text: SharedString = match &scramble {
-            Some(scramble) => scramble.clone().into(),
+            Some(scramble) => cube_core::scramble::display_text(self.event, scramble).into(),
             None if self.generating_visible => strings.generating_scramble.into(),
             None => "\u{a0}".into(),
         };

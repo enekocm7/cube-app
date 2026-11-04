@@ -30,6 +30,30 @@ pub fn generate(event: WcaEvent) -> String {
     scrambler(event).generate_scramble()
 }
 
+/// Prepares a scramble for centered, monospaced display.
+///
+/// Megaminx rows end in `U` or `U'`; the lone `U` is padded with a no-break
+/// space so the `U` column stays aligned and the prime hangs to its right.
+/// Other events are returned unchanged. Copy the original, not this text.
+#[must_use]
+pub fn display_text(event: WcaEvent, scramble: &str) -> String {
+    if event != WcaEvent::Megaminx {
+        return scramble.to_owned();
+    }
+    scramble
+        .split('\n')
+        .map(|line| {
+            let line = line.trim_end();
+            if line.ends_with('U') {
+                format!("{line}\u{a0}")
+            } else {
+                line.to_owned()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 fn scrambler(event: WcaEvent) -> &'static Scrambler {
     if event == WcaEvent::Cube3x3 && ACCURATE_3X3.load(Ordering::Relaxed) {
         return &ACCURATE_THREE;
@@ -83,6 +107,19 @@ impl ScrambleQueue {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn megaminx_rows_get_the_same_width() {
+        let text = display_text(WcaEvent::Megaminx, "R++ D-- U\nR-- D++ U'");
+        let widths: Vec<_> = text.split('\n').map(|l| l.chars().count()).collect();
+        assert_eq!(widths, [10, 10]);
+        assert!(text.starts_with("R++ D-- U\u{a0}\n"));
+    }
+
+    #[test]
+    fn other_events_are_not_padded() {
+        assert_eq!(display_text(WcaEvent::Cube3x3, "R U"), "R U");
+    }
 
     #[test]
     fn every_event_generates_a_scramble_that_unsolves_its_puzzle() {
