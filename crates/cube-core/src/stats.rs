@@ -34,7 +34,12 @@ impl Average {
 /// attempts, a single DNF counting as the worst, and is DNF with two or more.
 /// Returns `None` for windows too short to average.
 pub fn average(attempts: &[Solve]) -> Option<Average> {
-    let n = attempts.len();
+    average_of(attempts.iter().map(Solve::effective_ms))
+}
+
+/// The average of the effective times, where `None` is a DNF.
+fn average_of(times: impl ExactSizeIterator<Item = Option<u64>>) -> Option<Average> {
+    let n = times.len();
     if n < 3 {
         return None;
     }
@@ -42,8 +47,8 @@ pub fn average(attempts: &[Solve]) -> Option<Average> {
     let mut best = u64::MAX;
     let mut worst = 0;
     let mut dnfs = 0;
-    for solve in attempts {
-        match solve.effective_ms() {
+    for time in times {
+        match time {
             Some(ms) => {
                 sum += u128::from(ms);
                 best = best.min(ms);
@@ -363,7 +368,7 @@ pub struct WindowStats {
 }
 
 /// A summary of a whole session.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SessionStats {
     pub count: usize,
     pub dnf_count: usize,
@@ -376,59 +381,185 @@ pub struct SessionStats {
     /// The population standard deviation of every non-DNF solve.
     pub std_dev: Option<u64>,
     pub windows: Vec<WindowStats>,
+    /// The effective time of every solve, so [`Self::update`] can resume from
+    /// the first solve that differs instead of reading the session again.
+    times: Vec<Option<u64>>,
+    /// How many of `times` count towards the mean, and their totals.
+    counted: usize,
+    sum: u128,
+    squares: u128,
+    /// One entry per [`AVERAGE_SIZES`], in the same order.
+    caches: Vec<WindowCache>,
+}
+
+/// The averages of one window that beat every earlier one.
+///
+/// Keeping only the records makes the best average cheap to extend and to cut
+/// back: truncating the solves pops the records past the new end.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+struct WindowCache {
+    /// The best average so far and its last solve, one entry per new record.
+    records: Vec<(Average, usize)>,
+}
+
+impl Default for SessionStats {
+    fn default() -> Self {
+        Self {
+            count: 0,
+            dnf_count: 0,
+            best: None,
+            worst: None,
+            mean: None,
+            std_dev: None,
+            windows: AVERAGE_SIZES
+                .into_iter()
+                .map(|size| WindowStats {
+                    size,
+                    current: None,
+                    best: None,
+                })
+                .collect(),
+            times: Vec::new(),
+            counted: 0,
+            sum: 0,
+            squares: 0,
+            caches: vec![WindowCache::default(); AVERAGE_SIZES.len()],
+        }
+    }
 }
 
 impl SessionStats {
     /// Summarizes `solves` with every window in [`AVERAGE_SIZES`].
     pub fn compute(solves: &[Solve]) -> Self {
-        let times: Vec<(usize, u64)> = solves
-            .iter()
-            .enumerate()
-            .filter_map(|(index, solve)| Some((index, solve.effective_ms()?)))
-            .collect();
-        let mean = (!times.is_empty()).then(|| {
-            let sum: u128 = times.iter().map(|&(_, ms)| u128::from(ms)).sum();
-            (sum / times.len() as u128) as u64
-        });
-        let std_dev = mean.map(|mean| {
-            let variance = times
-                .iter()
-                .map(|&(_, ms)| (ms as f64 - mean as f64).powi(2))
-                .sum::<f64>()
-                / times.len() as f64;
-            variance.sqrt().round() as u64
-        });
+        let mut stats = Self::default();
+        stats.update(solves);
+        stats
+    }
 
-        Self {
-            count: solves.len(),
-            dnf_count: solves.len() - times.len(),
-            best: times
-                .iter()
-                .min_by_key(|&&(_, ms)| ms)
-                .map(|&(index, ms)| (ms, index)),
-            worst: times
-                .iter()
-                .max_by_key(|&&(_, ms)| ms)
-                .map(|&(index, ms)| (ms, index)),
-            mean,
-            std_dev,
-            windows: AVERAGE_SIZES
-                .into_iter()
-                .map(|size| window_stats(solves, size))
-                .collect(),
+    /// Brings the summary up to date with `solves`.
+    ///
+    /// Only the solves from the first one that differs from the previous
+    /// update are read again, so recording an attempt costs the longest window
+    /// instead of the whole session. Changing or removing a solve costs one
+    /// pass over the solves after it, which keeps a 100k solve history cheap.
+    pub fn update(&mut self, solves: &[Solve]) {
+        let common = (0..solves.len().min(self.times.len()))
+            .take_while(|&index| self.times[index] == solves[index].effective_ms())
+            .count();
+        if common == solves.len() && common == self.times.len() {
+            return;
+        }
+        self.rewind_to(common);
+        for (index, solve) in solves.iter().enumerate().skip(common) {
+            self.push(index, solve.effective_ms());
+        }
+        self.refresh();
+    }
+
+    /// Drops every solve from `len` on, keeping what came before.
+    fn rewind_to(&mut self, len: usize) {
+        for ms in self.times.drain(len..).flatten() {
+            let ms = u128::from(ms);
+            self.sum = self.sum.saturating_sub(ms);
+            self.squares = self.squares.saturating_sub(ms * ms);
+            self.counted -= 1;
+        }
+        for cache in &mut self.caches {
+            while cache.records.last().is_some_and(|&(_, index)| index >= len) {
+                cache.records.pop();
+            }
+        }
+        self.count = len;
+        self.dnf_count = len - self.counted;
+        let dropped = |found: Option<(u64, usize)>| found.is_some_and(|(_, index)| index >= len);
+        if dropped(self.best) || dropped(self.worst) {
+            self.best = None;
+            self.worst = None;
+            for index in 0..self.times.len() {
+                if let Some(ms) = self.times[index] {
+                    self.rank_single(index, ms);
+                }
+            }
         }
     }
-}
 
-fn window_stats(solves: &[Solve], size: usize) -> WindowStats {
-    let averages = rolling(solves, size);
-    WindowStats {
-        size,
-        current: averages.last().map(|&(_, average)| average),
-        best: averages
+    /// Adds the solve at `index`, which must follow every solve already kept.
+    fn push(&mut self, index: usize, time: Option<u64>) {
+        self.times.push(time);
+        self.count += 1;
+        if let Some(ms) = time {
+            let wide = u128::from(ms);
+            self.counted += 1;
+            self.sum += wide;
+            self.squares += wide * wide;
+            self.rank_single(index, ms);
+        } else {
+            self.dnf_count += 1;
+        }
+        for (column, &size) in AVERAGE_SIZES.iter().enumerate() {
+            let Some(average) = self.average_ending_at(index, size) else {
+                continue;
+            };
+            let records = &mut self.caches[column].records;
+            if records.last().is_none_or(|&(best, _)| average < best) {
+                records.push((average, index));
+            }
+        }
+    }
+
+    /// Notes a solve towards the fastest and slowest singles.
+    ///
+    /// A tie keeps the earliest fastest and the latest slowest, matching the
+    /// scan of `Iterator::min_by_key` and `Iterator::max_by_key`.
+    fn rank_single(&mut self, index: usize, ms: u64) {
+        if self.best.is_none_or(|(best, _)| ms < best) {
+            self.best = Some((ms, index));
+        }
+        if self.worst.is_none_or(|(worst, _)| ms >= worst) {
+            self.worst = Some((ms, index));
+        }
+    }
+
+    /// Returns the average of the `size` solves ending at `end`, inclusive.
+    fn average_ending_at(&self, end: usize, size: usize) -> Option<Average> {
+        let start = (end + 1).checked_sub(size)?;
+        let times = self.times.get(start..=end)?;
+        average_of(times.iter().copied())
+    }
+
+    /// Rebuilds the figures derived from every solve, which is cheap because
+    /// they come from the running totals.
+    fn refresh(&mut self) {
+        self.mean = None;
+        self.std_dev = None;
+        if self.counted > 0 {
+            let n = self.counted as u128;
+            let mean = (self.sum / n) as u64;
+            let centre = u128::from(mean);
+            // sum((ms - mean)^2), kept in integers so it stays exact. Writing
+            // the remainder of the division separately keeps every step
+            // positive.
+            let remainder = self.sum - n * centre;
+            let spread = self
+                .squares
+                .saturating_sub(n * centre * centre)
+                .saturating_sub(2 * centre * remainder);
+            self.mean = Some(mean);
+            self.std_dev = Some((spread as f64 / n as f64).sqrt().round() as u64);
+        }
+        self.windows = AVERAGE_SIZES
             .iter()
-            .min_by_key(|&&(_, average)| average)
-            .map(|&(index, average)| (average, index)),
+            .enumerate()
+            .map(|(column, &size)| WindowStats {
+                size,
+                current: self
+                    .times
+                    .len()
+                    .checked_sub(1)
+                    .and_then(|end| self.average_ending_at(end, size)),
+                best: self.caches[column].records.last().copied(),
+            })
+            .collect();
     }
 }
 
@@ -512,6 +643,88 @@ mod tests {
         let mo3 = stats.windows[0];
         assert_eq!(mo3.current, Some(Average::Dnf));
         assert_eq!(mo3.best, Some((Average::Time(1_000), 2)));
+    }
+
+    fn assert_up_to_date(attempts: &[Solve], stats: &SessionStats) {
+        assert_eq!(stats, &SessionStats::compute(attempts));
+    }
+
+    #[test]
+    fn updating_agrees_with_computing_from_scratch() {
+        let mut attempts = solves(&[5_000, 1_000, 9_000, 4_000, 3_000, 7_000, 2_000, 8_000]);
+        let mut stats = SessionStats::compute(&attempts);
+        assert_up_to_date(&attempts, &stats);
+
+        // Recording an attempt only adds to the end.
+        attempts.push(solve(6_000));
+        stats.update(&attempts);
+        assert_up_to_date(&attempts, &stats);
+
+        // A penalty on an old solve, a slower time in the middle, and a
+        // deletion all rewrite what comes after them.
+        attempts[3] = dnf();
+        stats.update(&attempts);
+        assert_up_to_date(&attempts, &stats);
+        attempts[2] = solve(500);
+        stats.update(&attempts);
+        assert_up_to_date(&attempts, &stats);
+        attempts.remove(0);
+        stats.update(&attempts);
+        assert_up_to_date(&attempts, &stats);
+
+        // Cutting the history back and filling it with DNFs.
+        attempts.truncate(3);
+        stats.update(&attempts);
+        assert_up_to_date(&attempts, &stats);
+        attempts.extend([dnf(), dnf(), dnf()]);
+        stats.update(&attempts);
+        assert_up_to_date(&attempts, &stats);
+
+        // A different session that shares nothing with the last one.
+        let mut replaced = solves(&[3_000, 3_000, 3_000, 2_000]);
+        stats.update(&replaced);
+        assert_up_to_date(&replaced, &stats);
+        replaced.clear();
+        stats.update(&replaced);
+        assert_up_to_date(&replaced, &stats);
+    }
+
+    #[test]
+    fn updating_without_a_change_keeps_the_same_summary() {
+        let attempts = solves(&[5_000, 1_000, 9_000, 4_000, 3_000]);
+        let mut stats = SessionStats::compute(&attempts);
+        let before = stats.clone();
+        stats.update(&attempts);
+        assert_eq!(stats, before);
+    }
+
+    #[test]
+    fn the_slowest_tie_moves_back_when_the_newest_goes() {
+        let mut attempts = solves(&[2_000, 5_000, 5_000]);
+        let mut stats = SessionStats::compute(&attempts);
+        assert_eq!(stats.worst, Some((5_000, 2)));
+        attempts.pop();
+        stats.update(&attempts);
+        assert_eq!(stats.worst, Some((5_000, 1)));
+        assert_up_to_date(&attempts, &stats);
+    }
+
+    #[test]
+    fn removing_the_best_average_falls_back_to_the_one_before_it() {
+        let mut attempts = solves(&[5_000, 5_000, 1_000, 1_000, 1_000]);
+        let mut stats = SessionStats::compute(&attempts);
+        assert_eq!(stats.windows[0].best, Some((Average::Time(1_000), 4)));
+        attempts.truncate(4);
+        stats.update(&attempts);
+        assert_eq!(stats.windows[0].best, Some((Average::Time(2_333), 3)));
+        assert_up_to_date(&attempts, &stats);
+    }
+
+    #[test]
+    fn an_empty_session_still_lists_every_window() {
+        let stats = SessionStats::compute(&[]);
+        assert_eq!(stats.windows.len(), AVERAGE_SIZES.len());
+        assert!(stats.windows.iter().all(|window| window.best.is_none()));
     }
 
     #[test]
