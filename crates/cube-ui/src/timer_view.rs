@@ -49,10 +49,17 @@ impl CubeApp {
             .when(!attempt, |panel| panel.child(self.render_scramble_bar(cx)))
             .child(
                 v_flex()
+                    .id("timer-pad")
                     .flex_1()
+                    .w_full()
                     .items_center()
                     .justify_center()
                     .gap_3()
+                    // Holding and releasing the digits works like the timer key,
+                    // for touchscreens and for a hand resting on the mouse.
+                    .on_mouse_down(MouseButton::Left, cx.listener(Self::on_pointer_down))
+                    .on_mouse_up(MouseButton::Left, cx.listener(Self::on_pointer_up))
+                    .on_mouse_up_out(MouseButton::Left, cx.listener(Self::on_pointer_up))
                     .child(
                         div()
                             .font_family(mono)

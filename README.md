@@ -53,6 +53,7 @@ with `Tab`, `Enter` and `Space`, `Enter` runs a dialog's primary action while `E
 |---|---|
 | `Space` | Start inspection, or hold and release to start the solve, and press to stop |
 | Any other key | Stop a running solve |
+| Left mouse button or touch on the digits | Same as the timer key: hold and release to start, click to stop |
 | `Esc` | Cancel the current attempt without recording it, or leave the stats screen |
 | `N` | New scramble |
 | `I` | Turn WCA inspection on or off |
