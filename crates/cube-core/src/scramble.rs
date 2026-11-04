@@ -54,6 +54,49 @@ pub fn display_text(event: WcaEvent, scramble: &str) -> String {
         .join("\n")
 }
 
+/// A drawing of the puzzle as a scramble leaves it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Preview {
+    /// An SVG document, rasterized at [`PREVIEW_SCALE`] times its natural size
+    /// so that it stays sharp on high-density screens.
+    pub svg: String,
+    /// The natural width in logical pixels.
+    pub width: u32,
+    /// The natural height in logical pixels.
+    pub height: u32,
+}
+
+/// How many times larger than its natural size the SVG is rasterized.
+pub const PREVIEW_SCALE: u32 = 2;
+
+/// Draws the puzzle in the state `scramble` reaches, or `None` when the
+/// scramble is not valid for `event`.
+///
+/// `TNoodle` draws all twelve events, so this never depends on the event.
+pub fn preview(event: WcaEvent, scramble: &str) -> Option<Preview> {
+    let mut svg = scrambler(event)
+        .draw_scramble(Some(scramble.trim()), None)
+        .ok()?;
+    let size = svg.size();
+    let (width, height) = (
+        u32::try_from(size.width).ok()?,
+        u32::try_from(size.height).ok()?,
+    );
+    if width == 0 || height == 0 {
+        return None;
+    }
+    // The view box keeps the drawing in proportion while the document grows.
+    svg.root_mut()
+        .set_attribute("width", format!("{}px", width * PREVIEW_SCALE));
+    svg.root_mut()
+        .set_attribute("height", format!("{}px", height * PREVIEW_SCALE));
+    Some(Preview {
+        svg: svg.to_string(),
+        width,
+        height,
+    })
+}
+
 fn scrambler(event: WcaEvent) -> &'static Scrambler {
     if event == WcaEvent::Cube3x3 && ACCURATE_3X3.load(Ordering::Relaxed) {
         return &ACCURATE_THREE;
@@ -128,6 +171,30 @@ mod tests {
             let solved = scrambler(event).is_solved_by(&scramble).unwrap();
             assert!(!solved, "{event:?}: {scramble}");
         }
+    }
+
+    #[test]
+    fn every_event_draws_its_scramble() {
+        for event in WcaEvent::ALL {
+            let scramble = generate(event);
+            let preview = preview(event, &scramble).unwrap_or_else(|| panic!("{event:?}"));
+            assert!(preview.svg.starts_with("<svg"), "{event:?}");
+            assert!(preview.width > 0 && preview.height > 0, "{event:?}");
+            assert!(
+                preview
+                    .svg
+                    .contains(&format!("width=\"{}px\"", preview.width * PREVIEW_SCALE)),
+                "{event:?}"
+            );
+            assert!(preview.svg.contains("viewBox=\"0 0 "), "{event:?}");
+        }
+    }
+
+    #[test]
+    fn a_scramble_for_another_event_has_no_preview() {
+        assert!(preview(WcaEvent::Cube3x3, "R U R' U'").is_some());
+        assert!(preview(WcaEvent::Cube3x3, "R++ D--").is_none());
+        assert!(preview(WcaEvent::Cube3x3, "nonsense").is_none());
     }
 
     #[test]

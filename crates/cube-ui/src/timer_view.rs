@@ -25,6 +25,9 @@ const SCRAMBLE_MIN_LINES: f32 = 2.;
 /// the big events leave room for the digits in a small window.
 const SCRAMBLE_MAX_LINES: f32 = 8.;
 
+/// The share of the window's height the scramble preview may take.
+const PREVIEW_HEIGHT_SHARE: f32 = 0.28;
+
 /// What the digits show at a given moment.
 struct Display {
     text: String,
@@ -33,12 +36,17 @@ struct Display {
 }
 
 impl CubeApp {
-    pub(crate) fn render_timer(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
+    pub(crate) fn render_timer(
+        &self,
+        window: &Window,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement + use<> {
         let display = self.display(cx);
         let attempt = self.timer.is_active();
         let theme = cx.theme();
         let mono = fonts::timer_digits(cx).unwrap_or_else(|| theme.mono_font_family.clone());
         let muted = theme.muted_foreground;
+        let preview = self.scramble_preview(window.viewport_size().height);
 
         v_flex()
             .flex_1()
@@ -73,6 +81,23 @@ impl CubeApp {
                         column.child(div().text_sm().text_color(muted).child(hint))
                     }),
             )
+            .when(!attempt, |panel| panel.children(preview))
+    }
+
+    /// The drawing of the current scramble, unless it is hidden or not ready.
+    fn scramble_preview(&self, window_height: Pixels) -> Option<Div> {
+        if !self.settings.scramble_preview {
+            return None;
+        }
+        let scramble = self.scramble.as_ref()?;
+        let image = self.preview.get(self.event, scramble)?;
+        Some(
+            div()
+                .flex_none()
+                .max_w_full()
+                .pt_3()
+                .child(image.element(window_height * PREVIEW_HEIGHT_SHARE)),
+        )
     }
 
     /// Works out the digits, their color and the hint for the timer's phase.

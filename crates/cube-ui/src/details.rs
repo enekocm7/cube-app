@@ -23,7 +23,11 @@ use crate::app::CubeApp;
 use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_title, dialog_width};
 use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
 use crate::palette::Palette;
+use crate::preview::PreviewCache;
 use crate::scroll_fade::FadeScroll;
+
+/// The tallest the scramble preview grows in the dialog.
+const PREVIEW_HEIGHT: Pixels = px(190.);
 
 /// One saved edit, with only the fields it changed.
 struct HistoryEntry {
@@ -57,6 +61,7 @@ struct SolveForm {
     comment: Entity<InputState>,
     time_error: Option<String>,
     scramble_error: Option<String>,
+    preview: PreviewCache,
     date_error: Option<String>,
     comment_error: Option<String>,
     strings: &'static cube_locale::Strings,
@@ -228,6 +233,7 @@ impl Render for SolveForm {
                         .child(keep_focus("field-scramble", Textarea::new(&self.scramble)))
                         .children(field_error(self.scramble_error.as_ref(), colors.red)),
                 )
+                .children(self.render_preview(cx))
                 .child(
                     v_flex()
                         .gap_1()
@@ -249,6 +255,25 @@ impl Render for SolveForm {
 }
 
 impl SolveForm {
+    /// The puzzle as the scramble in the field leaves it, unless the setting
+    /// hides it or the text is not a scramble for the event.
+    fn render_preview(&self, cx: &App) -> Option<impl IntoElement + use<>> {
+        let shown = self
+            .app
+            .read_with(cx, |app, _| app.settings.scramble_preview)
+            .unwrap_or(false);
+        if !shown {
+            return None;
+        }
+        let text = self.scramble.read(cx).value().to_string();
+        let image = self.preview.get(self.event, &text)?;
+        Some(
+            h_flex()
+                .justify_center()
+                .child(image.element(PREVIEW_HEIGHT)),
+        )
+    }
+
     /// The event picker next to the date field.
     fn render_event_and_date(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let strings = self.strings;
@@ -607,23 +632,28 @@ fn new_form(
     let date_subminute_ms = solve.solved_at_unix_ms() % 60_000;
     let event = solve.event();
     let modifier = solve.modifier();
-    cx.new(|cx| SolveForm {
-        app,
-        focus: cx.focus_handle(),
-        index,
-        changes,
-        event,
-        modifier,
-        date_subminute_ms,
-        history_expanded: false,
-        time,
-        scramble,
-        date,
-        comment,
-        time_error: None,
-        scramble_error: None,
-        date_error: None,
-        comment_error: None,
-        strings,
+    cx.new(|cx| {
+        // Typing in the scramble field redraws the preview.
+        cx.observe(&scramble, |_, _, cx| cx.notify()).detach();
+        SolveForm {
+            app,
+            focus: cx.focus_handle(),
+            index,
+            changes,
+            event,
+            modifier,
+            date_subminute_ms,
+            history_expanded: false,
+            time,
+            scramble,
+            date,
+            comment,
+            time_error: None,
+            scramble_error: None,
+            preview: PreviewCache::default(),
+            date_error: None,
+            comment_error: None,
+            strings,
+        }
     })
 }

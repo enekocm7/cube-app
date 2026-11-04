@@ -20,6 +20,7 @@ nothing is selected.
 | Cancel the current attempt | `Esc` | Does not record the solve; on the stats screen it returns to the timer |
 | New scramble | `N` | |
 | Turn inspection on or off | `I` | |
+| Show or hide the scramble preview | `P` | The same switch as the setting |
 | Select the newer solve | `Up` | Moves the highlight up the list |
 | Select the older solve | `Down` | Moves the highlight down the list |
 | Open the selected solve | `Enter` | Opens the details and edit dialog |

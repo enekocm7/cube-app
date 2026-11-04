@@ -210,6 +210,9 @@ pub struct Settings {
     pub font: FontChoice,
     /// How large the scramble is drawn.
     pub scramble_size: ScrambleSize,
+    /// Draws the puzzle as the scramble leaves it, on the timer and in the
+    /// solve details.
+    pub scramble_preview: bool,
     /// The scramble size in points used when `scramble_size` is `custom`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub scramble_custom_pt: Option<u32>,
@@ -246,6 +249,7 @@ impl Default for Settings {
             always_show_scrollbar: false,
             font: FontChoice::default(),
             scramble_size: ScrambleSize::default(),
+            scramble_preview: true,
             scramble_custom_pt: None,
             start_hint_seen: false,
             keybindings: BTreeMap::new(),
@@ -333,6 +337,15 @@ mod tests {
         ));
         settings.adopt_existing_history(&[History::new(), history]);
         assert!(!settings.shows_start_hint());
+    }
+
+    #[test]
+    fn scramble_preview_is_on_by_default_and_can_be_hidden() {
+        assert!(Settings::default().scramble_preview);
+        let settings: Settings = toml::from_str("scramble_preview = false").unwrap();
+        assert!(!settings.scramble_preview);
+        let settings: Settings = toml::from_str("inspection = false").unwrap();
+        assert!(settings.scramble_preview);
     }
 
     #[test]
