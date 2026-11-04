@@ -33,13 +33,19 @@ pub enum Action {
     UndoDelete,
     RedoDelete,
     OpenStats,
+    OpenCharts,
+    PreviousAverage,
+    NextAverage,
+    OpenAverage,
+    OpenBestAverage,
+    CopyAverage,
     OpenSettings,
     ShowHelp,
 }
 
 impl Action {
     /// Every action, in the order the help dialog lists them.
-    pub const ALL: [Self; 23] = [
+    pub const ALL: [Self; 29] = [
         Self::Timer,
         Self::Cancel,
         Self::NextScramble,
@@ -61,6 +67,12 @@ impl Action {
         Self::UndoDelete,
         Self::RedoDelete,
         Self::OpenStats,
+        Self::OpenCharts,
+        Self::PreviousAverage,
+        Self::NextAverage,
+        Self::OpenAverage,
+        Self::OpenBestAverage,
+        Self::CopyAverage,
         Self::OpenSettings,
         Self::ShowHelp,
     ];
@@ -89,6 +101,12 @@ impl Action {
             Self::UndoDelete => "undo_delete",
             Self::RedoDelete => "redo_delete",
             Self::OpenStats => "open_stats",
+            Self::OpenCharts => "open_charts",
+            Self::PreviousAverage => "previous_average",
+            Self::NextAverage => "next_average",
+            Self::OpenAverage => "open_average",
+            Self::OpenBestAverage => "open_best_average",
+            Self::CopyAverage => "copy_average",
             Self::OpenSettings => "open_settings",
             Self::ShowHelp => "show_help",
         }
@@ -276,6 +294,12 @@ impl Default for Keybinds {
             (Action::UndoDelete, "Ctrl+Z"),
             (Action::RedoDelete, "Ctrl+Y"),
             (Action::OpenStats, "a"),
+            (Action::OpenCharts, "g"),
+            (Action::PreviousAverage, "Left"),
+            (Action::NextAverage, "Right"),
+            (Action::OpenAverage, "o"),
+            (Action::OpenBestAverage, "Shift+O"),
+            (Action::CopyAverage, "c"),
             (Action::OpenSettings, "Ctrl+,"),
             (Action::ShowHelp, "F1"),
         ];
@@ -729,5 +753,21 @@ mod tests {
             Some(Action::Cancel)
         );
         assert_eq!(keybinds.action_for(&press("n", true, false, false)), None);
+    }
+
+    #[test]
+    fn the_average_actions_have_their_default_keys() {
+        let keybinds = Keybinds::default();
+        let press = |key: &str, shift| KeyPress::new(key, false, false, shift).unwrap();
+        for (key, shift, action) in [
+            ("g", false, Action::OpenCharts),
+            ("left", false, Action::PreviousAverage),
+            ("right", false, Action::NextAverage),
+            ("o", false, Action::OpenAverage),
+            ("o", true, Action::OpenBestAverage),
+            ("c", false, Action::CopyAverage),
+        ] {
+            assert_eq!(keybinds.action_for(&press(key, shift)), Some(action));
+        }
     }
 }

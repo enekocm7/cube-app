@@ -18,7 +18,9 @@ solve history, so you can move between the terminal and the desktop without impo
 - Sessions with custom names, deletable straight from the session dropdown
 - Solve history, with details you can edit (time, event, scramble, penalty, date and comment) and a full audit trail of every change
 - Current and best single, mo3, ao5, ao12, ao50 and ao100, plus mean, deviation and DNF count
-- Stats screen with charts of your times, your ao5 and their distribution
+- Stats screen with a heat-mapped table of every solve's rolling averages
+- Charts screen with your times, your ao5 and their distribution
+- Open any average from the table or the stats panel to see how far each solve landed from it, with the trimmed ones marked, and copy it as text to share
 - Light and dark themes, plus cube-tui TOML themes with a color-picker editor
 - Fully keyboard-controllable: every timer, solve, event, session and screen action has a rebindable shortcut, any
   key stops the timer, and `F1` lists the bindings
@@ -55,7 +57,7 @@ with `Tab`, `Enter` and `Space`, `Enter` runs a dialog's primary action while `E
 | `Space` | Start inspection, or hold and release to start the solve, and press to stop |
 | Any other key | Stop a running solve |
 | Left mouse button or touch on the digits | Same as the timer key: hold and release to start, click to stop |
-| `Esc` | Cancel the current attempt without recording it, or leave the stats screen |
+| `Esc` | Cancel the current attempt without recording it, or leave the stats or charts screen |
 | `N` | New scramble |
 | `I` | Turn WCA inspection on or off |
 | `P` | Show or hide the scramble preview |
@@ -71,12 +73,16 @@ with `Tab`, `Enter` and `Space`, `Enter` runs a dialog's primary action while `E
 | `Shift + S` | Delete session |
 | `Ctrl + Z` | Undo the last solve or session deletion (repeatable) |
 | `Ctrl + Y` | Redo an undone deletion |
+| `Left` / `Right` | Select a shorter or longer average |
+| `O` / `Shift + O` | Open the selected average, or its best |
+| `C` | Copy the selected average as text |
 | `A` | Show stats, or return to the timer |
+| `G` | Show charts, or return to the timer |
 | `Ctrl + ,` | Open settings |
 | `F1` | Open the keyboard shortcuts |
 
 Actions that need a solve use the keyboard selection, or the latest solve when nothing is
-selected. Click a solve in the list to see its details or edit it.
+selected. Click a solve in the list, or a single in the stats panel, to see its details or edit it.
 
 Hold `N`, `Up` or `Down` to repeat: scrambles keep coming and navigation keeps moving until you release the key.
 

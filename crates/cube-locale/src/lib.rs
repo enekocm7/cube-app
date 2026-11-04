@@ -58,6 +58,7 @@ impl Language {
 pub struct Strings {
     pub nav_timer: &'static str,
     pub nav_stats: &'static str,
+    pub nav_charts: &'static str,
     pub settings: &'static str,
 
     /// `{key}`: the timer's binding.
@@ -100,6 +101,18 @@ pub struct Strings {
     pub chart_averages: &'static str,
     pub chart_distribution: &'static str,
     pub chart_empty: &'static str,
+    pub table_time: &'static str,
+    pub table_empty: &'static str,
+    pub mean_of: &'static str,
+    pub average_of: &'static str,
+    pub average_trim_best: &'static str,
+    pub average_trim_worst: &'static str,
+    pub average_missing: &'static str,
+    pub average_range: &'static str,
+    pub average_faster: &'static str,
+    pub average_slower: &'static str,
+    pub copy_average: &'static str,
+    pub average_copied: &'static str,
 
     pub solve_details: &'static str,
     pub field_time: &'static str,
@@ -183,6 +196,7 @@ pub struct Strings {
     pub help_section_timer: &'static str,
     pub help_section_solves: &'static str,
     pub help_section_events_sessions: &'static str,
+    pub help_section_averages: &'static str,
     pub help_section_screens: &'static str,
     pub action_timer: &'static str,
     pub action_cancel: &'static str,
@@ -198,6 +212,12 @@ pub struct Strings {
     pub action_next_session: &'static str,
     pub action_previous_session: &'static str,
     pub action_open_stats: &'static str,
+    pub action_open_charts: &'static str,
+    pub action_previous_average: &'static str,
+    pub action_next_average: &'static str,
+    pub action_open_average: &'static str,
+    pub action_open_best_average: &'static str,
+    pub action_copy_average: &'static str,
     pub action_show_help: &'static str,
     pub unassigned: &'static str,
     pub search_placeholder: &'static str,
@@ -342,6 +362,11 @@ mod tests {
     fn every_language_keeps_the_placeholders() {
         for language in Language::ALL {
             let strings = language.strings();
+            assert!(strings.average_range.contains("{first}"));
+            assert!(strings.average_range.contains("{last}"));
+            assert!(strings.mean_of.contains("{size}"));
+            assert!(strings.average_of.contains("{size}"));
+            assert!(strings.average_missing.contains("{label}"));
             assert!(strings.toast_new_best.contains("{label}"));
             assert!(strings.toast_new_best.contains("{time}"));
             assert!(strings.delete_session_confirm.contains("{name}"));
