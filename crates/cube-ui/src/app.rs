@@ -57,6 +57,9 @@ impl Loaded {
     pub fn load() -> Self {
         let history_path = persistence::history_file().ok();
         let settings_path = persistence::settings_file().ok();
+        // cube-tui keeps its themes here; creating the default one gives both
+        // apps a theme to start from.
+        let _ = persistence::ensure_default_theme();
         let (sessions, load_error) = match history_path.as_deref().map(persistence::load_history) {
             Some(Ok(sessions)) => (sessions.unwrap_or_default(), None),
             Some(Err(error)) => (Vec::new(), Some(format!("{error:#}"))),
@@ -649,7 +652,7 @@ impl CubeApp {
             self.timer = self.settings.timer();
         }
         scramble::set_accurate_3x3(self.settings.accurate_3x3);
-        palette::apply(self.settings.theme, cx);
+        palette::apply(&self.settings, cx);
         self.save_settings(window, cx);
         window.refresh();
         cx.notify();

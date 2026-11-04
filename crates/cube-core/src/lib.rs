@@ -5,6 +5,7 @@
 //! so both applications read and write the same solve history.
 
 pub mod cstimer;
+pub mod dialogs;
 pub mod event;
 pub mod format;
 pub mod history;
@@ -14,7 +15,9 @@ pub mod scramble;
 pub mod settings;
 pub mod solve;
 pub mod stats;
+pub mod theme;
 pub mod timer;
+pub mod validation;
 
 pub use event::WcaEvent;
 pub use history::History;

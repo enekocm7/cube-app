@@ -107,9 +107,23 @@ pub struct Strings {
     pub field_event: &'static str,
     pub date_unknown: &'static str,
     pub penalty_none: &'static str,
-    /// `{count}`: how many times the solve was edited.
-    pub edited_times: &'static str,
     pub invalid_time: &'static str,
+    pub invalid_duration: &'static str,
+    /// `{event}`: the event the scramble must match.
+    pub invalid_scramble: &'static str,
+    pub invalid_date: &'static str,
+    pub invalid_comment: &'static str,
+    pub date_placeholder: &'static str,
+    pub edit_history: &'static str,
+    pub history_empty: &'static str,
+    /// `{count}`: how many edits the solve has.
+    pub history_show: &'static str,
+    pub history_hide: &'static str,
+    /// `{number}`: the revision; `{date}`: when it was saved.
+    pub history_revision: &'static str,
+    pub history_before: &'static str,
+    pub history_after: &'static str,
+    pub empty_value: &'static str,
 
     pub save: &'static str,
     pub cancel: &'static str,
@@ -121,12 +135,18 @@ pub struct Strings {
 
     pub settings_timer: &'static str,
     pub settings_appearance: &'static str,
+    pub settings_theme: &'static str,
     pub settings_data: &'static str,
     pub setting_inspection: &'static str,
     pub setting_inspection_audio: &'static str,
     pub setting_toasts: &'static str,
     pub setting_accurate: &'static str,
     pub setting_solve_list_ao5: &'static str,
+    pub setting_font: &'static str,
+    pub font_system: &'static str,
+    pub font_timer: &'static str,
+    pub font_times: &'static str,
+    pub font_whole: &'static str,
     pub setting_theme: &'static str,
     pub setting_language: &'static str,
     pub setting_import: &'static str,
@@ -138,6 +158,42 @@ pub struct Strings {
     pub theme_system: &'static str,
     pub theme_light: &'static str,
     pub theme_dark: &'static str,
+
+    pub custom_themes: &'static str,
+    pub new_theme: &'static str,
+    pub edit_theme: &'static str,
+    pub delete_theme: &'static str,
+    pub theme_name: &'static str,
+    pub theme_name_placeholder: &'static str,
+    pub theme_colors: &'static str,
+    pub theme_background: &'static str,
+    pub theme_border: &'static str,
+    pub theme_scramble: &'static str,
+    pub theme_selection: &'static str,
+    pub theme_selection_text: &'static str,
+    pub theme_text: &'static str,
+    pub theme_accent: &'static str,
+    pub theme_preview: &'static str,
+    pub theme_preview_selected: &'static str,
+    pub theme_alpha_hint: &'static str,
+    pub theme_name_empty: &'static str,
+    pub theme_name_invalid: &'static str,
+    pub theme_name_too_long: &'static str,
+    pub theme_name_exists: &'static str,
+    pub theme_invalid_color: &'static str,
+    /// `{error}`: the cause.
+    pub theme_save_failed: &'static str,
+    /// `{name}`: the theme.
+    pub theme_saved: &'static str,
+    /// `{name}`: the theme.
+    pub theme_delete_confirm: &'static str,
+    /// `{name}`: the theme.
+    pub theme_deleted: &'static str,
+    /// `{error}`: the cause.
+    pub theme_delete_failed: &'static str,
+    /// `{error}`: the cause.
+    pub theme_load_failed: &'static str,
+    pub no_themes: &'static str,
 
     pub settings_updates: &'static str,
     pub setting_check_updates: &'static str,
@@ -231,9 +287,18 @@ mod tests {
             assert!(strings.delete_session_confirm.contains("{name}"));
             assert!(strings.delete_session_confirm.contains("{count}"));
             assert!(strings.session_default_name.contains("{number}"));
-            assert!(strings.edited_times.contains("{count}"));
+            assert!(strings.invalid_scramble.contains("{event}"));
+            assert!(strings.history_show.contains("{count}"));
+            assert!(strings.history_revision.contains("{number}"));
+            assert!(strings.history_revision.contains("{date}"));
             assert!(strings.toast_save_failed.contains("{error}"));
             assert!(strings.toast_load_failed.contains("{error}"));
+            assert!(strings.theme_save_failed.contains("{error}"));
+            assert!(strings.theme_delete_failed.contains("{error}"));
+            assert!(strings.theme_load_failed.contains("{error}"));
+            assert!(strings.theme_saved.contains("{name}"));
+            assert!(strings.theme_delete_confirm.contains("{name}"));
+            assert!(strings.theme_deleted.contains("{name}"));
             assert!(strings.toast_import_done.contains("{imported}"));
             assert!(strings.toast_import_done.contains("{skipped}"));
             assert!(strings.toast_export_done.contains("{path}"));
