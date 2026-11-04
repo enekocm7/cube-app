@@ -130,6 +130,12 @@ pub struct CubeApp {
     pub(crate) panel_resizing: bool,
 }
 
+/// The padding `TitleBar` leaves before its content (`gpui-kit` keeps it private).
+#[cfg(target_os = "macos")]
+const TITLE_BAR_LEFT_PADDING: Pixels = px(80.);
+#[cfg(not(target_os = "macos"))]
+const TITLE_BAR_LEFT_PADDING: Pixels = px(12.);
+
 impl CubeApp {
     pub fn new(loaded: Loaded, window: &mut Window, cx: &mut Context<Self>) -> Self {
         let Loaded {
@@ -949,7 +955,6 @@ impl CubeApp {
                     Button::new("event")
                         .text()
                         .label(event.name())
-                        .dropdown_caret(true)
                         .tab_stop(false)
                         .dropdown_menu(move |mut menu, _, _| {
                             for item in WcaEvent::ALL {
@@ -993,7 +998,11 @@ impl CubeApp {
             )
     }
 
-    fn render_title_bar(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
+    fn render_title_bar(
+        &self,
+        window: &Window,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement + use<> {
         let strings = self.strings();
         let tab =
             |id: &'static str, label: &'static str, screen: Screen, cx: &mut Context<Self>| {
@@ -1036,12 +1045,17 @@ impl CubeApp {
                                 .child(tab("nav-stats", strings.nav_stats, Screen::Stats, cx)),
                         ),
                 )
-                // Centered on the bar itself, not between the unequal sides. The
-                // overlay lets clicks through; only the group is occluded.
+                // Centered on the window, not on the space the tabs and the window
+                // controls leave: the overlay starts where the title bar's own left
+                // padding ends and is as wide as the window. It lets clicks through;
+                // only the group is occluded.
                 .child(
                     h_flex()
                         .absolute()
-                        .inset_0()
+                        .top_0()
+                        .bottom_0()
+                        .left(-TITLE_BAR_LEFT_PADDING)
+                        .w(window.viewport_size().width)
                         .justify_center()
                         .items_center()
                         .child(self.render_event_picker(cx)),
@@ -1126,7 +1140,7 @@ impl Render for CubeApp {
             .text_color(theme.foreground)
             .on_key_down(cx.listener(Self::on_key_down))
             .on_key_up(cx.listener(Self::on_key_up))
-            .child(self.render_title_bar(cx))
+            .child(self.render_title_bar(window, cx))
             .child(body)
     }
 }
