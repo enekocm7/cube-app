@@ -15,6 +15,10 @@ use crate::app::{CubeApp, key_press};
 use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
 use crate::palette::Palette;
 
+/// The panel has action labels, key pills and icon buttons side by side, so it
+/// uses the roomier form size rather than the narrower settings size.
+const DIALOG_SIZE: DialogSize = DialogSize::FORM;
+
 const TIMER_ACTIONS: [Action; 4] = [
     Action::Timer,
     Action::Cancel,
@@ -285,7 +289,7 @@ impl Render for KeybindsView {
         let strings = app.strings();
         let keybinds = app.keybinds().clone();
         let colors = Palette::of(cx);
-        let max_height = dialog_body_height(DialogSize::STANDARD, window);
+        let max_height = dialog_body_height(DIALOG_SIZE, window);
         let sections = [
             (strings.help_section_timer, &TIMER_ACTIONS[..]),
             (strings.help_section_solves, &SOLVE_ACTIONS[..]),
@@ -402,7 +406,7 @@ impl CubeApp {
             let content_view = view.clone();
             dialog
                 .title(strings.help_title)
-                .w(dialog_width(DialogSize::STANDARD, window))
+                .w(dialog_width(DIALOG_SIZE, window))
                 .content(move |content, _, cx| {
                     content
                         .px_0()
