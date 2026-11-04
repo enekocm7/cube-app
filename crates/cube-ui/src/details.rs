@@ -21,6 +21,7 @@ use gpui_kit::*;
 
 use crate::app::CubeApp;
 use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_title, dialog_width};
+use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
 use crate::palette::Palette;
 use crate::scroll_fade::FadeScroll;
 
@@ -502,10 +503,17 @@ impl CubeApp {
 
         window.open_dialog(cx, move |dialog, window, _| {
             let (form_for_save, app_for_delete) = (form.clone(), app.clone());
+            let save: Submit = std::rc::Rc::new(move |window, cx| {
+                let saved = form_for_save.update(cx, |form, cx| form.save(window, cx));
+                if saved {
+                    window.close_dialog(cx);
+                }
+            });
             dialog
                 .title(dialog_title(title.clone(), strings.close))
                 .close_button(false)
                 .w(dialog_width(DialogSize::FORM, window))
+                .submit_on_enter(&save)
                 .child(form.clone())
                 .footer(
                     h_flex()
@@ -537,13 +545,7 @@ impl CubeApp {
                                     Button::new("solve-save")
                                         .primary()
                                         .label(strings.save)
-                                        .on_click(move |_, window, cx| {
-                                            let saved = form_for_save
-                                                .update(cx, |form, cx| form.save(window, cx));
-                                            if saved {
-                                                window.close_dialog(cx);
-                                            }
-                                        }),
+                                        .on_click(on_press(&save)),
                                 ),
                         ),
                 )
@@ -551,12 +553,17 @@ impl CubeApp {
     }
 
     pub(crate) fn confirm_delete_solve(
-        &self,
+        &mut self,
         index: usize,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
         let strings = self.strings();
+        if !self.settings.confirm_delete {
+            self.delete_solve(index, window, cx);
+            self.focus.focus(window, cx);
+            return;
+        }
         let on_confirm = cx.listener(move |app: &mut Self, (): &(), window, cx| {
             app.delete_solve(index, window, cx);
             app.focus.focus(window, cx);

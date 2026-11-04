@@ -5,6 +5,7 @@
 //! so both applications read and write the same solve history.
 
 pub mod cstimer;
+pub mod dialog_keys;
 pub mod dialogs;
 pub mod event;
 pub mod format;
