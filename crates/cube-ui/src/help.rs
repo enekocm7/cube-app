@@ -454,7 +454,13 @@ impl CubeApp {
             }
         });
 
+        let first_build = std::cell::Cell::new(true);
         window.open_dialog(cx, move |dialog, window, cx| {
+            if first_build.replace(false) {
+                // So `/` and capture keys reach the panel before any click.
+                let focus = view.read(cx).focus.clone();
+                focus.focus(window, cx);
+            }
             let editing = view.read(cx).editing;
             let edit_view = view.clone();
             let content_view = view.clone();

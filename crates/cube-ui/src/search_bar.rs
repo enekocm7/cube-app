@@ -4,6 +4,7 @@ use cube_locale::Strings;
 use gpui_kit::assets::IconName;
 use gpui_kit::component::input::{Input, InputEvent, InputState};
 use gpui_kit::component::{ActiveTheme as _, Icon};
+use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 /// Vertical space the bar takes above a dialog's scrolling body, which the body
@@ -28,11 +29,29 @@ pub(crate) fn new_search<V: 'static>(
 
 /// The field, laid out above a dialog's scrolling body.
 pub(crate) fn search_bar(input: &Entity<InputState>, cx: &App) -> Div {
+    let theme = cx.theme();
+    let (muted, border) = (theme.muted_foreground, theme.border);
+    let mono = theme.mono_font_family.clone();
+    let empty = input.read(cx).value().is_empty();
     div().h(BAR_HEIGHT).px_4().pt_4().child(
         Input::new(input)
             .w_full()
             .cleanable(true)
-            .prefix(Icon::new(IconName::Search).text_color(cx.theme().muted_foreground)),
+            .prefix(Icon::new(IconName::Search).text_color(muted))
+            .when(empty, |input| {
+                // Shows which key jumps to the field.
+                input.suffix(
+                    div()
+                        .px_1p5()
+                        .rounded(px(4.))
+                        .border_1()
+                        .border_color(border)
+                        .font_family(mono)
+                        .text_xs()
+                        .text_color(muted)
+                        .child("/"),
+                )
+            }),
     )
 }
 
