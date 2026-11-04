@@ -134,6 +134,10 @@ pub const STRINGS: Strings = Strings {
     action_open_stats: "Show stats or the timer",
     action_show_help: "Show these shortcuts",
     unassigned: "Unassigned",
+    search_placeholder: "Search",
+    search_no_results: "No results found.",
+    search_on: "on",
+    search_off: "off",
 
     settings_keybindings: "Keyboard shortcuts",
     keybind_hint: "Use the pencil to change a shortcut and the trash to remove it. The timer key can't be removed or use modifiers.",

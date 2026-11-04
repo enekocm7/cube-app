@@ -14,6 +14,7 @@ pub mod keybind;
 pub mod panels;
 pub mod persistence;
 pub mod scramble;
+pub mod search;
 pub mod settings;
 pub mod solve;
 pub mod stats;

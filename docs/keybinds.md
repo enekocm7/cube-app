@@ -5,6 +5,9 @@ events, sessions, stats, settings and help all have shortcuts, dialogs stay
 reachable with `Tab`, `Enter` and `Space`, every shortcut can be changed, and
 the timer can be stopped with any key. The same list is available in the app
 with `F1` or the keyboard icon in the title bar.
+The panel opens with a search field: type to filter by action name or current
+key (for example `space`, `ctrl` or `unassigned`). While an action is being
+rebound, keys go to the capture, never to the search field.
 
 ## Default bindings
 

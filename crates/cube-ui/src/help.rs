@@ -5,6 +5,7 @@ use cube_locale::Strings;
 use gpui_kit::assets::IconName;
 use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
+use gpui_kit::component::input::InputState;
 use gpui_kit::component::notification::Notification;
 use gpui_kit::component::{ActiveTheme as _, Sizable as _, WindowExt as _, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
@@ -15,6 +16,7 @@ use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_tit
 use crate::dialog_submit::{close_action, route_enter};
 use crate::palette::Palette;
 use crate::scroll_fade::FadeScroll;
+use crate::search_bar::{BAR_HEIGHT, new_search, query, search_bar};
 
 /// The panel has action labels, key pills and icon buttons side by side, so it
 /// uses the roomier form size rather than the narrower settings size.
@@ -56,6 +58,8 @@ struct KeybindsView {
     capturing: Option<Action>,
     /// Why the last captured key was rejected.
     error: Option<String>,
+    /// Filters the rows by label and binding.
+    search: Entity<InputState>,
 }
 
 impl KeybindsView {
@@ -166,6 +170,8 @@ impl KeybindsView {
         strings: &'static Strings,
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
+        // Only the actions the search keeps; a section left with none is
+        // skipped by the caller.
         let theme = cx.theme();
         let border = theme.border;
         let muted = theme.muted_foreground;
@@ -304,50 +310,82 @@ impl Render for KeybindsView {
                 .keybind_capture_hint
                 .replace("{action}", action_label(strings, action))
         });
+        let search = query(&self.search, cx);
         let sections: Vec<AnyElement> = sections
             .into_iter()
-            .map(|(heading, actions)| {
-                self.render_section(heading, actions, &keybinds, strings, cx)
-                    .into_any_element()
+            .filter_map(|(heading, actions)| {
+                let actions: Vec<Action> = actions
+                    .iter()
+                    .copied()
+                    .filter(|&action| {
+                        // The row being rebound stays, so the capture is never lost.
+                        self.capturing == Some(action)
+                            || cube_core::search::matches(
+                                &search,
+                                &[
+                                    action_label(strings, action).to_owned(),
+                                    keybinds
+                                        .label(action)
+                                        .unwrap_or_else(|| strings.unassigned.to_owned()),
+                                ],
+                            )
+                    })
+                    .collect();
+                (!actions.is_empty()).then(|| {
+                    self.render_section(heading, &actions, &keybinds, strings, cx)
+                        .into_any_element()
+                })
             })
             .collect();
+        let no_results = sections.is_empty();
 
+        let bar = search_bar(&self.search);
         dialog_body(
-            FadeScroll::new("keybind-panel", cx.theme().background)
-                .track_focus(&self.focus)
-                .on_key_down(cx.listener(Self::on_key_down))
-                .max_h(max_height)
-                .p_4()
-                .gap_5()
-                .child(
-                    div()
-                        .text_sm()
-                        .text_color(cx.theme().muted_foreground)
-                        .child(strings.help_any_key_stops),
-                )
-                .when(self.editing, |column| {
-                    column.child(
+            v_flex().child(bar).child(
+                FadeScroll::new("keybind-panel", cx.theme().background)
+                    .track_focus(&self.focus)
+                    .on_key_down(cx.listener(Self::on_key_down))
+                    .max_h(max_height - BAR_HEIGHT)
+                    .p_4()
+                    .gap_5()
+                    .child(
                         div()
                             .text_sm()
                             .text_color(cx.theme().muted_foreground)
-                            .child(strings.keybind_hint),
+                            .child(strings.help_any_key_stops),
                     )
-                })
-                .when_some(capture_hint, |column, hint| {
-                    column.child(div().text_sm().text_color(colors.yellow).child(hint))
-                })
-                .when_some(self.error.clone(), |column, error| {
-                    column.child(div().text_sm().text_color(colors.red).child(error))
-                })
-                .children(sections)
-                .child(
-                    div()
-                        .px_2()
-                        .pt_2()
-                        .text_sm()
-                        .text_color(cx.theme().muted_foreground)
-                        .child(strings.help_hint),
-                ),
+                    .when(self.editing, |column| {
+                        column.child(
+                            div()
+                                .text_sm()
+                                .text_color(cx.theme().muted_foreground)
+                                .child(strings.keybind_hint),
+                        )
+                    })
+                    .when_some(capture_hint, |column, hint| {
+                        column.child(div().text_sm().text_color(colors.yellow).child(hint))
+                    })
+                    .when_some(self.error.clone(), |column, error| {
+                        column.child(div().text_sm().text_color(colors.red).child(error))
+                    })
+                    .children(sections)
+                    .when(no_results, |column| {
+                        column.child(
+                            div()
+                                .text_base()
+                                .text_color(cx.theme().muted_foreground)
+                                .child(strings.search_no_results),
+                        )
+                    })
+                    .child(
+                        div()
+                            .px_2()
+                            .pt_2()
+                            .text_sm()
+                            .text_color(cx.theme().muted_foreground)
+                            .child(strings.help_hint),
+                    ),
+            ),
         )
     }
 }
@@ -398,12 +436,14 @@ impl CubeApp {
         let strings = self.strings();
         let view = cx.new(|cx| {
             cx.observe(&app, |_, _, cx| cx.notify()).detach();
+            let search = new_search(strings, window, cx);
             KeybindsView {
                 app: app.clone(),
                 focus: cx.focus_handle(),
                 editing: false,
                 capturing: None,
                 error: None,
+                search,
             }
         });
 
