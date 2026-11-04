@@ -2,13 +2,14 @@
 
 use cube_core::Settings;
 use cube_core::persistence;
-use cube_core::settings::{ThemePreference, UpdateChannel, UpdateFrequency};
+use cube_core::settings::{FontChoice, ThemePreference, UpdateChannel, UpdateFrequency};
 use cube_core::theme;
 use cube_core::theme::{ThemeColor, ThemeFile};
 use cube_locale::{Language, Strings};
 use gpui_kit::assets::IconName;
 use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
+use gpui_kit::component::menu::{DropdownMenu as _, PopupMenuItem};
 use gpui_kit::component::scroll::ScrollableElement as _;
 use gpui_kit::component::switch::Switch;
 use gpui_kit::component::{
@@ -156,6 +157,37 @@ impl SettingsView {
                 }))
             })
             .collect()
+    }
+
+    /// Which text uses the bundled font.
+    fn font_row(&self, settings: &Settings, strings: &'static Strings) -> AnyElement {
+        let current = settings.font;
+        let app = self.app.clone();
+        row(
+            strings.setting_font,
+            Button::new("font")
+                .outline()
+                .small()
+                .label(font_label(strings, current))
+                .tab_stop(false)
+                .dropdown_menu(move |mut menu, _, _| {
+                    for choice in FontChoice::ALL {
+                        let app = app.clone();
+                        menu = menu.item(
+                            PopupMenuItem::new(font_label(strings, choice))
+                                .checked(choice == current)
+                                .on_click(move |_, window, cx| {
+                                    app.update(cx, |app, cx| {
+                                        app.update_settings(window, cx, move |settings| {
+                                            settings.font = choice;
+                                        });
+                                    });
+                                }),
+                        );
+                    }
+                    menu
+                }),
+        )
     }
 
     /// The updater's preferences and its manual check.
@@ -568,6 +600,7 @@ impl Render for SettingsView {
                 |settings, value| settings.solve_list_ao5 = value,
                 cx,
             ),
+            self.font_row(&settings, strings),
             self.switch(
                 "toasts",
                 strings.setting_toasts,
@@ -647,6 +680,16 @@ fn choice(id: impl Into<ElementId>, label: impl Into<SharedString>, selected: bo
 /// Converts a theme file color for use in the interface.
 fn theme_hsla(color: ThemeColor) -> Hsla {
     rgb(color.rgb()).into()
+}
+
+/// The menu label for a font choice.
+fn font_label(strings: &'static Strings, choice: FontChoice) -> &'static str {
+    match choice {
+        FontChoice::System => strings.font_system,
+        FontChoice::Timer => strings.font_timer,
+        FontChoice::Times => strings.font_times,
+        FontChoice::Whole => strings.font_whole,
+    }
 }
 
 /// A label on the left of its control.

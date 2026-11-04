@@ -9,10 +9,12 @@
 
 use cube_core::Settings;
 use cube_core::persistence;
-use cube_core::settings::ThemePreference;
+use cube_core::settings::{FontChoice, ThemePreference};
 use cube_core::theme::{ThemeColor, ThemeColors};
 use gpui_kit::component::{Theme, ThemeMode};
 use gpui_kit::*;
+
+use crate::fonts;
 
 /// The colors used directly by cube's own views.
 #[derive(Clone, Copy)]
@@ -32,6 +34,32 @@ pub struct Palette {
 struct ScrambleColor(Hsla);
 
 impl Global for ScrambleColor {}
+
+/// The theme's own font families, saved before the bundled font was applied so
+/// that choosing the system font again can put them back. `Theme::change` only
+/// loads a theme file's families when the file sets them, and cube's themes
+/// only carry colors, so the previous choice would otherwise stick.
+#[derive(Clone)]
+struct SystemFonts {
+    sans: SharedString,
+    mono: SharedString,
+}
+
+impl Global for SystemFonts {}
+
+/// Returns the theme's own font families, saving them on first use.
+fn system_fonts(cx: &mut App) -> SystemFonts {
+    if let Some(fonts) = cx.try_global::<SystemFonts>() {
+        return fonts.clone();
+    }
+    let theme = Theme::global(cx);
+    let fonts = SystemFonts {
+        sans: theme.font_family.clone(),
+        mono: theme.mono_font_family.clone(),
+    };
+    cx.set_global(fonts.clone());
+    fonts
+}
 
 impl Palette {
     /// Returns the sticker colors tuned for contrast on the current background.
@@ -112,8 +140,41 @@ pub fn apply(settings: &Settings, cx: &mut App) {
     };
     Theme::change(mode, None, cx);
 
+    // Put the theme's own families back before applying the choice, since a
+    // previous choice may still be in place.
+    let system = system_fonts(cx);
+    {
+        let theme = Theme::global_mut(cx);
+        theme.font_family = system.sans;
+        theme.mono_font_family = system.mono;
+    }
+
+    let bundled = if settings.font == FontChoice::System {
+        None
+    } else {
+        fonts::family(cx)
+    };
+    fonts::set_timer_digits(
+        cx,
+        if settings.font == FontChoice::Timer {
+            bundled.clone()
+        } else {
+            None
+        },
+    );
+
     let scramble = {
         let theme = Theme::global_mut(cx);
+        if let Some(family) = bundled {
+            match settings.font {
+                FontChoice::System | FontChoice::Timer => {}
+                FontChoice::Times => theme.mono_font_family = family,
+                FontChoice::Whole => {
+                    theme.font_family = family.clone();
+                    theme.mono_font_family = family;
+                }
+            }
+        }
         if let Some(colors) = &custom {
             apply_custom(theme, colors);
             hsla(colors.scramble)

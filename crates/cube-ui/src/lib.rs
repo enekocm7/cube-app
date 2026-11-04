@@ -10,6 +10,7 @@ use gpui_kit::*;
 mod app;
 mod audio;
 mod details;
+mod fonts;
 mod palette;
 mod settings_view;
 mod sidebar;
