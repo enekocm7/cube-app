@@ -7,6 +7,7 @@ use cube_core::validation::{
     validate_scramble,
 };
 use cube_core::{Modifier, Solve, SolveChange, SolveSnapshot, WcaEvent};
+use gpui_kit::assets::IconName;
 use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::collapsible::Collapsible;
@@ -45,6 +46,7 @@ struct HistoryRow {
 /// The editable form shown inside the dialog.
 struct SolveForm {
     app: WeakEntity<CubeApp>,
+    focus: FocusHandle,
     index: usize,
     changes: Vec<SolveChange>,
     event: WcaEvent,
@@ -209,34 +211,47 @@ impl Render for SolveForm {
         let max_height =
             (window.viewport_size().height - DIALOG_CHROME_HEIGHT).min(BODY_MAX_HEIGHT);
 
-        div().max_h(max_height).overflow_y_scrollbar().child(
-            v_flex()
-                .gap_3()
-                .child(self.render_event_and_date(cx))
-                .child(
-                    v_flex()
-                        .gap_1()
-                        .child(field_label(strings.field_scramble, muted))
-                        .child(Textarea::new(&self.scramble))
-                        .children(field_error(self.scramble_error.as_ref(), colors.red)),
-                )
-                .child(
-                    v_flex()
-                        .gap_1()
-                        .child(field_label(strings.field_time, muted))
-                        .child(Input::new(&self.time))
-                        .children(field_error(self.time_error.as_ref(), colors.red)),
-                )
-                .child(self.render_penalty_row(cx))
-                .child(
-                    v_flex()
-                        .gap_1()
-                        .child(field_label(strings.field_comment, muted))
-                        .child(Input::new(&self.comment))
-                        .children(field_error(self.comment_error.as_ref(), colors.red)),
-                )
-                .child(self.render_history(cx)),
-        )
+        div()
+            .id("solve-form")
+            .track_focus(&self.focus)
+            .max_h(max_height)
+            .overflow_y_scrollbar()
+            .on_mouse_down(
+                MouseButton::Left,
+                cx.listener(|form, _, window, cx| {
+                    // Clicking the dialog's empty space moves focus off any
+                    // field; presses inside fields stop below instead.
+                    form.focus.focus(window, cx);
+                }),
+            )
+            .child(
+                v_flex()
+                    .gap_3()
+                    .child(self.render_event_and_date(cx))
+                    .child(
+                        v_flex()
+                            .gap_1()
+                            .child(field_label(strings.field_scramble, muted))
+                            .child(keep_focus("field-scramble", Textarea::new(&self.scramble)))
+                            .children(field_error(self.scramble_error.as_ref(), colors.red)),
+                    )
+                    .child(
+                        v_flex()
+                            .gap_1()
+                            .child(field_label(strings.field_time, muted))
+                            .child(keep_focus("field-time", Input::new(&self.time)))
+                            .children(field_error(self.time_error.as_ref(), colors.red)),
+                    )
+                    .child(self.render_penalty_row(cx))
+                    .child(
+                        v_flex()
+                            .gap_1()
+                            .child(field_label(strings.field_comment, muted))
+                            .child(keep_focus("field-comment", Input::new(&self.comment)))
+                            .children(field_error(self.comment_error.as_ref(), colors.red)),
+                    )
+                    .child(self.render_history(cx)),
+            )
     }
 }
 
@@ -289,7 +304,7 @@ impl SolveForm {
                     .flex_1()
                     .gap_1()
                     .child(field_label(strings.field_date, muted))
-                    .child(Input::new(&self.date))
+                    .child(keep_focus("field-date", Input::new(&self.date)))
                     .children(field_error(self.date_error.as_ref(), red)),
             )
     }
@@ -361,8 +376,12 @@ impl SolveForm {
                 Button::new("history-toggle")
                     .text()
                     .small()
+                    .icon(if self.history_expanded {
+                        IconName::ChevronUp
+                    } else {
+                        IconName::ChevronDown
+                    })
                     .label(toggle_label)
-                    .dropdown_caret(true)
                     .tab_stop(false)
                     .on_click(cx.listener(|form, _, _, cx| {
                         form.history_expanded = !form.history_expanded;
@@ -406,6 +425,15 @@ impl SolveForm {
 /// A small muted caption above a field.
 fn field_label(text: &'static str, muted: Hsla) -> impl IntoElement {
     div().text_xs().text_color(muted).child(text)
+}
+
+/// Wraps a text field so presses inside it never reach the dialog
+/// background, which would pull focus away from the field just pressed.
+fn keep_focus(id: &'static str, field: impl IntoElement) -> impl IntoElement {
+    div()
+        .id(id)
+        .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+        .child(field)
 }
 
 /// A validation message below a field, if there is one.
@@ -576,8 +604,9 @@ fn new_form(
     let date_subminute_ms = solve.solved_at_unix_ms() % 60_000;
     let event = solve.event();
     let modifier = solve.modifier();
-    cx.new(|_| SolveForm {
+    cx.new(|cx| SolveForm {
         app,
+        focus: cx.focus_handle(),
         index,
         changes,
         event,
