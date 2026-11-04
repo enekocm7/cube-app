@@ -20,7 +20,7 @@ use gpui_kit::component::Sizable as _;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::menu::{DropdownMenu as _, PopupMenuItem};
 use gpui_kit::component::notification::Notification;
-use gpui_kit::component::{ActiveTheme as _, TitleBar, WindowExt as _, h_flex, v_flex};
+use gpui_kit::component::{ActiveTheme as _, Icon, TitleBar, WindowExt as _, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
@@ -954,7 +954,16 @@ impl CubeApp {
                 div().occlude().flex_none().child(
                     Button::new("event")
                         .text()
-                        .label(event.name())
+                        // An equal spacer balances the arrow, so the label itself is what
+                        // sits in the middle.
+                        .child(
+                            h_flex()
+                                .gap_1()
+                                .items_center()
+                                .child(div().w(px(14.)))
+                                .child(event.name())
+                                .child(Icon::new(IconName::ChevronDown).size(px(14.))),
+                        )
                         .tab_stop(false)
                         .dropdown_menu(move |mut menu, _, _| {
                             for item in WcaEvent::ALL {
