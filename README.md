@@ -67,6 +67,12 @@ for valid bindings.
 | `A` | Show stats, or return to the timer |
 | `G` | Show charts, or return to the timer |
 | `B` | Connect or disconnect a Bluetooth timer |
+| `V` | Show the next charts view |
+| `F` | Filter charts by the next event |
+| `R` / `Shift + R` | Filter charts by the next range, or by custom dates |
+| `W` | Chart one session or all of them |
+| `Z` / `Shift + Z` | Zoom the times chart in or out |
+| `X` | Reset the times chart zoom |
 | `Ctrl + ,` | Open settings |
 | `F1` | Open the keyboard shortcuts |
 
@@ -114,7 +120,10 @@ Around the shortcuts:
 - A stats screen with a heat-mapped table of every solve's rolling averages. Click a value, in the table or the stats
   panel, to see the solves behind it and how far each landed from the average, with the trimmed ones marked. Copy an
   average as text to share it.
-- A charts screen with your times, your ao5 and their distribution.
+- A charts screen with your times, ao5, ao12 and ao100, personal bests, DNFs and the distribution of your times.
+- Chart filters by session, event, last solves and dates.
+- Zoom on the times chart with the mouse wheel.
+- A calendar of solves per day, a comparison of sessions and your all-time bests per event.
 
 **Interface**
 
