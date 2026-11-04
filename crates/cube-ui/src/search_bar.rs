@@ -1,13 +1,14 @@
 //! The search field at the top of the shortcuts and settings dialogs.
 
 use cube_locale::Strings;
-use gpui_kit::component::Sizable as _;
+use gpui_kit::assets::IconName;
 use gpui_kit::component::input::{Input, InputEvent, InputState};
+use gpui_kit::component::{ActiveTheme as _, Icon};
 use gpui_kit::*;
 
 /// Vertical space the bar takes above a dialog's scrolling body, which the body
 /// gives up so the whole dialog keeps its height.
-pub(crate) const BAR_HEIGHT: Pixels = px(56.);
+pub(crate) const BAR_HEIGHT: Pixels = px(68.);
 
 /// Creates the field and re-renders `V` whenever its text changes.
 pub(crate) fn new_search<V: 'static>(
@@ -26,12 +27,36 @@ pub(crate) fn new_search<V: 'static>(
 }
 
 /// The field, laid out above a dialog's scrolling body.
-pub(crate) fn search_bar(input: &Entity<InputState>) -> Div {
-    div()
-        .h(BAR_HEIGHT)
-        .px_4()
-        .pt_4()
-        .child(Input::new(input).small().w_full())
+pub(crate) fn search_bar(input: &Entity<InputState>, cx: &App) -> Div {
+    div().h(BAR_HEIGHT).px_4().pt_4().child(
+        Input::new(input)
+            .w_full()
+            .cleanable(true)
+            .prefix(Icon::new(IconName::Search).text_color(cx.theme().muted_foreground)),
+    )
+}
+
+/// Moves focus to the field when `/` is pressed anywhere else in the dialog.
+/// Returns whether the key was taken, so the `/` is not typed into the field.
+pub(crate) fn focus_on_slash(
+    event: &KeyDownEvent,
+    input: &Entity<InputState>,
+    window: &mut Window,
+    cx: &mut App,
+) -> bool {
+    let keystroke = &event.keystroke;
+    let plain =
+        !keystroke.modifiers.control && !keystroke.modifiers.alt && !keystroke.modifiers.platform;
+    let focus = input.read(cx).focus_handle(cx);
+    if event.is_held
+        || !plain
+        || keystroke.key_char.as_deref() != Some("/")
+        || focus.is_focused(window)
+    {
+        return false;
+    }
+    focus.focus(window, cx);
+    true
 }
 
 /// What the user has typed so far.

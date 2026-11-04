@@ -16,7 +16,7 @@ use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_tit
 use crate::dialog_submit::{close_action, route_enter};
 use crate::palette::Palette;
 use crate::scroll_fade::FadeScroll;
-use crate::search_bar::{BAR_HEIGHT, new_search, query, search_bar};
+use crate::search_bar::{BAR_HEIGHT, focus_on_slash, new_search, query, search_bar};
 
 /// The panel has action labels, key pills and icon buttons side by side, so it
 /// uses the roomier form size rather than the narrower settings size.
@@ -339,53 +339,60 @@ impl Render for KeybindsView {
             .collect();
         let no_results = sections.is_empty();
 
-        let bar = search_bar(&self.search);
+        let bar = search_bar(&self.search, cx);
         dialog_body(
-            v_flex().child(bar).child(
-                FadeScroll::new("keybind-panel", cx.theme().background)
-                    .track_focus(&self.focus)
-                    .on_key_down(cx.listener(Self::on_key_down))
-                    .max_h(max_height - BAR_HEIGHT)
-                    .p_4()
-                    .gap_5()
-                    .child(
-                        div()
-                            .text_sm()
-                            .text_color(cx.theme().muted_foreground)
-                            .child(strings.help_any_key_stops),
-                    )
-                    .when(self.editing, |column| {
-                        column.child(
+            v_flex()
+                .on_key_down(cx.listener(|view, event: &KeyDownEvent, window, cx| {
+                    if focus_on_slash(event, &view.search, window, cx) {
+                        cx.stop_propagation();
+                    }
+                }))
+                .child(bar)
+                .child(
+                    FadeScroll::new("keybind-panel", cx.theme().background)
+                        .track_focus(&self.focus)
+                        .on_key_down(cx.listener(Self::on_key_down))
+                        .max_h(max_height - BAR_HEIGHT)
+                        .p_4()
+                        .gap_5()
+                        .child(
                             div()
                                 .text_sm()
                                 .text_color(cx.theme().muted_foreground)
-                                .child(strings.keybind_hint),
+                                .child(strings.help_any_key_stops),
                         )
-                    })
-                    .when_some(capture_hint, |column, hint| {
-                        column.child(div().text_sm().text_color(colors.yellow).child(hint))
-                    })
-                    .when_some(self.error.clone(), |column, error| {
-                        column.child(div().text_sm().text_color(colors.red).child(error))
-                    })
-                    .children(sections)
-                    .when(no_results, |column| {
-                        column.child(
+                        .when(self.editing, |column| {
+                            column.child(
+                                div()
+                                    .text_sm()
+                                    .text_color(cx.theme().muted_foreground)
+                                    .child(strings.keybind_hint),
+                            )
+                        })
+                        .when_some(capture_hint, |column, hint| {
+                            column.child(div().text_sm().text_color(colors.yellow).child(hint))
+                        })
+                        .when_some(self.error.clone(), |column, error| {
+                            column.child(div().text_sm().text_color(colors.red).child(error))
+                        })
+                        .children(sections)
+                        .when(no_results, |column| {
+                            column.child(
+                                div()
+                                    .text_base()
+                                    .text_color(cx.theme().muted_foreground)
+                                    .child(strings.search_no_results),
+                            )
+                        })
+                        .child(
                             div()
-                                .text_base()
+                                .px_2()
+                                .pt_2()
+                                .text_sm()
                                 .text_color(cx.theme().muted_foreground)
-                                .child(strings.search_no_results),
-                        )
-                    })
-                    .child(
-                        div()
-                            .px_2()
-                            .pt_2()
-                            .text_sm()
-                            .text_color(cx.theme().muted_foreground)
-                            .child(strings.help_hint),
-                    ),
-            ),
+                                .child(strings.help_hint),
+                        ),
+                ),
         )
     }
 }

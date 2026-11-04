@@ -85,7 +85,7 @@ danger-coloured trash can to remove its shortcut. Bindings can also be edited by
 in `cube-gui.toml`; [docs/keybinds.md](docs/keybinds.md) documents every action, the key syntax and the validation
 rules.
 
-The shortcuts panel and the settings dialog both start with a search field (reachable with `Tab`). Type to
+The shortcuts panel and the settings dialog both start with a search field. Press `/` to jump straight to it (or reach it with `Tab`). Type to
 filter rows by label or current value, such as `space`, `ctrl` or `unassigned` for shortcuts, or `dark` or `off` for
 settings; matching ignores case and uses the interface language. Sections with no match are hidden.
 

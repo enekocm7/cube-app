@@ -26,7 +26,7 @@ use crate::app::CubeApp;
 use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_title, dialog_width};
 use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
 use crate::scroll_fade::FadeScroll;
-use crate::search_bar::{BAR_HEIGHT, new_search, query, search_bar};
+use crate::search_bar::{BAR_HEIGHT, focus_on_slash, new_search, query, search_bar};
 
 const ROW_MIN_HEIGHT: Pixels = px(44.);
 
@@ -42,6 +42,8 @@ struct SettingsView {
     scramble_pt_invalid: bool,
     /// Filters the rows by label and visible value.
     search: Entity<InputState>,
+    /// Holds focus so `/` reaches the dialog before anything is clicked.
+    focus: FocusHandle,
 }
 
 impl SettingsView {
@@ -862,21 +864,29 @@ impl Render for SettingsView {
         let max_height = dialog_body_height(DialogSize::STANDARD, window);
 
         dialog_body(
-            v_flex().child(search_bar(&self.search)).child(
-                FadeScroll::new("settings-scroll", cx.theme().background)
-                    .max_h(max_height - BAR_HEIGHT)
-                    .p_4()
-                    .gap_5()
-                    .children(sections)
-                    .when(no_results, |column| {
-                        column.child(
-                            div()
-                                .text_sm()
-                                .text_color(cx.theme().muted_foreground)
-                                .child(strings.search_no_results),
-                        )
-                    }),
-            ),
+            v_flex()
+                .track_focus(&self.focus)
+                .on_key_down(cx.listener(|view, event: &KeyDownEvent, window, cx| {
+                    if focus_on_slash(event, &view.search, window, cx) {
+                        cx.stop_propagation();
+                    }
+                }))
+                .child(search_bar(&self.search, cx))
+                .child(
+                    FadeScroll::new("settings-scroll", cx.theme().background)
+                        .max_h(max_height - BAR_HEIGHT)
+                        .p_4()
+                        .gap_5()
+                        .children(sections)
+                        .when(no_results, |column| {
+                            column.child(
+                                div()
+                                    .text_sm()
+                                    .text_color(cx.theme().muted_foreground)
+                                    .child(strings.search_no_results),
+                            )
+                        }),
+                ),
         )
     }
 }
@@ -1015,12 +1025,18 @@ impl CubeApp {
                 scramble_pt: scramble_pt.clone(),
                 scramble_pt_invalid: false,
                 search,
+                focus: cx.focus_handle(),
             }
         });
         let strings_app = cx.entity();
+        let first_build = std::cell::Cell::new(true);
         window.open_dialog(cx, move |dialog, window, cx| {
             let strings = strings_app.read(cx).strings();
             let view = view.clone();
+            if first_build.replace(false) {
+                let focus = view.read(cx).focus.clone();
+                focus.focus(window, cx);
+            }
             dialog
                 .title(dialog_title(
                     div().text_lg().child(strings.settings),
