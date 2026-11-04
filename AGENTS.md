@@ -117,6 +117,13 @@ settings, import/export dialogs and help.
   is an error, never an empty history (treating it as empty would let the
   next save overwrite it). The app turns saving off in that case; preserve
   that behavior. Writes go through the atomic sibling-temp-file helper.
+- **Saving the history** goes through `history_writer::HistoryWriter`, never
+  a bare write. Its thread owns the `persistence::HistoryStore`, which merges
+  what cube-tui wrote (`cube-core::merge`), keeps backups, and refuses to
+  overwrite a file it can't read. cube-tui rewrites the whole file, so a
+  solve missing from it proves nothing: a merge must never let the file
+  remove a solve or a session. A merge reaches the UI as a `Merge` it adopts
+  only once no attempt or dialog is relying on solve positions.
 - **User-facing strings** go in `cube-locale` as fields on `Strings`, never
   hard-coded in the UI. A missing translation is a compile error by design:
   add the field, fill it in `en.rs` **and** `es.rs`, and keep `{placeholder}`
