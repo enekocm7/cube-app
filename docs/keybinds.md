@@ -53,7 +53,8 @@ The key is checked before it is saved:
 - It must be a key the application understands. A modifier on its own, such as
   `Shift`, is not a key.
 - It must not already belong to another action. The error names the action that
-  uses it.
+  uses it. To swap two keys, remove one of them first, or set both overrides in
+  the file together.
 - The timer key cannot use `Ctrl`, `Alt` or `Shift`, because press and release
   must be unambiguous.
 - The timer key cannot be removed; every other action can.
@@ -106,12 +107,13 @@ the same file.
 
 ### Validation
 
-Invalid values are ignored instead of breaking the settings file: the action
-keeps its previous value, which is its default unless another override changed
-it. This also covers unknown action names, keys the application does not
-understand, a timer key with modifiers, and two actions asking for the same key.
-The settings dialog shows the effective bindings, so `F1` is always the quickest
-way to check what is really active.
+Invalid values are ignored instead of breaking the settings file. An action with
+an invalid or conflicting override usually keeps its default; if another
+override has claimed that default key, the action is left unassigned so two
+actions never share a key. This also covers unknown action names, keys the
+application does not understand, a timer key with modifiers, and two actions
+asking for the same key. The settings dialog shows the effective bindings, so
+`F1` is always the quickest way to check what is really active.
 
 ## Where the settings live
 

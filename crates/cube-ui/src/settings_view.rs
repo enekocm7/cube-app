@@ -9,6 +9,7 @@ use cube_locale::{Language, Strings};
 use gpui_kit::assets::IconName;
 use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
+use gpui_kit::component::notification::Notification;
 use gpui_kit::component::scroll::ScrollableElement as _;
 use gpui_kit::component::switch::Switch;
 use gpui_kit::component::{
@@ -106,6 +107,18 @@ impl SettingsView {
         });
     }
 
+    /// Shows a rejected key change inline and as a notification.
+    fn report_binding_error(
+        &mut self,
+        message: String,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        window.push_notification(Notification::error(message.clone()), cx);
+        self.error = Some(message);
+        cx.notify();
+    }
+
     /// Starts waiting for the key that will replace `action`'s binding.
     fn start_capture(&mut self, action: Action, window: &mut Window, cx: &mut Context<Self>) {
         self.capturing = Some(action);
@@ -122,7 +135,9 @@ impl SettingsView {
             .update(cx, |app, cx| app.set_keybinding(action, None, window, cx))
         {
             Ok(()) => self.error = None,
-            Err(error) => self.error = Some(binding_error_message(strings, error)),
+            Err(error) => {
+                self.report_binding_error(binding_error_message(strings, error), window, cx);
+            }
         }
         self.capturing = None;
         self.focus.focus(window, cx);
@@ -151,8 +166,8 @@ impl SettingsView {
             return;
         }
         let Some(press) = key_press(&event.keystroke) else {
-            self.error = Some(self.app.read(cx).strings().keybind_error_invalid.to_owned());
-            cx.notify();
+            let message = self.app.read(cx).strings().keybind_error_invalid.to_owned();
+            self.report_binding_error(message, window, cx);
             return;
         };
         let binding = KeyBinding::from_press(&press);
@@ -164,10 +179,12 @@ impl SettingsView {
                 self.capturing = None;
                 self.error = None;
                 self.focus.focus(window, cx);
+                cx.notify();
             }
-            Err(error) => self.error = Some(binding_error_message(strings, error)),
+            Err(error) => {
+                self.report_binding_error(binding_error_message(strings, error), window, cx);
+            }
         }
-        cx.notify();
     }
 
     /// One row per action: its current key, a Change button and, when allowed,

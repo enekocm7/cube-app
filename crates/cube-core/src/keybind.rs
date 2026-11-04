@@ -276,6 +276,10 @@ impl Keybinds {
     /// and bindings that would collide with another action are ignored.
     pub fn from_overrides(overrides: &BTreeMap<String, String>) -> Self {
         let mut bindings = Self::default();
+        let defaults = bindings.clone();
+
+        // Unknown actions, unreadable keys and invalid timer overrides keep the
+        // action's default, so they are not even considered here.
         let parsed: Vec<(Action, Option<KeyBinding>)> = overrides
             .iter()
             .filter_map(|(name, text)| {
@@ -286,28 +290,42 @@ impl Keybinds {
                 } else {
                     Some(KeyBinding::parse(text)?)
                 };
+                if action == Action::Timer {
+                    match &binding {
+                        None => return None,
+                        Some(binding) if binding.is_modified() => return None,
+                        Some(_) => {}
+                    }
+                }
                 Some((action, binding))
             })
             .collect();
 
-        // Removals go first so a key freed here can be reused by another
-        // action in the same settings file.
-        for (action, binding) in &parsed {
-            if binding.is_none() && *action != Action::Timer {
-                bindings.0.insert(*action, None);
-            }
+        // Clear every overridden default first. This makes swapping two keys
+        // and reusing a key freed by another override work in one file.
+        for (action, _) in &parsed {
+            bindings.0.insert(*action, None);
         }
+
+        let mut failed = Vec::new();
         for (action, binding) in parsed {
             let Some(binding) = binding else {
                 continue;
             };
-            if action == Action::Timer && binding.is_modified() {
-                continue;
-            }
             if bindings.conflict(action, &binding).is_some() {
+                failed.push(action);
                 continue;
             }
             bindings.0.insert(action, Some(binding));
+        }
+
+        // A conflicting override is ignored when its own default is still free.
+        for action in failed {
+            if let Some(default) = defaults.get(action).cloned()
+                && bindings.conflict(action, &default).is_none()
+            {
+                bindings.0.insert(action, Some(default));
+            }
         }
         bindings
     }
@@ -542,6 +560,44 @@ mod tests {
         let keybinds = Keybinds::from_overrides(&overrides);
         assert!(!keybinds.is_bound(Action::NextScramble));
         assert_eq!(keybinds.label(Action::DeleteSolve).as_deref(), Some("N"));
+    }
+
+    #[test]
+    fn an_overridden_default_frees_its_key_for_another_override() {
+        let overrides = BTreeMap::from([
+            ("next_scramble".to_owned(), "Ctrl+J".to_owned()),
+            ("delete_solve".to_owned(), "n".to_owned()),
+        ]);
+        let keybinds = Keybinds::from_overrides(&overrides);
+        assert_eq!(
+            keybinds.label(Action::NextScramble).as_deref(),
+            Some("Ctrl+J")
+        );
+        assert_eq!(keybinds.label(Action::DeleteSolve).as_deref(), Some("N"));
+    }
+
+    #[test]
+    fn two_overrides_can_swap_keys() {
+        let overrides = BTreeMap::from([
+            ("next_scramble".to_owned(), "d".to_owned()),
+            ("delete_solve".to_owned(), "n".to_owned()),
+        ]);
+        let keybinds = Keybinds::from_overrides(&overrides);
+        assert_eq!(keybinds.label(Action::NextScramble).as_deref(), Some("D"));
+        assert_eq!(keybinds.label(Action::DeleteSolve).as_deref(), Some("N"));
+    }
+
+    #[test]
+    fn a_conflicting_override_frees_its_key_for_a_valid_one() {
+        let overrides = BTreeMap::from([
+            ("next_scramble".to_owned(), "space".to_owned()),
+            ("next_solve".to_owned(), "n".to_owned()),
+        ]);
+        let keybinds = Keybinds::from_overrides(&overrides);
+        // Space belongs to the timer, so NextScramble cannot take it.
+        assert!(!keybinds.is_bound(Action::NextScramble));
+        // The valid override gets the key that was freed.
+        assert_eq!(keybinds.label(Action::NextSolve).as_deref(), Some("N"));
     }
 
     #[test]
