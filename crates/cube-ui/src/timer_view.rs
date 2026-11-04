@@ -18,9 +18,6 @@ use crate::scroll_fade::FadeScroll;
 /// Digit size of the timer.
 const DIGITS_SIZE: Pixels = px(112.);
 
-/// Line height of the scramble.
-const SCRAMBLE_LINE: Pixels = px(24.);
-
 /// Lines the scramble row always reserves: enough for most events, so that the
 /// digits stay put from one scramble to the next.
 const SCRAMBLE_MIN_LINES: f32 = 2.;
@@ -143,6 +140,8 @@ impl CubeApp {
     fn render_scramble_bar(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
         let strings = self.strings();
         let scramble = self.scramble.clone();
+        let size = self.settings.scramble_size;
+        let line = px(size.line_px());
         let theme = cx.theme();
         let mono = theme.mono_font_family.clone();
         let muted = theme.muted_foreground;
@@ -158,7 +157,7 @@ impl CubeApp {
         h_flex()
             .flex_none()
             .w_full()
-            .min_h(SCRAMBLE_LINE * SCRAMBLE_MIN_LINES)
+            .min_h(line * SCRAMBLE_MIN_LINES)
             .pb_3()
             .border_b_1()
             .border_color(border)
@@ -167,11 +166,11 @@ impl CubeApp {
                     .flex_1()
                     .min_w_0()
                     .h_auto()
-                    .max_h(SCRAMBLE_LINE * SCRAMBLE_MAX_LINES)
+                    .max_h(line * SCRAMBLE_MAX_LINES)
                     .text_center()
                     .font_family(mono)
-                    .text_base()
-                    .line_height(SCRAMBLE_LINE)
+                    .text_size(px(size.font_px()))
+                    .line_height(line)
                     .when(scramble.is_none(), |text| text.text_color(muted))
                     .when(scramble.is_some(), |text| {
                         text.text_color(scramble_color).cursor_pointer().tooltip(

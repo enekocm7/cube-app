@@ -2,7 +2,9 @@
 
 use cube_core::Settings;
 use cube_core::persistence;
-use cube_core::settings::{FontChoice, ThemePreference, UpdateChannel, UpdateFrequency};
+use cube_core::settings::{
+    FontChoice, ScrambleSize, ThemePreference, UpdateChannel, UpdateFrequency,
+};
 use cube_core::theme;
 use cube_core::theme::{ThemeColor, ThemeFile};
 use cube_locale::{Language, Strings};
@@ -176,6 +178,37 @@ impl SettingsView {
                                     app.update(cx, |app, cx| {
                                         app.update_settings(window, cx, move |settings| {
                                             settings.font = choice;
+                                        });
+                                    });
+                                }),
+                        );
+                    }
+                    menu
+                }),
+        )
+    }
+
+    /// How large the scramble is drawn.
+    fn scramble_size_row(&self, settings: &Settings, strings: &'static Strings) -> AnyElement {
+        let current = settings.scramble_size;
+        let app = self.app.clone();
+        row(
+            strings.setting_scramble_size,
+            Button::new("scramble-size")
+                .outline()
+                .small()
+                .label(scramble_size_label(strings, current))
+                .tab_stop(false)
+                .dropdown_menu(move |mut menu, _, _| {
+                    for choice in ScrambleSize::ALL {
+                        let app = app.clone();
+                        menu = menu.item(
+                            PopupMenuItem::new(scramble_size_label(strings, choice))
+                                .checked(choice == current)
+                                .on_click(move |_, window, cx| {
+                                    app.update(cx, |app, cx| {
+                                        app.update_settings(window, cx, move |settings| {
+                                            settings.scramble_size = choice;
                                         });
                                     });
                                 }),
@@ -606,6 +639,7 @@ impl Render for SettingsView {
                 cx,
             ),
             self.font_row(&settings, strings),
+            self.scramble_size_row(&settings, strings),
             self.switch(
                 "toasts",
                 strings.setting_toasts,
@@ -687,6 +721,15 @@ fn theme_hsla(color: ThemeColor) -> Hsla {
 }
 
 /// The menu label for a font choice.
+fn scramble_size_label(strings: &'static Strings, size: ScrambleSize) -> &'static str {
+    match size {
+        ScrambleSize::Normal => strings.scramble_size_normal,
+        ScrambleSize::Large => strings.scramble_size_large,
+        ScrambleSize::Larger => strings.scramble_size_larger,
+        ScrambleSize::Largest => strings.scramble_size_largest,
+    }
+}
+
 fn font_label(strings: &'static Strings, choice: FontChoice) -> &'static str {
     match choice {
         FontChoice::System => strings.font_system,

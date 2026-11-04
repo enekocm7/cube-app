@@ -69,6 +69,40 @@ impl FontChoice {
     pub const ALL: [Self; 4] = [Self::System, Self::Timer, Self::Times, Self::Whole];
 }
 
+/// How large the scramble is drawn.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ScrambleSize {
+    /// The original size.
+    #[default]
+    Normal,
+    Large,
+    Larger,
+    /// For reading the scramble from across the room.
+    Largest,
+}
+
+impl ScrambleSize {
+    /// Every size, in the order the settings menu lists them.
+    pub const ALL: [Self; 4] = [Self::Normal, Self::Large, Self::Larger, Self::Largest];
+
+    /// Text size in pixels.
+    pub const fn font_px(self) -> f32 {
+        match self {
+            Self::Normal => 16.0,
+            Self::Large => 22.0,
+            Self::Larger => 30.0,
+            Self::Largest => 40.0,
+        }
+    }
+
+    /// Line height in pixels: the text size plus half again, as the original
+    /// 16px text had 24px lines.
+    pub const fn line_px(self) -> f32 {
+        self.font_px() * 1.5
+    }
+}
+
 /// Updater state and preferences.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
@@ -146,6 +180,8 @@ pub struct Settings {
     pub always_show_scrollbar: bool,
     /// Which text uses the bundled `JetBrains Mono`.
     pub font: FontChoice,
+    /// How large the scramble is drawn.
+    pub scramble_size: ScrambleSize,
     /// Whether the start hint has been used, so it is no longer shown while idle.
     pub start_hint_seen: bool,
     /// Action name to keystroke overrides; see [`crate::keybind`].
@@ -174,6 +210,7 @@ impl Default for Settings {
             solve_list_ao5: false,
             always_show_scrollbar: false,
             font: FontChoice::default(),
+            scramble_size: ScrambleSize::default(),
             start_hint_seen: false,
             keybindings: BTreeMap::new(),
             sidebar_width: DEFAULT_SIDEBAR_WIDTH,
@@ -248,6 +285,16 @@ mod tests {
         assert!(!Settings::default().inspection_audio);
         let settings: Settings = toml::from_str("inspection_audio = true").unwrap();
         assert!(settings.inspection_audio);
+    }
+
+    #[test]
+    fn scramble_size_defaults_and_scales_lines() {
+        assert_eq!(Settings::default().scramble_size, ScrambleSize::Normal);
+        assert!((ScrambleSize::Normal.line_px() - 24.0).abs() < f32::EPSILON);
+        let settings: Settings = toml::from_str("scramble_size = 'largest'").unwrap();
+        assert_eq!(settings.scramble_size, ScrambleSize::Largest);
+        let sizes = ScrambleSize::ALL.map(ScrambleSize::line_px);
+        assert!(sizes.windows(2).all(|pair| pair[0] < pair[1]));
     }
 
     #[test]
