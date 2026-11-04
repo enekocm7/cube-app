@@ -960,6 +960,7 @@ impl CubeApp {
                             h_flex()
                                 .gap_1()
                                 .items_center()
+                                .text_base()
                                 .child(div().w(px(14.)))
                                 .child(event.name())
                                 .child(Icon::new(IconName::ChevronDown).size(px(14.))),
