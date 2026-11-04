@@ -18,7 +18,7 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::CubeApp;
-use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_width};
+use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_title, dialog_width};
 use crate::scroll_fade::FadeScroll;
 
 const ROW_MIN_HEIGHT: Pixels = px(44.);
@@ -576,11 +576,15 @@ impl CubeApp {
             let content_view = content_view.clone();
             let save_view = save_view.clone();
             dialog
-                .title(div().text_lg().pb_2().child(if is_new {
-                    strings.new_theme
-                } else {
-                    strings.edit_theme
-                }))
+                .title(dialog_title(
+                    div().text_lg().child(if is_new {
+                        strings.new_theme
+                    } else {
+                        strings.edit_theme
+                    }),
+                    strings.close,
+                ))
+                .close_button(false)
                 .w(dialog_width(DialogSize::WIDE, window))
                 .content(move |content, _, cx| {
                     content
