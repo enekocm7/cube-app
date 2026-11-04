@@ -64,11 +64,11 @@ pub fn format_rfc3339(unix_ms: u64) -> String {
 }
 
 /// Formats Unix milliseconds as a local date and time for editing:
-/// `2026-11-02 00:07`.
+/// `2026-11-02 00:07:32`.
 ///
-/// Seconds and smaller units are left out: they don't matter for a solve's
-/// date. Returns an empty string when the date is unknown (`0`) or out of
-/// range, matching what [`parse_date_input`] reads back as unknown.
+/// Milliseconds are left out: they don't matter for a solve's date. Returns
+/// an empty string when the date is unknown (`0`) or out of range, matching
+/// what [`parse_date_input`] reads back as unknown.
 pub fn format_date_input(unix_ms: u64) -> String {
     if unix_ms == 0 {
         return String::new();
@@ -78,7 +78,7 @@ pub fn format_date_input(unix_ms: u64) -> String {
         .and_then(DateTime::from_timestamp_millis)
         .map_or_else(String::new, |date| {
             date.with_timezone(&Local)
-                .format("%Y-%m-%d %H:%M")
+                .format("%Y-%m-%d %H:%M:%S")
                 .to_string()
         })
 }
@@ -304,13 +304,12 @@ mod tests {
         assert_eq!(parse_date_input("   "), Some(0));
         let minute = parse_date_input("2026-11-02 00:07").unwrap();
         assert_eq!(minute % 60_000, 0);
-        assert_eq!(format_date_input(minute), "2026-11-02 00:07");
+        assert_eq!(format_date_input(minute), "2026-11-02 00:07:00");
         assert_eq!(format_date_input(0), "");
-        // Seconds are accepted but never shown.
-        assert_eq!(
-            parse_date_input("2026-11-02 00:07:32").unwrap(),
-            minute + 32_000
-        );
+        // Seconds are shown and round-trip.
+        let with_seconds = parse_date_input("2026-11-02 00:07:32").unwrap();
+        assert_eq!(with_seconds, minute + 32_000);
+        assert_eq!(format_date_input(with_seconds), "2026-11-02 00:07:32");
         for text in [
             "yesterday",
             "2026-11-02",

@@ -116,6 +116,9 @@ pub struct Strings {
     pub date_placeholder: &'static str,
     pub edit_history: &'static str,
     pub history_empty: &'static str,
+    /// `{count}`: how many edits the solve has.
+    pub history_show: &'static str,
+    pub history_hide: &'static str,
     /// `{number}`: the revision; `{date}`: when it was saved.
     pub history_revision: &'static str,
     pub history_before: &'static str,
@@ -243,6 +246,7 @@ mod tests {
             assert!(strings.delete_session_confirm.contains("{count}"));
             assert!(strings.session_default_name.contains("{number}"));
             assert!(strings.invalid_scramble.contains("{event}"));
+            assert!(strings.history_show.contains("{count}"));
             assert!(strings.history_revision.contains("{number}"));
             assert!(strings.history_revision.contains("{date}"));
             assert!(strings.toast_save_failed.contains("{error}"));

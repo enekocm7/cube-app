@@ -350,13 +350,18 @@ impl SolveForm {
                 .into_any_element();
         }
         let entries = self.history_entries();
+        let toggle_label = if self.history_expanded {
+            strings.history_hide.to_owned()
+        } else {
+            strings.history_show.replace("{count}", &count.to_string())
+        };
         Collapsible::new()
             .open(self.history_expanded)
             .child(
                 Button::new("history-toggle")
                     .text()
                     .small()
-                    .label(format!("{} ({count})", strings.edit_history))
+                    .label(toggle_label)
                     .dropdown_caret(true)
                     .tab_stop(false)
                     .on_click(cx.listener(|form, _, _, cx| {
