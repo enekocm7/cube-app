@@ -19,6 +19,7 @@ use gpui_kit::*;
 
 use crate::app::CubeApp;
 use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
+use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
 use crate::scroll_fade::FadeScroll;
 
 const ROW_MIN_HEIGHT: Pixels = px(44.);
@@ -573,6 +574,9 @@ impl CubeApp {
             let strings = strings_app.read(cx).strings();
             let content_view = content_view.clone();
             let save_view = save_view.clone();
+            let save: Submit = std::rc::Rc::new(move |window, cx| {
+                save_view.update(cx, |editor, cx| editor.save(window, cx));
+            });
             dialog
                 .title(div().text_lg().pb_2().child(if is_new {
                     strings.new_theme
@@ -580,6 +584,7 @@ impl CubeApp {
                     strings.edit_theme
                 }))
                 .w(dialog_width(DialogSize::WIDE, window))
+                .submit_on_enter(&save)
                 .content(move |content, _, cx| {
                     content
                         .px_0()
@@ -603,9 +608,7 @@ impl CubeApp {
                             Button::new("theme-editor-save")
                                 .primary()
                                 .label(strings.save)
-                                .on_click(move |_, window, cx| {
-                                    save_view.update(cx, |editor, cx| editor.save(window, cx));
-                                }),
+                                .on_click(on_press(&save)),
                         ),
                 )
         });

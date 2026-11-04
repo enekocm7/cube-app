@@ -45,7 +45,7 @@ cargo run --release
 ## How to use it
 
 cube is designed to be fully usable from the keyboard: every action below has a shortcut, dialogs stay reachable
-with `Tab`, `Enter` and `Space`, and the **Edit** button on the `F1` shortcuts panel rebinds or removes them. See
+with `Tab`, `Enter` and `Space`, `Enter` runs a dialog's primary action while `Esc` closes it, and the **Edit** button on the `F1` shortcuts panel rebinds or removes them. See
 [docs/keybinds.md](docs/keybinds.md) for the full reference, the key name syntax, and how to change bindings from
 `cube-gui.toml`.
 

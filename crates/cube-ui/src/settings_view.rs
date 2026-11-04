@@ -19,6 +19,7 @@ use gpui_kit::*;
 
 use crate::app::CubeApp;
 use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
+use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
 use crate::scroll_fade::FadeScroll;
 
 const ROW_MIN_HEIGHT: Pixels = px(44.);
@@ -443,9 +444,43 @@ impl SettingsView {
             let app = app.clone();
             let file = file.clone();
             let display = display.clone();
+            let delete: Submit = std::rc::Rc::new(move |window, cx| {
+                window.close_dialog(cx);
+                let app = app.clone();
+                let file = file.clone();
+                let display = display.clone();
+                let dir = match persistence::themes_dir() {
+                    Ok(dir) => dir,
+                    Err(error) => {
+                        let message = strings
+                            .theme_delete_failed
+                            .replace("{error}", &format!("{error:#}"));
+                        app.update(cx, |app, cx| {
+                            app.toast(&message, window, cx);
+                        });
+                        return;
+                    }
+                };
+                match theme::delete(&dir, &file) {
+                    Ok(()) => {
+                        app.update(cx, |app, cx| {
+                            app.theme_deleted(&file, &display, window, cx);
+                        });
+                    }
+                    Err(error) => {
+                        let message = strings
+                            .theme_delete_failed
+                            .replace("{error}", &format!("{error:#}"));
+                        app.update(cx, |app, cx| {
+                            app.toast(&message, window, cx);
+                        });
+                    }
+                }
+            });
             dialog
                 .title(strings.delete_theme)
                 .w(dialog_width(DialogSize::COMPACT, window))
+                .submit_on_enter(&delete)
                 .child(message.clone())
                 .footer(
                     h_flex()
@@ -462,39 +497,7 @@ impl SettingsView {
                             Button::new("theme-delete-confirm")
                                 .danger()
                                 .label(strings.delete)
-                                .on_click(move |_, window, cx| {
-                                    window.close_dialog(cx);
-                                    let app = app.clone();
-                                    let file = file.clone();
-                                    let display = display.clone();
-                                    let dir = match persistence::themes_dir() {
-                                        Ok(dir) => dir,
-                                        Err(error) => {
-                                            let message = strings
-                                                .theme_delete_failed
-                                                .replace("{error}", &format!("{error:#}"));
-                                            app.update(cx, |app, cx| {
-                                                app.toast(&message, window, cx);
-                                            });
-                                            return;
-                                        }
-                                    };
-                                    match theme::delete(&dir, &file) {
-                                        Ok(()) => {
-                                            app.update(cx, |app, cx| {
-                                                app.theme_deleted(&file, &display, window, cx);
-                                            });
-                                        }
-                                        Err(error) => {
-                                            let message = strings
-                                                .theme_delete_failed
-                                                .replace("{error}", &format!("{error:#}"));
-                                            app.update(cx, |app, cx| {
-                                                app.toast(&message, window, cx);
-                                            });
-                                        }
-                                    }
-                                }),
+                                .on_click(on_press(&delete)),
                         ),
                 )
         });
@@ -721,6 +724,7 @@ impl CubeApp {
             dialog
                 .title(div().text_lg().pb_2().child(strings.settings))
                 .w(dialog_width(DialogSize::STANDARD, window))
+                .close_on_enter()
                 .content(move |content, _, cx| {
                     content
                         .px_0()

@@ -16,6 +16,7 @@ use gpui_kit::*;
 
 use crate::app::CubeApp;
 use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
+use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
 use crate::scroll_fade::FadeScroll;
 
 /// Current time as a Unix timestamp, for update pacing.
@@ -282,9 +283,16 @@ impl CubeApp {
         let fade = cx.theme().background;
         window.open_dialog(cx, move |dialog, window, _| {
             let entity = entity.clone();
+            let update: Submit = std::rc::Rc::new(move |window, cx| {
+                window.close_dialog(cx);
+                entity
+                    .update(cx, |this, cx| this.start_update(window, cx))
+                    .ok();
+            });
             dialog
                 .title(title.clone())
                 .w(dialog_width(DialogSize::STANDARD, window))
+                .submit_on_enter(&update)
                 .child(
                     FadeScroll::new("release-notes", fade)
                         .max_h(dialog_body_height(DialogSize::STANDARD, window))
@@ -306,12 +314,7 @@ impl CubeApp {
                             Button::new("notes-update")
                                 .primary()
                                 .label(update_label)
-                                .on_click(move |_, window, cx| {
-                                    window.close_dialog(cx);
-                                    entity
-                                        .update(cx, |this, cx| this.start_update(window, cx))
-                                        .ok();
-                                }),
+                                .on_click(on_press(&update)),
                         ),
                 )
         });

@@ -15,6 +15,7 @@ use gpui_kit::*;
 
 use crate::app::{CubeApp, average_label, format_average_at};
 use crate::dialog_size::{DialogSize, dialog_width};
+use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
 use crate::palette::Palette;
 use crate::scroll_fade::fading_scroll;
 
@@ -334,9 +335,20 @@ impl CubeApp {
                 input.focus_handle(cx).focus(window, cx);
             }
             let (input_for_save, entity) = (input.clone(), entity.clone());
+            let save: Submit = std::rc::Rc::new(move |window, cx| {
+                let name = input_for_save.read(cx).value().to_string();
+                entity
+                    .update(cx, |app, cx| {
+                        app.rename_session(index, &name, window, cx);
+                        app.focus.focus(window, cx);
+                    })
+                    .ok();
+                window.close_dialog(cx);
+            });
             dialog
                 .title(strings.rename_session)
                 .w(dialog_width(DialogSize::COMPACT, window))
+                .submit_on_enter(&save)
                 .child(Input::new(&input))
                 .footer(
                     h_flex()
@@ -353,16 +365,7 @@ impl CubeApp {
                             Button::new("rename-save")
                                 .primary()
                                 .label(strings.save)
-                                .on_click(move |_, window, cx| {
-                                    let name = input_for_save.read(cx).value().to_string();
-                                    entity
-                                        .update(cx, |app, cx| {
-                                            app.rename_session(index, &name, window, cx);
-                                            app.focus.focus(window, cx);
-                                        })
-                                        .ok();
-                                    window.close_dialog(cx);
-                                }),
+                                .on_click(on_press(&save)),
                         ),
                 )
         });
@@ -399,9 +402,14 @@ impl CubeApp {
         let on_confirm = std::rc::Rc::new(on_confirm);
         window.open_dialog(cx, move |dialog, window, _| {
             let on_confirm = std::rc::Rc::clone(&on_confirm);
+            let confirm: Submit = std::rc::Rc::new(move |window, cx| {
+                window.close_dialog(cx);
+                on_confirm(&(), window, cx);
+            });
             dialog
                 .title(title)
                 .w(dialog_width(DialogSize::COMPACT, window))
+                .submit_on_enter(&confirm)
                 .child(message.clone())
                 .footer(
                     h_flex()
@@ -418,10 +426,7 @@ impl CubeApp {
                             Button::new("confirm-delete")
                                 .danger()
                                 .label(strings.delete)
-                                .on_click(move |_, window, cx| {
-                                    window.close_dialog(cx);
-                                    on_confirm(&(), window, cx);
-                                }),
+                                .on_click(on_press(&confirm)),
                         ),
                 )
         });
