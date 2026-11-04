@@ -16,6 +16,7 @@ use gpui_kit::component::{ActiveTheme as _, Sizable as _, WindowExt as _, h_flex
 use gpui_kit::*;
 
 use crate::app::CubeApp;
+use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
 
 /// Current time as a Unix timestamp, for update pacing.
 fn unix_now() -> i64 {
@@ -278,15 +279,15 @@ impl CubeApp {
             .replace("{version}", &release.version.to_string());
         let close_label = strings.close;
         let update_label = strings.update_now;
-        window.open_dialog(cx, move |dialog, _, _| {
+        window.open_dialog(cx, move |dialog, window, _| {
             let entity = entity.clone();
             dialog
                 .title(title.clone())
-                .w(px(560.))
+                .w(dialog_width(DialogSize::STANDARD, window))
                 .child(
                     div()
                         .id("release-notes")
-                        .max_h(px(380.))
+                        .max_h(dialog_body_height(DialogSize::STANDARD, window))
                         .overflow_y_scrollbar()
                         .text_sm()
                         .child(notes.clone()),
@@ -368,11 +369,11 @@ impl CubeApp {
         window.open_dialog(cx, {
             let progress = progress.clone();
             let view = view.clone();
-            move |dialog, _, _| {
+            move |dialog, window, _| {
                 let progress = progress.clone();
                 dialog
                     .title(dialog_title)
-                    .w(px(460.))
+                    .w(dialog_width(DialogSize::COMPACT, window))
                     .close_button(false)
                     .overlay_closable(false)
                     .keyboard(false)

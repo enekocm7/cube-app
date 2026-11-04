@@ -12,13 +12,8 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::{CubeApp, key_press};
+use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
 use crate::palette::Palette;
-
-/// The tallest the scrolling body gets, however large the window is.
-const BODY_MAX_HEIGHT: Pixels = px(520.);
-/// The height the dialog needs around the body: its title, its footer and the
-/// margins it keeps from the window edges.
-const DIALOG_CHROME_HEIGHT: Pixels = px(170.);
 
 const TIMER_ACTIONS: [Action; 4] = [
     Action::Timer,
@@ -290,8 +285,7 @@ impl Render for KeybindsView {
         let strings = app.strings();
         let keybinds = app.keybinds().clone();
         let colors = Palette::of(cx);
-        let max_height =
-            (window.viewport_size().height - DIALOG_CHROME_HEIGHT).min(BODY_MAX_HEIGHT);
+        let max_height = dialog_body_height(DialogSize::STANDARD, window);
         let sections = [
             (strings.help_section_timer, &TIMER_ACTIONS[..]),
             (strings.help_section_solves, &SOLVE_ACTIONS[..]),
@@ -402,13 +396,13 @@ impl CubeApp {
             }
         });
 
-        window.open_dialog(cx, move |dialog, _, cx| {
+        window.open_dialog(cx, move |dialog, window, cx| {
             let editing = view.read(cx).editing;
             let edit_view = view.clone();
             let content_view = view.clone();
             dialog
                 .title(strings.help_title)
-                .w(px(560.))
+                .w(dialog_width(DialogSize::STANDARD, window))
                 .content(move |content, _, cx| {
                     content
                         .px_0()

@@ -2,13 +2,14 @@
 
 use cube_core::Settings;
 use cube_core::persistence;
-use cube_core::settings::{ThemePreference, UpdateChannel, UpdateFrequency};
+use cube_core::settings::{FontChoice, ThemePreference, UpdateChannel, UpdateFrequency};
 use cube_core::theme;
 use cube_core::theme::{ThemeColor, ThemeFile};
 use cube_locale::{Language, Strings};
 use gpui_kit::assets::IconName;
 use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
+use gpui_kit::component::menu::{DropdownMenu as _, PopupMenuItem};
 use gpui_kit::component::scroll::ScrollableElement as _;
 use gpui_kit::component::switch::Switch;
 use gpui_kit::component::{
@@ -18,12 +19,8 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::CubeApp;
+use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
 
-/// The tallest the scrolling body gets, however large the window is.
-const BODY_MAX_HEIGHT: Pixels = px(460.);
-/// The height the dialog needs around the body: its title, its footer and the
-/// margins it keeps from the window edges.
-const DIALOG_CHROME_HEIGHT: Pixels = px(170.);
 const ROW_MIN_HEIGHT: Pixels = px(44.);
 
 /// A view of the app's settings; re-renders whenever the app changes.
@@ -156,6 +153,37 @@ impl SettingsView {
                 }))
             })
             .collect()
+    }
+
+    /// Which text uses the bundled font.
+    fn font_row(&self, settings: &Settings, strings: &'static Strings) -> AnyElement {
+        let current = settings.font;
+        let app = self.app.clone();
+        row(
+            strings.setting_font,
+            Button::new("font")
+                .outline()
+                .small()
+                .label(font_label(strings, current))
+                .tab_stop(false)
+                .dropdown_menu(move |mut menu, _, _| {
+                    for choice in FontChoice::ALL {
+                        let app = app.clone();
+                        menu = menu.item(
+                            PopupMenuItem::new(font_label(strings, choice))
+                                .checked(choice == current)
+                                .on_click(move |_, window, cx| {
+                                    app.update(cx, |app, cx| {
+                                        app.update_settings(window, cx, move |settings| {
+                                            settings.font = choice;
+                                        });
+                                    });
+                                }),
+                        );
+                    }
+                    menu
+                }),
+        )
     }
 
     /// The updater's preferences and its manual check.
@@ -411,12 +439,13 @@ impl SettingsView {
         let app = self.app.clone();
         let file = file.to_owned();
         let display = display.to_owned();
-        window.open_dialog(cx, move |dialog, _, _| {
+        window.open_dialog(cx, move |dialog, window, _| {
             let app = app.clone();
             let file = file.clone();
             let display = display.clone();
             dialog
                 .title(strings.delete_theme)
+                .w(dialog_width(DialogSize::COMPACT, window))
                 .child(message.clone())
                 .footer(
                     h_flex()
@@ -568,6 +597,7 @@ impl Render for SettingsView {
                 |settings, value| settings.solve_list_ao5 = value,
                 cx,
             ),
+            self.font_row(&settings, strings),
             self.switch(
                 "toasts",
                 strings.setting_toasts,
@@ -585,8 +615,7 @@ impl Render for SettingsView {
             .into_any_element()];
         let data = self.data_rows(strings, cx);
 
-        let max_height =
-            (window.viewport_size().height - DIALOG_CHROME_HEIGHT).min(BODY_MAX_HEIGHT);
+        let max_height = dialog_body_height(DialogSize::STANDARD, window);
 
         v_flex()
             .id("settings-body")
@@ -649,6 +678,16 @@ fn theme_hsla(color: ThemeColor) -> Hsla {
     rgb(color.rgb()).into()
 }
 
+/// The menu label for a font choice.
+fn font_label(strings: &'static Strings, choice: FontChoice) -> &'static str {
+    match choice {
+        FontChoice::System => strings.font_system,
+        FontChoice::Timer => strings.font_timer,
+        FontChoice::Times => strings.font_times,
+        FontChoice::Whole => strings.font_whole,
+    }
+}
+
 /// A label on the left of its control.
 fn row(label: &'static str, control: impl IntoElement) -> AnyElement {
     h_flex()
@@ -678,12 +717,12 @@ impl CubeApp {
             }
         });
         let strings_app = cx.entity();
-        window.open_dialog(cx, move |dialog, _, cx| {
+        window.open_dialog(cx, move |dialog, window, cx| {
             let strings = strings_app.read(cx).strings();
             let view = view.clone();
             dialog
                 .title(div().text_lg().pb_2().child(strings.settings))
-                .w(px(480.))
+                .w(dialog_width(DialogSize::STANDARD, window))
                 .content(move |content, _, cx| {
                     content
                         .px_0()

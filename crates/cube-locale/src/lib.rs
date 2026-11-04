@@ -110,9 +110,23 @@ pub struct Strings {
     pub field_event: &'static str,
     pub date_unknown: &'static str,
     pub penalty_none: &'static str,
-    /// `{count}`: how many times the solve was edited.
-    pub edited_times: &'static str,
     pub invalid_time: &'static str,
+    pub invalid_duration: &'static str,
+    /// `{event}`: the event the scramble must match.
+    pub invalid_scramble: &'static str,
+    pub invalid_date: &'static str,
+    pub invalid_comment: &'static str,
+    pub date_placeholder: &'static str,
+    pub edit_history: &'static str,
+    pub history_empty: &'static str,
+    /// `{count}`: how many edits the solve has.
+    pub history_show: &'static str,
+    pub history_hide: &'static str,
+    /// `{number}`: the revision; `{date}`: when it was saved.
+    pub history_revision: &'static str,
+    pub history_before: &'static str,
+    pub history_after: &'static str,
+    pub empty_value: &'static str,
 
     pub save: &'static str,
     pub cancel: &'static str,
@@ -131,6 +145,11 @@ pub struct Strings {
     pub setting_toasts: &'static str,
     pub setting_accurate: &'static str,
     pub setting_solve_list_ao5: &'static str,
+    pub setting_font: &'static str,
+    pub font_system: &'static str,
+    pub font_timer: &'static str,
+    pub font_times: &'static str,
+    pub font_whole: &'static str,
     pub setting_theme: &'static str,
     pub setting_language: &'static str,
     pub setting_import: &'static str,
@@ -308,7 +327,10 @@ mod tests {
             assert!(strings.delete_session_confirm.contains("{name}"));
             assert!(strings.delete_session_confirm.contains("{count}"));
             assert!(strings.session_default_name.contains("{number}"));
-            assert!(strings.edited_times.contains("{count}"));
+            assert!(strings.invalid_scramble.contains("{event}"));
+            assert!(strings.history_show.contains("{count}"));
+            assert!(strings.history_revision.contains("{number}"));
+            assert!(strings.history_revision.contains("{date}"));
             assert!(strings.toast_save_failed.contains("{error}"));
             assert!(strings.toast_load_failed.contains("{error}"));
             assert!(strings.theme_save_failed.contains("{error}"));

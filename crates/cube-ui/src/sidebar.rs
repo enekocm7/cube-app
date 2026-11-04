@@ -14,6 +14,7 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::{CubeApp, average_label, format_average_at};
+use crate::dialog_size::{DialogSize, dialog_width};
 use crate::palette::Palette;
 
 /// The widest the session picker gets, however long the session's name is.
@@ -328,6 +329,7 @@ impl CubeApp {
             let (input_for_save, entity) = (input.clone(), entity.clone());
             dialog
                 .title(strings.rename_session)
+                .w(dialog_width(DialogSize::COMPACT, window))
                 .child(Input::new(&input))
                 .footer(
                     h_flex()
@@ -388,29 +390,33 @@ impl CubeApp {
     ) {
         let strings = self.strings();
         let on_confirm = std::rc::Rc::new(on_confirm);
-        window.open_dialog(cx, move |dialog, _, _| {
+        window.open_dialog(cx, move |dialog, window, _| {
             let on_confirm = std::rc::Rc::clone(&on_confirm);
-            dialog.title(title).child(message.clone()).footer(
-                h_flex()
-                    .w_full()
-                    .justify_end()
-                    .gap_2()
-                    .child(
-                        Button::new("confirm-cancel")
-                            .outline()
-                            .label(strings.cancel)
-                            .on_click(|_, window, cx| window.close_dialog(cx)),
-                    )
-                    .child(
-                        Button::new("confirm-delete")
-                            .danger()
-                            .label(strings.delete)
-                            .on_click(move |_, window, cx| {
-                                window.close_dialog(cx);
-                                on_confirm(&(), window, cx);
-                            }),
-                    ),
-            )
+            dialog
+                .title(title)
+                .w(dialog_width(DialogSize::COMPACT, window))
+                .child(message.clone())
+                .footer(
+                    h_flex()
+                        .w_full()
+                        .justify_end()
+                        .gap_2()
+                        .child(
+                            Button::new("confirm-cancel")
+                                .outline()
+                                .label(strings.cancel)
+                                .on_click(|_, window, cx| window.close_dialog(cx)),
+                        )
+                        .child(
+                            Button::new("confirm-delete")
+                                .danger()
+                                .label(strings.delete)
+                                .on_click(move |_, window, cx| {
+                                    window.close_dialog(cx);
+                                    on_confirm(&(), window, cx);
+                                }),
+                        ),
+                )
         });
     }
 }

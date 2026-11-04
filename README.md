@@ -15,12 +15,13 @@ solve history, so you can move between the terminal and the desktop without impo
   12 s audio cues warn you, and hold colors work like a stackmat's
 - Official WCA random-state scrambles for 12 events, generated with `tnoodle-rs`
 - Sessions with custom names
-- Solve history, with details, comments, penalties and edits that keep an audit trail
+- Solve history, with details you can edit (time, event, scramble, penalty, date and comment) and a full audit trail of every change
 - Current and best single, mo3, ao5, ao12, ao50 and ao100, plus mean, deviation and DNF count
 - Stats screen with charts of your times, your ao5 and their distribution
 - Light and dark themes, plus cube-tui TOML themes with a color-picker editor
 - Fully keyboard-controllable: every timer, solve, event, session and screen action has a rebindable shortcut, any
   key stops the timer, and `F1` lists the bindings
+- Optional bundled JetBrains Mono for the timer digits, all times, or the whole interface
 - Import and export csTimer sessions, with file pickers, from Settings → Data
 - Checks GitHub for new releases and updates itself, verifying the download against the release's SHA-256
 - Interface in English and Spanish
@@ -74,6 +75,9 @@ selected. Click a solve in the list to see its details or edit it.
 
 Hold `N`, `Up` or `Down` to repeat: scrambles keep coming and navigation keeps moving until you release the key.
 
+Dialogs size themselves to the window: settings, solve details and the theme editor get wider and taller on a large
+screen, and scroll their bodies when the window is too small to show everything.
+
 `F1` opens the shortcuts panel. Its **Edit** button (opposite **Close**) shows a pencil to rebind an action and a
 danger-coloured trash can to remove its shortcut. Bindings can also be edited by hand in the `[keybindings]` table
 in `cube-gui.toml`; [docs/keybinds.md](docs/keybinds.md) documents every action, the key syntax and the validation
@@ -85,6 +89,10 @@ remembered between launches.
 
 The start hint is only shown until you start your first solve, so the timer stays clean once you
 know the controls. It names whichever key the timer is bound to.
+
+Times use the system's monospace font. **Settings → Appearance → Font** can switch to
+[JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) for the timer only, for every time, or for the whole
+interface; the font is bundled under the SIL Open Font License and stays off by default.
 
 ## Themes
 
