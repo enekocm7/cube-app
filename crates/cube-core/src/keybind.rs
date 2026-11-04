@@ -585,6 +585,7 @@ mod tests {
         let press = KeyPress::new("E", false, false, false).unwrap();
         assert_eq!(binding.to_string(), "Shift+E");
         assert!(binding.matches(&press));
+        assert_eq!(KeyBinding::from_press(&press), binding);
     }
 
     #[test]
