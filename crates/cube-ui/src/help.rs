@@ -7,7 +7,6 @@ use gpui_kit::component::Size as ComponentSize;
 use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::notification::Notification;
-use gpui_kit::component::scroll::ScrollableElement as _;
 use gpui_kit::component::{ActiveTheme as _, Sizable as _, WindowExt as _, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
@@ -15,6 +14,7 @@ use gpui_kit::*;
 use crate::app::{CubeApp, key_press};
 use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
 use crate::palette::Palette;
+use crate::scroll_fade::FadeScroll;
 
 /// The panel has action labels, key pills and icon buttons side by side, so it
 /// uses the roomier form size rather than the narrower settings size.
@@ -309,14 +309,12 @@ impl Render for KeybindsView {
             })
             .collect();
 
-        v_flex()
-            .id("keybind-panel")
+        FadeScroll::new("keybind-panel", cx.theme().background)
             .track_focus(&self.focus)
             .on_key_down(cx.listener(Self::on_key_down))
             .max_h(max_height)
             .p_4()
             .gap_5()
-            .overflow_y_scrollbar()
             .child(
                 div()
                     .text_sm()
