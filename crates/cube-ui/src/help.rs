@@ -221,7 +221,7 @@ impl KeybindsView {
                                     .gap_2()
                                     .child(
                                         div()
-                                            .min_w(px(110.))
+                                            .min_w(px(140.))
                                             .text_center()
                                             .font_family(mono.clone())
                                             .text_xs()
