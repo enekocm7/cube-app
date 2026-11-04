@@ -176,7 +176,7 @@ impl KeybindsView {
             .gap_2()
             .child(
                 div()
-                    .text_xs()
+                    .text_sm()
                     .font_semibold()
                     .text_color(muted)
                     .child(heading),
@@ -211,9 +211,10 @@ impl KeybindsView {
                             .py_2()
                             .gap_3()
                             .justify_between()
-                            .text_sm()
+                            .text_base()
                             .child(
                                 div()
+                                    .text_base()
                                     .flex_1()
                                     .min_w_0()
                                     .child(action_label(strings, action)),
@@ -227,7 +228,7 @@ impl KeybindsView {
                                             .min_w(px(140.))
                                             .text_center()
                                             .font_family(mono.clone())
-                                            .text_xs()
+                                            .text_base()
                                             .text_color(keys_color)
                                             .child(keys),
                                     )
@@ -327,23 +328,23 @@ impl Render for KeybindsView {
                 .when(self.editing, |column| {
                     column.child(
                         div()
-                            .text_xs()
+                            .text_sm()
                             .text_color(cx.theme().muted_foreground)
                             .child(strings.keybind_hint),
                     )
                 })
                 .when_some(capture_hint, |column, hint| {
-                    column.child(div().text_xs().text_color(colors.yellow).child(hint))
+                    column.child(div().text_sm().text_color(colors.yellow).child(hint))
                 })
                 .when_some(self.error.clone(), |column, error| {
-                    column.child(div().text_xs().text_color(colors.red).child(error))
+                    column.child(div().text_sm().text_color(colors.red).child(error))
                 })
                 .children(sections)
                 .child(
                     div()
                         .px_2()
                         .pt_2()
-                        .text_xs()
+                        .text_sm()
                         .text_color(cx.theme().muted_foreground)
                         .child(strings.help_hint),
                 ),
