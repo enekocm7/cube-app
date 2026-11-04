@@ -13,7 +13,8 @@ solve history, so you can move between the terminal and the desktop without impo
 
 - Timer with WCA inspection that counts up to 15 seconds: `+2` and DNF are applied automatically, optional 8 s and
   12 s audio cues warn you, and hold colors work like a stackmat's
-- Official WCA random-state scrambles for 12 events, generated with `tnoodle-rs`
+- Official WCA random-state scrambles for 12 events, generated with `tnoodle-rs`, each drawn as a picture of the scrambled puzzle on the timer and in the
+  solve details
 - Sessions with custom names, deletable straight from the session dropdown
 - Solve history, with details you can edit (time, event, scramble, penalty, date and comment) and a full audit trail of every change
 - Current and best single, mo3, ao5, ao12, ao50 and ao100, plus mean, deviation and DNF count
@@ -56,6 +57,7 @@ with `Tab`, `Enter` and `Space`, `Enter` runs a dialog's primary action while `E
 | `Esc` | Cancel the current attempt without recording it, or leave the stats screen |
 | `N` | New scramble |
 | `I` | Turn WCA inspection on or off |
+| `P` | Show or hide the scramble preview |
 | `Up` / `Down` | Select a newer or older solve |
 | `Enter` | Open the selected solve's details |
 | `D` | Delete the selected solve |
@@ -100,6 +102,10 @@ Times use the system's monospace font. **Settings → Appearance → Font** can 
 interface; the font is bundled under the SIL Open Font License and stays off by default.
 **Settings → Appearance → Scramble size** picks Small, Normal (default), Large, Largest or Custom,
 which takes an exact size in points (6 to 120). Long scrambles still scroll.
+
+The scramble preview draws the puzzle as the scramble leaves it, under the timer and in the solve details (where it
+follows the scramble you are editing). Turn it off with **Settings → Appearance → Show the scramble preview**, or
+toggle it with `P`.
 
 ## Themes
 

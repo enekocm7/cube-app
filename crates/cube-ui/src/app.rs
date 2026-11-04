@@ -26,6 +26,7 @@ use gpui_kit::*;
 
 use crate::palette;
 use crate::panel_resize::{PanelSide, render_grab};
+use crate::preview::PreviewCache;
 use crate::stats_screen::ChartData;
 
 /// The most sessions cube-tui can display.
@@ -105,6 +106,8 @@ pub struct CubeApp {
     pub(crate) current: usize,
     pub(crate) event: WcaEvent,
     pub(crate) scramble: Option<String>,
+    /// The drawing of `scramble`, kept while the same one is on screen.
+    pub(crate) preview: PreviewCache,
     /// Whether the wait for a scramble has outlasted `GENERATING_DELAY`, so
     /// the placeholder message may show.
     pub(crate) generating_visible: bool,
@@ -193,6 +196,7 @@ impl CubeApp {
             current: 0,
             event,
             scramble: None,
+            preview: PreviewCache::default(),
             generating_visible: false,
             generating_timer: None,
             queue: ScrambleQueue::new(event),
@@ -393,6 +397,7 @@ impl CubeApp {
                 if self.screen != Screen::Timer => {}
             Action::NextScramble => self.skip_scramble(cx),
             Action::ToggleInspection => self.toggle_inspection(window, cx),
+            Action::ToggleScramblePreview => self.toggle_scramble_preview(window, cx),
             Action::PreviousSolve => self.select_solve(true, cx),
             Action::NextSolve => self.select_solve(false, cx),
             Action::OpenSolve => {
@@ -641,6 +646,13 @@ impl CubeApp {
                 settings.inspection = !settings.inspection;
             });
         }
+    }
+
+    /// Shows or hides the scramble preview, saving the setting.
+    pub(crate) fn toggle_scramble_preview(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.update_settings(window, cx, |settings| {
+            settings.scramble_preview = !settings.scramble_preview;
+        });
     }
 
     /// Moves the solve selection one step newer (`newer`) or older.
@@ -1344,7 +1356,7 @@ impl Render for CubeApp {
                     .when(!attempt, |row| {
                         row.child(self.render_sidebar(sidebar_width, cx))
                     })
-                    .child(self.render_timer(cx))
+                    .child(self.render_timer(window, cx))
                     .when(!attempt, |row| {
                         row.child(self.render_stats_panel(stats_width, cx))
                             // The grips go last so they sit above the panels they straddle.

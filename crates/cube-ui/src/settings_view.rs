@@ -693,6 +693,13 @@ impl Render for SettingsView {
                 cx,
             ),
             self.font_row(&settings, strings),
+            self.switch(
+                "scramble-preview",
+                strings.setting_scramble_preview,
+                settings.scramble_preview,
+                |settings, value| settings.scramble_preview = value,
+                cx,
+            ),
             self.scramble_size_row(&settings, strings),
         ];
         if settings.scramble_size == ScrambleSize::Custom {

@@ -16,6 +16,7 @@ pub enum Action {
     Cancel,
     NextScramble,
     ToggleInspection,
+    ToggleScramblePreview,
     PreviousSolve,
     NextSolve,
     OpenSolve,
@@ -38,11 +39,12 @@ pub enum Action {
 
 impl Action {
     /// Every action, in the order the help dialog lists them.
-    pub const ALL: [Self; 22] = [
+    pub const ALL: [Self; 23] = [
         Self::Timer,
         Self::Cancel,
         Self::NextScramble,
         Self::ToggleInspection,
+        Self::ToggleScramblePreview,
         Self::PreviousSolve,
         Self::NextSolve,
         Self::OpenSolve,
@@ -70,6 +72,7 @@ impl Action {
             Self::Cancel => "cancel",
             Self::NextScramble => "next_scramble",
             Self::ToggleInspection => "toggle_inspection",
+            Self::ToggleScramblePreview => "toggle_scramble_preview",
             Self::PreviousSolve => "previous_solve",
             Self::NextSolve => "next_solve",
             Self::OpenSolve => "open_solve",
@@ -256,6 +259,7 @@ impl Default for Keybinds {
             (Action::Cancel, "Escape"),
             (Action::NextScramble, "n"),
             (Action::ToggleInspection, "i"),
+            (Action::ToggleScramblePreview, "p"),
             (Action::PreviousSolve, "Up"),
             (Action::NextSolve, "Down"),
             (Action::OpenSolve, "Enter"),

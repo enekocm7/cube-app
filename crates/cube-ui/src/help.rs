@@ -20,11 +20,12 @@ use crate::scroll_fade::FadeScroll;
 /// uses the roomier form size rather than the narrower settings size.
 const DIALOG_SIZE: DialogSize = DialogSize::FORM;
 
-const TIMER_ACTIONS: [Action; 4] = [
+const TIMER_ACTIONS: [Action; 5] = [
     Action::Timer,
     Action::Cancel,
     Action::NextScramble,
     Action::ToggleInspection,
+    Action::ToggleScramblePreview,
 ];
 const SOLVE_ACTIONS: [Action; 6] = [
     Action::PreviousSolve,
@@ -359,6 +360,7 @@ fn action_label(strings: &'static Strings, action: Action) -> &'static str {
         Action::Cancel => strings.action_cancel,
         Action::NextScramble => strings.new_scramble,
         Action::ToggleInspection => strings.action_toggle_inspection,
+        Action::ToggleScramblePreview => strings.action_toggle_scramble_preview,
         Action::PreviousSolve => strings.action_previous_solve,
         Action::NextSolve => strings.action_next_solve,
         Action::OpenSolve => strings.action_open_solve,
