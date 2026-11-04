@@ -49,6 +49,9 @@ cargo run --release
 
 Click a solve in the list to see its details or edit it.
 
+Dialogs size themselves to the window: settings, solve details and the theme editor get wider and taller on a large
+screen, and scroll their bodies when the window is too small to show everything.
+
 Drag the inner edge of the solve list or the statistics panel to resize it. Neither panel gets narrower than
 180 px, and double-click an edge to restore its default width. The widths are remembered between launches.
 

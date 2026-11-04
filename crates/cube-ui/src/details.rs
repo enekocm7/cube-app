@@ -21,13 +21,8 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::CubeApp;
+use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
 use crate::palette::Palette;
-
-/// The tallest the dialog body gets, however large the window is.
-const BODY_MAX_HEIGHT: Pixels = px(560.);
-/// The height the dialog needs around the body: its title, its footer and the
-/// margins it keeps from the window edges.
-const DIALOG_CHROME_HEIGHT: Pixels = px(220.);
 
 /// One saved edit, with only the fields it changed.
 struct HistoryEntry {
@@ -208,8 +203,7 @@ impl Render for SolveForm {
         let colors = Palette::of(cx);
         let theme = cx.theme();
         let muted = theme.muted_foreground;
-        let max_height =
-            (window.viewport_size().height - DIALOG_CHROME_HEIGHT).min(BODY_MAX_HEIGHT);
+        let max_height = dialog_body_height(DialogSize::FORM, window);
 
         div()
             .id("solve-form")
@@ -505,11 +499,11 @@ impl CubeApp {
         let form = new_form(app.clone(), index, solve, strings, window, cx);
         let title = format!("{} · #{}", strings.solve_details, index + 1);
 
-        window.open_dialog(cx, move |dialog, _, _| {
+        window.open_dialog(cx, move |dialog, window, _| {
             let (form_for_save, app_for_delete) = (form.clone(), app.clone());
             dialog
                 .title(title.clone())
-                .w(px(520.))
+                .w(dialog_width(DialogSize::FORM, window))
                 .child(form.clone())
                 .footer(
                     h_flex()
