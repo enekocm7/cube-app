@@ -1443,7 +1443,8 @@ impl CubeApp {
     }
 
     fn refresh_stats(&mut self) {
-        self.stats = SessionStats::compute(self.session().solves());
+        let stats = &mut self.stats;
+        stats.update(self.sessions[self.current].solves());
         self.chart_data = None;
         self.stats_table = None;
     }
