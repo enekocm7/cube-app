@@ -1,12 +1,11 @@
-//! The central panel: scramble, digits and the latest result's actions.
+//! The central panel: scramble, digits and the finished time.
 
 use std::time::Instant;
 
 use cube_core::format::format_ms;
 use cube_core::{Action, Modifier, Readiness, TimerPhase};
-use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::tooltip::Tooltip;
-use gpui_kit::component::{ActiveTheme as _, Selectable as _, Sizable as _, h_flex, v_flex};
+use gpui_kit::component::{ActiveTheme as _, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
@@ -68,9 +67,6 @@ impl CubeApp {
                     )
                     .when_some(display.hint, |column, hint| {
                         column.child(div().text_sm().text_color(muted).child(hint))
-                    })
-                    .when_some(self.last_result.filter(|_| !attempt), |column, result| {
-                        column.child(self.render_result_actions(result, cx))
                     }),
             )
     }
@@ -186,43 +182,6 @@ impl CubeApp {
                         app.focus.focus(window, cx);
                     }))
                     .child(text),
-            )
-    }
-
-    /// Penalty shortcuts for the attempt that just finished.
-    fn render_result_actions(
-        &self,
-        result: LastResult,
-        cx: &mut Context<Self>,
-    ) -> impl IntoElement + use<> {
-        let strings = self.strings();
-        let index = self.session().len().saturating_sub(1);
-        let penalty =
-            |id: &'static str, label: &'static str, modifier: Modifier, cx: &mut Context<Self>| {
-                Button::new(id)
-                    .outline()
-                    .small()
-                    .label(label)
-                    .tab_stop(false)
-                    .selected(result.modifier == modifier)
-                    .on_click(cx.listener(move |app, _, window, cx| {
-                        app.toggle_penalty(index, modifier, window, cx);
-                        app.focus.focus(window, cx);
-                    }))
-            };
-        h_flex()
-            .gap_2()
-            .child(penalty("last-plus-two", "+2", Modifier::PlusTwo, cx))
-            .child(penalty("last-dnf", "DNF", Modifier::DNF, cx))
-            .child(
-                Button::new("last-delete")
-                    .ghost()
-                    .small()
-                    .label(strings.delete)
-                    .tab_stop(false)
-                    .on_click(cx.listener(move |app, _, window, cx| {
-                        app.confirm_delete_solve(index, window, cx);
-                    })),
             )
     }
 }
