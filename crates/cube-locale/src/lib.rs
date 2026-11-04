@@ -189,6 +189,15 @@ pub struct Strings {
     pub export_button: &'static str,
     /// The label of the import file picker's confirm button.
     pub import_prompt: &'static str,
+    pub setting_backup_folder: &'static str,
+    /// Shown in place of the folder's path when none is chosen.
+    pub backup_folder_none: &'static str,
+    pub backup_folder_button: &'static str,
+    pub backup_folder_clear: &'static str,
+    /// The label of the backup folder picker's confirm button.
+    pub backup_folder_prompt: &'static str,
+    pub setting_backup_now: &'static str,
+    pub backup_now_button: &'static str,
     pub theme_system: &'static str,
     pub theme_light: &'static str,
     pub theme_dark: &'static str,
@@ -339,6 +348,17 @@ pub struct Strings {
     pub toast_save_failed: &'static str,
     /// `{error}`: the cause.
     pub toast_load_failed: &'static str,
+    /// `{path}`: the newest backup of the solves.
+    pub toast_backup_available: &'static str,
+    /// `{path}`: the backup that was written.
+    pub toast_backup_done: &'static str,
+    /// `{error}`: the cause.
+    pub toast_backup_failed: &'static str,
+    /// `{added}`: solves taken from the file; `{updated}`: solves replaced by
+    /// newer edits; `{kept}`: solves the file lost that were kept.
+    pub toast_history_merged: &'static str,
+    /// `{path}`: where the unreadable settings file is now.
+    pub toast_settings_reset: &'static str,
     /// `{imported}`: how many solves were added; `{skipped}`: how many were not.
     pub toast_import_done: &'static str,
     /// `{path}`: the file that was written.
@@ -382,6 +402,13 @@ mod tests {
             assert!(strings.history_revision.contains("{date}"));
             assert!(strings.toast_save_failed.contains("{error}"));
             assert!(strings.toast_load_failed.contains("{error}"));
+            assert!(strings.toast_backup_available.contains("{path}"));
+            assert!(strings.toast_backup_done.contains("{path}"));
+            assert!(strings.toast_backup_failed.contains("{error}"));
+            assert!(strings.toast_history_merged.contains("{added}"));
+            assert!(strings.toast_history_merged.contains("{updated}"));
+            assert!(strings.toast_history_merged.contains("{kept}"));
+            assert!(strings.toast_settings_reset.contains("{path}"));
             assert!(strings.theme_save_failed.contains("{error}"));
             assert!(strings.theme_delete_failed.contains("{error}"));
             assert!(strings.theme_load_failed.contains("{error}"));

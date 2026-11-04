@@ -6,13 +6,14 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use cube_core::cstimer::{self, ImportReport};
+use cube_core::persistence::{self, HistoryStore};
 use cube_core::scramble::{self, ScrambleQueue};
 use cube_core::stats::{self, Average, AverageTable, SessionStats};
 use cube_core::window_state::WindowState;
 use cube_core::{
-    Action, BindingError, History, KeyBinding, KeyPress, Keybinds, ManualEntry, Modifier, Settings,
-    Solve, SolveSnapshot, Timer, TimerOutcome, TimerPhase, WcaEvent, format::format_ms,
-    persistence,
+    Action, BindingError, History, KeyBinding, KeyPress, Keybinds, ManualEntry, MergeSummary,
+    Modifier, Settings, Solve, SolveSnapshot, Timer, TimerOutcome, TimerPhase, WcaEvent,
+    format::format_ms,
 };
 use cube_locale::{Language, Strings};
 use cube_updater::Release;
@@ -54,11 +55,16 @@ pub enum Screen {
 pub struct Loaded {
     pub settings: Settings,
     sessions: Vec<History>,
-    history_path: Option<PathBuf>,
+    /// `None` when the history could not be loaded, which keeps saving off so
+    /// a file this version cannot read is never overwritten.
+    history: Option<HistoryStore>,
     settings_path: Option<PathBuf>,
-    /// Why the history could not be loaded. Saving stays off in that case, so a
-    /// file this version cannot read is never overwritten.
+    /// Why the history could not be loaded.
     load_error: Option<String>,
+    /// The newest backup, offered when the history could not be loaded.
+    backup: Option<PathBuf>,
+    /// Where unreadable settings are, now that the defaults replace them.
+    settings_aside: Option<PathBuf>,
 }
 
 impl Loaded {
@@ -68,25 +74,53 @@ impl Loaded {
         // cube-tui keeps its themes here; creating the default one gives both
         // apps a theme to start from.
         let _ = persistence::ensure_default_theme();
-        let (sessions, load_error) = match history_path.as_deref().map(persistence::load_history) {
-            Some(Ok(sessions)) => (sessions.unwrap_or_default(), None),
-            Some(Err(error)) => (Vec::new(), Some(format!("{error:#}"))),
+        let (history, sessions, load_error, backup) = match history_path.as_deref() {
+            Some(path) => match HistoryStore::open(path) {
+                Ok((store, sessions)) => (Some(store), sessions, None, None),
+                Err(error) => (
+                    None,
+                    Vec::new(),
+                    Some(format!("{error:#}")),
+                    persistence::latest_backup(path),
+                ),
+            },
             None => (
+                None,
                 Vec::new(),
                 Some("The data directory is unavailable.".to_owned()),
+                None,
             ),
         };
-        let settings = settings_path
-            .as_deref()
-            .and_then(|path| persistence::load_settings(path).ok())
-            .unwrap_or_default();
+        let (settings, settings_path, settings_aside) = load_settings(settings_path);
+        let mut history = history;
+        if let Some(store) = &mut history {
+            store.set_user_backups(settings.user_backups());
+        }
         Self {
             settings,
             sessions,
-            history_path,
+            history,
             settings_path,
             load_error,
+            backup,
+            settings_aside,
         }
+    }
+}
+
+/// Loads the settings, moving a file that cannot be read aside so saving the
+/// defaults does not destroy it. When it cannot be moved, the returned path is
+/// `None`, which keeps settings from being saved over it.
+fn load_settings(path: Option<PathBuf>) -> (Settings, Option<PathBuf>, Option<PathBuf>) {
+    let Some(path) = path else {
+        return (Settings::default(), None, None);
+    };
+    match persistence::load_settings(&path) {
+        Ok(settings) => (settings, Some(path), None),
+        Err(_) => match persistence::set_aside(&path) {
+            Ok(aside) => (Settings::default(), Some(path), Some(aside)),
+            Err(_) => (Settings::default(), None, Some(path)),
+        },
     }
 }
 
@@ -146,9 +180,9 @@ pub struct CubeApp {
     undo_stack: Vec<Deleted>,
     /// Undone deletions Redo can repeat, until a new deletion clears them.
     redo_stack: Vec<Deleted>,
-    history_path: Option<PathBuf>,
+    /// The history on disk; `None` keeps saving off.
+    history: Option<HistoryStore>,
     settings_path: Option<PathBuf>,
-    saving_blocked: bool,
     /// The newer release the update notification offers, if any.
     pub(crate) available: Option<Arc<Release>>,
     pub(crate) update_checking: bool,
@@ -188,9 +222,11 @@ impl CubeApp {
         let Loaded {
             mut settings,
             mut sessions,
-            history_path,
+            history,
             settings_path,
             load_error,
+            backup,
+            settings_aside,
         } = loaded;
         settings.adopt_existing_history(&sessions);
         if sessions.is_empty() {
@@ -230,9 +266,8 @@ impl CubeApp {
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
             keybinds,
-            history_path,
+            history,
             settings_path,
-            saving_blocked: load_error.is_some(),
             available: None,
             update_checking: false,
             updating: false,
@@ -241,11 +276,24 @@ impl CubeApp {
             window_save: None,
         };
         if let Some(error) = load_error {
-            let message = app.strings().toast_load_failed.replace("{error}", &error);
+            let strings = app.strings();
+            let mut message = strings.toast_load_failed.replace("{error}", &error);
+            if let Some(backup) = backup {
+                let path = backup.display().to_string();
+                message.push(' ');
+                message.push_str(&strings.toast_backup_available.replace("{path}", &path));
+            }
             // The notification layer belongs to the root view, which wraps this
             // one and does not exist until construction finishes.
             window.on_next_frame(move |window, cx| {
                 window.push_notification(Notification::error(message).autohide(false), cx);
+            });
+        }
+        if let Some(aside) = settings_aside {
+            let path = aside.display().to_string();
+            let message = app.strings().toast_settings_reset.replace("{path}", &path);
+            window.on_next_frame(move |window, cx| {
+                window.push_notification(Notification::warning(message).autohide(false), cx);
             });
         }
         app.next_scramble(cx);
@@ -621,6 +669,10 @@ impl CubeApp {
                 self.timer.cancel();
                 cx.notify();
             }
+        } else if !self.timer.is_active() && !window.has_active_dialog(cx) {
+            // Coming back from cube-tui, say. An open dialog may hold a solve's
+            // index, so with one open the next save does the merging instead.
+            self.refresh_history(window, cx);
         }
     }
 
@@ -1330,6 +1382,9 @@ impl CubeApp {
     ) {
         let accurate_3x3 = self.settings.accurate_3x3;
         change(&mut self.settings);
+        if let Some(store) = &mut self.history {
+            store.set_user_backups(self.settings.user_backups());
+        }
         self.keybinds = self.settings.keybinds();
         if !self.timer.is_active() {
             self.timer = self.settings.timer();
@@ -1383,14 +1438,92 @@ impl CubeApp {
         )
     }
 
-    fn save_history(&self, window: &mut Window, cx: &mut Context<Self>) {
-        if self.saving_blocked {
-            return;
+    fn save_history(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(store) = &mut self.history {
+            let saved = store.save(&mut self.sessions);
+            self.finish_sync(saved, window, cx);
         }
-        if let Some(path) = &self.history_path
-            && let Err(error) = persistence::save_history(path, &self.sessions)
-        {
-            self.report_save_error(&error, window, cx);
+    }
+
+    /// Picks up what another app wrote to the history since the last save.
+    fn refresh_history(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(store) = &mut self.history {
+            let refreshed = store.refresh(&mut self.sessions);
+            self.finish_sync(refreshed, window, cx);
+        }
+    }
+
+    /// Reports the result of a save, catching up with any merge in it.
+    fn finish_sync(
+        &mut self,
+        result: anyhow::Result<Option<MergeSummary>>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        match result {
+            Ok(Some(summary)) => self.history_merged(summary, window, cx),
+            Ok(None) => {}
+            Err(error) => self.report_save_error(&error, window, cx),
+        }
+        let backup_error = self
+            .history
+            .as_mut()
+            .and_then(HistoryStore::take_backup_error);
+        if let Some(error) = backup_error {
+            self.report_backup_error(&error, window, cx);
+        }
+    }
+
+    /// Copies the history into the user's backup folder.
+    pub(crate) fn back_up_now(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.refresh_history(window, cx);
+        let backup = self.history.as_ref().map_or_else(
+            || Err(anyhow::anyhow!("Your solves are not loaded.")),
+            HistoryStore::back_up_now,
+        );
+        match backup {
+            Ok(path) => {
+                let path = path.display().to_string();
+                let message = self.strings().toast_backup_done.replace("{path}", &path);
+                self.toast(&message, window, cx);
+            }
+            Err(error) => self.report_backup_error(&error, window, cx),
+        }
+    }
+
+    pub(crate) fn report_backup_error(
+        &self,
+        error: &anyhow::Error,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.report_error(self.strings().toast_backup_failed, error, window, cx);
+    }
+
+    /// Catches up after a merge moved solves around under the session.
+    ///
+    /// Session indices survive a merge but solve indices may not, so what
+    /// points at a solve by position is dropped. Shown even with toasts turned
+    /// off: the history changed without the user doing anything.
+    fn history_merged(
+        &mut self,
+        summary: MergeSummary,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.selected_solve = None;
+        self.redo_stack.clear();
+        self.refresh_stats();
+        cx.notify();
+        if !summary.is_empty() {
+            let message = self
+                .strings()
+                .toast_history_merged
+                .replace("{added}", &summary.added.to_string())
+                .replace("{updated}", &summary.updated.to_string())
+                .replace("{kept}", &summary.kept.to_string());
+            let toast = Notification::warning(message).placement(Anchor::BottomRight);
+            window.push_notification(toast, cx);
         }
     }
 

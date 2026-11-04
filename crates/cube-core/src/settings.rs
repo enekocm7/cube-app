@@ -4,6 +4,7 @@
 //! schema, so sharing it would lose settings on both sides.
 
 use std::collections::BTreeMap;
+use std::path::PathBuf;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
@@ -218,6 +219,9 @@ pub struct Settings {
     pub scramble_custom_pt: Option<u32>,
     /// Whether the start hint has been used, so it is no longer shown while idle.
     pub start_hint_seen: bool,
+    /// A folder for backups of the user's own, on top of the app's; empty for
+    /// none.
+    pub user_backup_dir: String,
     /// Action name to keystroke overrides; see [`crate::keybind`].
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub keybindings: BTreeMap<String, String>,
@@ -230,6 +234,13 @@ pub struct Settings {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub window: Option<WindowState>,
     pub updates: UpdateSettings,
+}
+
+impl Settings {
+    /// Returns the folder for the user's own backups, if they chose one.
+    pub fn user_backups(&self) -> Option<PathBuf> {
+        (!self.user_backup_dir.is_empty()).then(|| PathBuf::from(&self.user_backup_dir))
+    }
 }
 
 impl Default for Settings {
@@ -252,6 +263,7 @@ impl Default for Settings {
             scramble_preview: true,
             scramble_custom_pt: None,
             start_hint_seen: false,
+            user_backup_dir: String::new(),
             keybindings: BTreeMap::new(),
             sidebar_width: DEFAULT_SIDEBAR_WIDTH,
             stats_panel_width: DEFAULT_STATS_WIDTH,
