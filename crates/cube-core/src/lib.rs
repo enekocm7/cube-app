@@ -33,4 +33,4 @@ pub use manual_entry::{ManualEntry, ManualError};
 pub use merge::MergeSummary;
 pub use settings::{Settings, UpdateChannel, UpdateFrequency, UpdateSettings};
 pub use solve::{Modifier, Solve, SolveChange, SolveSnapshot};
-pub use timer::{InspectionCue, Readiness, Timer, TimerOutcome, TimerPhase};
+pub use timer::{HardwareState, InspectionCue, Readiness, Timer, TimerOutcome, TimerPhase};

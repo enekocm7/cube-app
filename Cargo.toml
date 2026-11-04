@@ -1,6 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
+    "crates/cube-bluetooth",
     "crates/cube-core",
     "crates/cube-locale",
     "crates/cube-ui",
@@ -14,15 +15,19 @@ license = "GPL-3.0-or-later"
 repository = "https://github.com/enekocm7/cube-gui"
 
 [workspace.dependencies]
+cube-bluetooth = { path = "crates/cube-bluetooth" }
 cube-core = { path = "crates/cube-core" }
 cube-locale = { path = "crates/cube-locale" }
 cube-ui = { path = "crates/cube-ui" }
 cube-updater = { path = "crates/cube-updater" }
 
 anyhow = "1"
+btleplug = "0.13.3"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 dirs = "7"
 flate2 = "1"
+flume = "0.12"
+futures-util = "0.3"
 gpui-kit = { version = "0.9.0", features = ["gpui-fast"] }
 rodio = { version = "0.22.2", features = ["mp3"] }
 semver = "1.0.28"
@@ -31,8 +36,10 @@ serde_json = "1"
 sha2 = "0.11.1"
 tar = "0.4"
 tnoodle-rs = "0.1.1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync", "time"] }
 toml = "0.8"
 ureq = "3"
+uuid = "1"
 zip = { version = "9.2.2", default-features = false, features = ["deflate"] }
 
 [workspace.lints.rust]

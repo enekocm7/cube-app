@@ -9,6 +9,7 @@ description = "GPUI user interface for cube"
 [dependencies]
 anyhow.workspace = true
 chrono.workspace = true
+cube-bluetooth.workspace = true
 cube-core.workspace = true
 cube-locale.workspace = true
 cube-updater.workspace = true

@@ -11,6 +11,7 @@ use gpui_kit::*;
 mod app;
 mod audio;
 mod average_details;
+mod bluetooth;
 mod details;
 mod dialog_size;
 mod dialog_submit;
