@@ -17,14 +17,14 @@ nothing is selected.
 | Action | Default | Notes |
 |---|---|---|
 | Start or stop the timer | `Space` | Hold and release to start the solve. Pressing and releasing the digits with the left mouse button or a touch does the same |
-| Cancel the current attempt | `Esc` | Does not record the solve; on the stats screen it returns to the timer |
+| Cancel the current attempt | `Esc` | Does not record the solve; on the stats or charts screen it returns to the timer |
 | New scramble | `N` | |
 | Turn inspection on or off | `I` | |
 | Show or hide the scramble preview | `P` | The same switch as the setting |
 | Turn manual mode on or off | `M` | Type a time from another timer. See [Manual mode](#manual-mode) |
-| Select the newer solve | `Up` | Moves the highlight up the list |
-| Select the older solve | `Down` | Moves the highlight down the list |
-| Open the selected solve | `Enter` | Opens the details and edit dialog |
+| Select the newer solve | `Up` | Moves the highlight up the list, or up the stats table |
+| Select the older solve | `Down` | Moves the highlight down the list, or down the stats table |
+| Open the selected solve | `Enter` | Opens the details and edit dialog, from the solve list or the stats table |
 | Delete the selected solve | `D` | Asks for confirmation (can be turned off in settings) and shows an Undo toast. Each entry in the session dropdown also has a trash button, reachable with `Tab` and pressed with `Enter` or `Space` |
 | Toggle `+2` on the selected solve | `2` | |
 | Toggle DNF on the selected solve | `Shift + D` | |
@@ -37,7 +37,13 @@ nothing is selected.
 | Delete session | `Shift + S` | Asks for confirmation (can be turned off in settings) and shows an Undo toast |
 | Undo the last solve or session deletion | `Ctrl + Z` | Repeat to step back through earlier deletions |
 | Redo an undone deletion | `Ctrl + Y` | A new deletion clears the redo history |
-| Show stats or the timer | `A` | Toggles between the two screens |
+| Select the shorter average | `Left` | Moves between mo3, ao5, ao12, ao50 and ao100, highlighted in the stats panel and the stats table |
+| Select the longer average | `Right` | |
+| Open the selected average | `O` | Lists the solves of the average ending at the selected solve, marking the trimmed ones. Starts on ao5 |
+| Open the best of the selected average | `Shift + O` | |
+| Copy the selected average as text | `C` | Copies the result and every attempt with its scramble. The average's dialog has the same action on a button |
+| Show stats or the timer | `A` | Toggles the table of every solve's averages |
+| Show charts or the timer | `G` | |
 | Open settings | `Ctrl + ,` | |
 | Open the shortcuts panel | `F1` | |
 
@@ -46,6 +52,9 @@ it cancels the attempt without recording it.
 
 Hold `N`, `Up` or `Down` to repeat the action until you release the key. Other
 actions fire once per press.
+
+The solves listed in an average's dialog are buttons: reach them with `Tab` and
+press `Enter` or `Space` to open that solve.
 
 ## Manual mode
 

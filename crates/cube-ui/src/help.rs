@@ -49,7 +49,19 @@ const SESSION_ACTIONS: [Action; 9] = [
     Action::UndoDelete,
     Action::RedoDelete,
 ];
-const SCREEN_ACTIONS: [Action; 3] = [Action::OpenStats, Action::OpenSettings, Action::ShowHelp];
+const AVERAGE_ACTIONS: [Action; 5] = [
+    Action::PreviousAverage,
+    Action::NextAverage,
+    Action::OpenAverage,
+    Action::OpenBestAverage,
+    Action::CopyAverage,
+];
+const SCREEN_ACTIONS: [Action; 4] = [
+    Action::OpenStats,
+    Action::OpenCharts,
+    Action::OpenSettings,
+    Action::ShowHelp,
+];
 
 /// The shortcut reference, with an edit mode for rebinding.
 struct KeybindsView {
@@ -305,6 +317,7 @@ impl Render for KeybindsView {
             (strings.help_section_timer, &TIMER_ACTIONS[..]),
             (strings.help_section_solves, &SOLVE_ACTIONS[..]),
             (strings.help_section_events_sessions, &SESSION_ACTIONS[..]),
+            (strings.help_section_averages, &AVERAGE_ACTIONS[..]),
             (strings.help_section_screens, &SCREEN_ACTIONS[..]),
         ];
         let capture_hint = self.capturing.map(|action| {
@@ -424,6 +437,12 @@ fn action_label(strings: &'static Strings, action: Action) -> &'static str {
         Action::UndoDelete => strings.action_undo_delete,
         Action::RedoDelete => strings.action_redo_delete,
         Action::OpenStats => strings.action_open_stats,
+        Action::OpenCharts => strings.action_open_charts,
+        Action::PreviousAverage => strings.action_previous_average,
+        Action::NextAverage => strings.action_next_average,
+        Action::OpenAverage => strings.action_open_average,
+        Action::OpenBestAverage => strings.action_open_best_average,
+        Action::CopyAverage => strings.action_copy_average,
         Action::OpenSettings => strings.settings,
         Action::ShowHelp => strings.action_show_help,
     }

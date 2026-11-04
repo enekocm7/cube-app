@@ -19,6 +19,12 @@ pub fn format_ms(ms: u64) -> String {
     }
 }
 
+/// Formats a difference between two times, such as `+1.200` or `−0.345`.
+pub fn format_delta(ms: i64) -> String {
+    let sign = if ms < 0 { '−' } else { '+' };
+    format!("{sign}{}", format_ms(ms.unsigned_abs()))
+}
+
 /// Parses seconds, `M:SS` or `H:MM:SS` with up to three decimals into milliseconds.
 ///
 /// Integer arithmetic avoids rounding milliseconds away. Returns `None` for
@@ -56,6 +62,14 @@ pub fn parse_time(text: &str) -> Option<u64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn deltas_always_carry_a_sign() {
+        assert_eq!(format_delta(1_200), "+1.200");
+        assert_eq!(format_delta(-345), "−0.345");
+        assert_eq!(format_delta(0), "+0.000");
+        assert_eq!(format_delta(-61_000), "−1:01.000");
+    }
 
     #[test]
     fn formats_only_the_units_in_use() {

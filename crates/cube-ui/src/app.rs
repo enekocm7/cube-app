@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 
 use cube_core::cstimer::{self, ImportReport};
 use cube_core::scramble::{self, ScrambleQueue};
-use cube_core::stats::{self, Average, SessionStats};
+use cube_core::stats::{self, Average, AverageTable, SessionStats};
 use cube_core::window_state::WindowState;
 use cube_core::{
     Action, BindingError, History, KeyBinding, KeyPress, Keybinds, ManualEntry, Modifier, Settings,
@@ -47,6 +47,7 @@ const GENERATING_DELAY: Duration = Duration::from_millis(500);
 pub enum Screen {
     Timer,
     Stats,
+    Charts,
 }
 
 /// Everything read from disk at startup.
@@ -132,9 +133,14 @@ pub struct CubeApp {
     pub(crate) last_result: Option<LastResult>,
     pub(crate) stats: SessionStats,
     chart_data: Option<Rc<ChartData>>,
+    stats_table: Option<Rc<AverageTable>>,
+    pub(crate) stats_table_scroll: UniformListScrollHandle,
     pub(crate) solves_scroll: UniformListScrollHandle,
     /// The solve selected with the keyboard, as an index into the session.
     pub(crate) selected_solve: Option<usize>,
+    /// The average selected with the keyboard, as an index into
+    /// `stats::AVERAGE_SIZES`.
+    pub(crate) selected_average: Option<usize>,
     keybinds: Keybinds,
     /// Deletions Undo can restore, oldest first.
     undo_stack: Vec<Deleted>,
@@ -216,8 +222,11 @@ impl CubeApp {
             stop_repeat_key: None,
             last_result: None,
             chart_data: None,
+            stats_table: None,
+            stats_table_scroll: UniformListScrollHandle::new(),
             solves_scroll: UniformListScrollHandle::new(),
             selected_solve: None,
+            selected_average: None,
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
             keybinds,
@@ -458,14 +467,21 @@ impl CubeApp {
         if self.timer.is_active() || (event.is_held && !action.repeats()) {
             return;
         }
+        self.run_action(action, window, cx);
+    }
+
+    /// Runs a shortcut other than the timer's and Cancel, which depend on the
+    /// key going down and up.
+    fn run_action(&mut self, action: Action, window: &mut Window, cx: &mut Context<Self>) {
         match action {
+            Action::DeleteSolve | Action::PenaltyPlusTwo | Action::PenaltyDnf
+                if self.screen != Screen::Timer => {}
             Action::PreviousSolve
             | Action::NextSolve
             | Action::OpenSolve
-            | Action::DeleteSolve
-            | Action::PenaltyPlusTwo
-            | Action::PenaltyDnf
-                if self.screen != Screen::Timer => {}
+            | Action::PreviousAverage
+            | Action::NextAverage
+                if self.screen == Screen::Charts => {}
             Action::NextScramble => self.skip_scramble(cx),
             Action::ToggleInspection => self.toggle_inspection(window, cx),
             Action::ToggleScramblePreview => self.toggle_scramble_preview(window, cx),
@@ -493,14 +509,13 @@ impl CubeApp {
             Action::DeleteSession => self.confirm_delete_session(window, cx),
             Action::UndoDelete => self.undo_delete(window, cx),
             Action::RedoDelete => self.redo_delete(window, cx),
-            Action::OpenStats => {
-                self.screen = if self.screen == Screen::Stats {
-                    Screen::Timer
-                } else {
-                    Screen::Stats
-                };
-                cx.notify();
-            }
+            Action::OpenStats => self.toggle_screen(Screen::Stats, cx),
+            Action::OpenCharts => self.toggle_screen(Screen::Charts, cx),
+            Action::PreviousAverage => self.step_selected_average(false, cx),
+            Action::NextAverage => self.step_selected_average(true, cx),
+            Action::OpenAverage => self.open_selected_average(window, cx),
+            Action::OpenBestAverage => self.open_best_average(window, cx),
+            Action::CopyAverage => self.copy_selected_average(window, cx),
             Action::OpenSettings => self.open_settings(window, cx),
             Action::ShowHelp => self.open_help(window, cx),
             Action::Timer | Action::Cancel => {}
@@ -760,6 +775,28 @@ impl CubeApp {
         });
     }
 
+    /// Shows `screen`, keeping the target solve in view on the stats table.
+    fn show_screen(&mut self, screen: Screen, cx: &mut Context<Self>) {
+        self.screen = screen;
+        if screen == Screen::Stats
+            && let Some(index) = self.target_solve()
+        {
+            self.stats_table_scroll
+                .scroll_to_item(self.session().len() - 1 - index, ScrollStrategy::Nearest);
+        }
+        cx.notify();
+    }
+
+    /// Shows `screen`, or returns to the timer when it is already showing.
+    fn toggle_screen(&mut self, screen: Screen, cx: &mut Context<Self>) {
+        let next = if self.screen == screen {
+            Screen::Timer
+        } else {
+            screen
+        };
+        self.show_screen(next, cx);
+    }
+
     /// Turns manual mode on or off. It starts only from the idle timer
     /// screen, and the scramble stays until a typed time is recorded.
     pub(crate) fn toggle_manual_entry(&mut self, cx: &mut Context<Self>) {
@@ -856,6 +893,8 @@ impl CubeApp {
         };
         self.selected_solve = Some(index);
         self.solves_scroll
+            .scroll_to_item(count - 1 - index, ScrollStrategy::Nearest);
+        self.stats_table_scroll
             .scroll_to_item(count - 1 - index, ScrollStrategy::Nearest);
         cx.notify();
     }
@@ -1322,6 +1361,7 @@ impl CubeApp {
     fn refresh_stats(&mut self) {
         self.stats = SessionStats::compute(self.session().solves());
         self.chart_data = None;
+        self.stats_table = None;
     }
 
     /// Returns the current session's chart series, building them on first use.
@@ -1330,6 +1370,16 @@ impl CubeApp {
         Rc::clone(
             self.chart_data
                 .get_or_insert_with(|| Rc::new(ChartData::new(solves))),
+        )
+    }
+
+    /// Returns the current session's table of averages, building it on first
+    /// use.
+    pub(crate) fn stats_table(&mut self) -> Rc<AverageTable> {
+        let solves = self.sessions[self.current].solves();
+        Rc::clone(
+            self.stats_table
+                .get_or_insert_with(|| Rc::new(AverageTable::new(solves))),
         )
     }
 
@@ -1454,8 +1504,7 @@ impl CubeApp {
                     .selected(self.screen == screen)
                     .on_click(cx.listener(move |app, _, window, cx| {
                         if !app.timer.is_active() {
-                            app.screen = screen;
-                            cx.notify();
+                            app.show_screen(screen, cx);
                         }
                         app.focus.focus(window, cx);
                     }))
@@ -1482,7 +1531,8 @@ impl CubeApp {
                                 .ml_4()
                                 .gap_1()
                                 .child(tab("nav-timer", strings.nav_timer, Screen::Timer, cx))
-                                .child(tab("nav-stats", strings.nav_stats, Screen::Stats, cx)),
+                                .child(tab("nav-stats", strings.nav_stats, Screen::Stats, cx))
+                                .child(tab("nav-charts", strings.nav_charts, Screen::Charts, cx)),
                         ),
                 )
                 // Centered on the window, not on the space the tabs and the window
@@ -1569,7 +1619,8 @@ impl Render for CubeApp {
                     })
                     .into_any_element()
             }
-            Screen::Stats => self.render_stats_screen(cx).into_any_element(),
+            Screen::Stats => self.render_table(cx),
+            Screen::Charts => self.render_charts(cx),
         };
         let theme = cx.theme();
         v_flex()

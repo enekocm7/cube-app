@@ -3,7 +3,7 @@
 
 use std::ops::Range;
 
-use cube_core::Modifier;
+use cube_core::{Modifier, Solve};
 use gpui_kit::assets::IconName;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::input::{Input, InputState};
@@ -33,6 +33,16 @@ const AVERAGE_SCROLLBAR_GUTTER: Pixels = px(10.);
 
 /// The rolling average the solve list can show.
 const LIST_AVERAGE_SIZE: usize = 5;
+
+/// The color that marks a solve's time, if it stands out.
+pub(crate) fn solve_time_color(solve: &Solve, colors: Palette) -> Option<Hsla> {
+    match solve.modifier() {
+        Modifier::DNF => Some(colors.red),
+        Modifier::PlusTwo => Some(colors.yellow),
+        Modifier::None if solve.was_single_record() => Some(colors.green),
+        Modifier::None => None,
+    }
+}
 
 impl CubeApp {
     pub(crate) fn render_sidebar(
@@ -102,15 +112,18 @@ impl CubeApp {
                         )
                         .size_full(),
                     )
-                    .child(Scrollbar::vertical(&self.solves_scroll).mode(
-                        if self.settings.always_show_scrollbar {
-                            ScrollbarMode::Always
-                        } else {
-                            ScrollbarMode::Scrolling
-                        },
-                    ))
+                    .child(Scrollbar::vertical(&self.solves_scroll).mode(self.scrollbar_mode()))
                     .into_any_element()
             })
+    }
+
+    /// Returns how the scrollbars of the long lists behave.
+    pub(crate) const fn scrollbar_mode(&self) -> ScrollbarMode {
+        if self.settings.always_show_scrollbar {
+            ScrollbarMode::Always
+        } else {
+            ScrollbarMode::Scrolling
+        }
     }
 
     fn render_session_picker(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
@@ -267,12 +280,7 @@ impl CubeApp {
             .filter_map(|row| {
                 let index = total.checked_sub(row + 1)?;
                 let solve = &solves[index];
-                let time_color = match solve.modifier() {
-                    Modifier::DNF => Some(colors.red),
-                    Modifier::PlusTwo => Some(colors.yellow),
-                    Modifier::None if solve.was_single_record() => Some(colors.green),
-                    Modifier::None => None,
-                };
+                let time_color = solve_time_color(solve, colors);
                 Some(
                     h_flex()
                         .id(("solve", index))

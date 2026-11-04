@@ -44,7 +44,7 @@ for valid bindings.
 | `Space` | Start inspection, hold and release to start the solve, press to stop |
 | Any other key | Stop a running solve |
 | Left mouse button or touch on the digits | Same as the timer key: hold and release to start, click to stop |
-| `Esc` | Cancel the current attempt without recording it, or leave the stats screen |
+| `Esc` | Cancel the current attempt without recording it, or leave the stats or charts screen |
 | `N` | New scramble (hold to keep generating) |
 | `I` | Turn WCA inspection on or off |
 | `P` | Show or hide the scramble preview |
@@ -61,12 +61,16 @@ for valid bindings.
 | `Shift + S` | Delete session |
 | `Ctrl + Z` | Undo the last solve or session deletion (repeatable) |
 | `Ctrl + Y` | Redo an undone deletion |
+| `Left` / `Right` | Select a shorter or longer average |
+| `O` / `Shift + O` | Open the selected average, or its best |
+| `C` | Copy the selected average as text |
 | `A` | Show stats, or return to the timer |
+| `G` | Show charts, or return to the timer |
 | `Ctrl + ,` | Open settings |
 | `F1` | Open the keyboard shortcuts |
 
 Actions that need a solve use the keyboard selection, or the latest solve when nothing is selected. You can also click
-a solve in the list to see its details or edit it.
+a solve in the list, or a single in the stats panel, to see its details or edit it.
 
 Around the shortcuts:
 
@@ -105,7 +109,10 @@ Around the shortcuts:
 **Statistics**
 
 - Current and best single, mo3, ao5, ao12, ao50 and ao100, plus mean, deviation and DNF count.
-- A stats screen with charts of your times, your ao5 and their distribution.
+- A stats screen with a heat-mapped table of every solve's rolling averages. Click a value, in the table or the stats
+  panel, to see the solves behind it and how far each landed from the average, with the trimmed ones marked. Copy an
+  average as text to share it.
+- A charts screen with your times, your ao5 and their distribution.
 
 **Interface**
 
