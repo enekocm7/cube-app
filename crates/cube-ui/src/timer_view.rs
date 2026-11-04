@@ -64,7 +64,8 @@ impl CubeApp {
                     .justify_center()
                     .gap_3()
                     // Holding and releasing the digits works like the timer key,
-                    // for touchscreens and for a hand resting on the mouse.
+                    // for touchscreens and for a hand resting on the mouse,
+                    // while `touch_to_start` is on.
                     .on_mouse_down(MouseButton::Left, cx.listener(Self::on_pointer_down))
                     .on_mouse_up(MouseButton::Left, cx.listener(Self::on_pointer_up))
                     .on_mouse_up_out(MouseButton::Left, cx.listener(Self::on_pointer_up))

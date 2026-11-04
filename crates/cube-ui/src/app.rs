@@ -1,11 +1,14 @@
 //! Application state and the operations on it. Views live in sibling modules.
 
+use std::cell::Cell;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use chrono::NaiveDate;
 use cube_bluetooth::Client;
+use cube_core::charts::{ChartFilter, ChartView, ChartZoom};
 use cube_core::cstimer::{self, ImportReport};
 use cube_core::history_writer::{HistoryWriter, Merge, WriterEvent};
 use cube_core::persistence::{self, HistoryStore};
@@ -30,10 +33,10 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::bluetooth::TimerLink;
+use crate::charts_screen::{ChartData, KEY_ZOOM};
 use crate::palette;
 use crate::panel_resize::{PanelSide, render_grab};
 use crate::preview::PreviewCache;
-use crate::stats_screen::ChartData;
 
 /// The most sessions cube-tui can display.
 pub const MAX_SESSIONS: usize = 99;
@@ -173,6 +176,16 @@ pub struct CubeApp {
     pub(crate) last_result: Option<LastResult>,
     pub(crate) stats: SessionStats,
     chart_data: Option<Rc<ChartData>>,
+    pub(crate) chart_view: ChartView,
+    /// What the charts keep of each session. It lasts until the app closes.
+    pub(crate) chart_filter: ChartFilter,
+    /// The day selected on the calendar; the latest with solves until one is.
+    pub(crate) chart_day: Option<NaiveDate>,
+    pub(crate) chart_scroll: ScrollHandle,
+    /// The stretch of the times chart showing; `None` shows all of it.
+    pub(crate) chart_zoom: Option<ChartZoom>,
+    /// Where the times chart was last painted, to place the wheel's cursor.
+    pub(crate) chart_plot_bounds: Rc<Cell<Option<Bounds<Pixels>>>>,
     stats_table: Option<Rc<AverageTable>>,
     pub(crate) stats_table_scroll: UniformListScrollHandle,
     pub(crate) solves_scroll: UniformListScrollHandle,
@@ -268,6 +281,12 @@ impl CubeApp {
             stop_repeat_key: None,
             last_result: None,
             chart_data: None,
+            chart_view: ChartView::default(),
+            chart_filter: ChartFilter::default(),
+            chart_day: None,
+            chart_scroll: ScrollHandle::default(),
+            chart_zoom: None,
+            chart_plot_bounds: Rc::default(),
             stats_table: None,
             stats_table_scroll: UniformListScrollHandle::new(),
             solves_scroll: UniformListScrollHandle::new(),
@@ -552,12 +571,24 @@ impl CubeApp {
         match action {
             Action::DeleteSolve | Action::PenaltyPlusTwo | Action::PenaltyDnf
                 if self.screen != Screen::Timer => {}
+            Action::NextChartView
+            | Action::NextChartEvent
+            | Action::NextChartRange
+            | Action::ChartDates
+            | Action::ToggleChartSessions
+            | Action::ChartZoomIn
+            | Action::ChartZoomOut
+            | Action::ChartResetZoom
+                if self.screen != Screen::Charts => {}
+            Action::OpenSolve if self.screen == Screen::Charts => {}
             Action::PreviousSolve
             | Action::NextSolve
-            | Action::OpenSolve
             | Action::PreviousAverage
             | Action::NextAverage
-                if self.screen == Screen::Charts => {}
+                if self.screen == Screen::Charts =>
+            {
+                self.chart_arrow(action, cx);
+            }
             Action::NextScramble => self.skip_scramble(cx),
             Action::ToggleInspection => self.toggle_inspection(window, cx),
             Action::ToggleScramblePreview => self.toggle_scramble_preview(window, cx),
@@ -588,6 +619,14 @@ impl CubeApp {
             Action::OpenStats => self.toggle_screen(Screen::Stats, cx),
             Action::OpenCharts => self.toggle_screen(Screen::Charts, cx),
             Action::OpenBluetooth => self.open_bluetooth(window, cx),
+            Action::NextChartView => self.next_chart_view(cx),
+            Action::NextChartEvent => self.next_chart_event(cx),
+            Action::NextChartRange => self.next_chart_range(cx),
+            Action::ChartDates => self.open_chart_dates(window, cx),
+            Action::ToggleChartSessions => self.toggle_chart_sessions(cx),
+            Action::ChartZoomIn => self.zoom_chart(KEY_ZOOM, 0.5, cx),
+            Action::ChartZoomOut => self.zoom_chart(KEY_ZOOM.recip(), 0.5, cx),
+            Action::ChartResetZoom => self.reset_chart_zoom(cx),
             Action::PreviousAverage => self.step_selected_average(false, cx),
             Action::NextAverage => self.step_selected_average(true, cx),
             Action::OpenAverage => self.open_selected_average(window, cx),
@@ -619,13 +658,19 @@ impl CubeApp {
     }
 
     /// Starts or stops the timer with the mouse or a touch on the digits, the
-    /// same way the timer key does.
+    /// same way the timer key does. Only when `touch_to_start` is on.
     pub(crate) fn on_pointer_down(
         &mut self,
         _event: &MouseDownEvent,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        // Keep keyboard shortcuts working after a click, even while touching
+        // the digits does nothing.
+        if !self.settings.touch_to_start {
+            window.focus(&self.focus, cx);
+            return;
+        }
         if window.has_active_dialog(cx)
             || self.pointer_down
             || self.key_down
@@ -649,6 +694,8 @@ impl CubeApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        // `pointer_down` only becomes true while `touch_to_start` is on, so a
+        // release always finishes its own hold even if the setting changed.
         if !self.pointer_down {
             return;
         }
@@ -831,6 +878,10 @@ impl CubeApp {
         if self.sessions.len() <= 1 || self.timer.is_active() {
             return;
         }
+        // Moving between sessions on the charts is asking to see one of them.
+        if self.screen == Screen::Charts {
+            self.chart_filter.all_sessions = false;
+        }
         let count = self.sessions.len();
         let step = delta.unsigned_abs() % count;
         let index = if delta >= 0 {
@@ -994,6 +1045,7 @@ impl CubeApp {
         self.current = index;
         self.last_result = None;
         self.selected_solve = None;
+        self.chart_day = None;
         self.refresh_stats();
         let event = session_event(self.session());
         self.set_event(event, cx);
@@ -1412,12 +1464,7 @@ impl CubeApp {
     ) {
         let accurate_3x3 = self.settings.accurate_3x3;
         let user_backups = self.settings.user_backups();
-        let language = self.language();
         change(&mut self.settings);
-        if self.language() != language {
-            // Chart axis labels are built with the language's number format.
-            self.chart_data = None;
-        }
         if let Some(writer) = &self.history_writer
             && self.settings.user_backups() != user_backups
         {
@@ -1452,18 +1499,25 @@ impl CubeApp {
     }
 
     fn refresh_stats(&mut self) {
-        self.stats = SessionStats::compute(self.session().solves());
-        self.chart_data = None;
+        let stats = &mut self.stats;
+        stats.update(self.sessions[self.current].solves());
+        self.clear_chart_data();
         self.stats_table = None;
     }
 
-    /// Returns the current session's chart series, building them on first use.
+    /// Drops the chart data, so the next use builds it again. The zoom goes
+    /// with it, since it points into the old series.
+    pub(crate) fn clear_chart_data(&mut self) {
+        self.chart_data = None;
+        self.chart_zoom = None;
+    }
+
+    /// Returns the data behind the charts, building it on first use.
     pub(crate) fn chart_data(&mut self) -> Rc<ChartData> {
-        let language = self.language();
-        let solves = self.sessions[self.current].solves();
+        let (sessions, current, filter) = (&self.sessions, self.current, self.chart_filter);
         Rc::clone(
             self.chart_data
-                .get_or_insert_with(|| Rc::new(ChartData::new(solves, language))),
+                .get_or_insert_with(|| Rc::new(ChartData::new(sessions, current, filter))),
         )
     }
 

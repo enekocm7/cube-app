@@ -12,6 +12,7 @@ mod app;
 mod audio;
 mod average_details;
 mod bluetooth;
+mod charts_screen;
 mod details;
 mod dialog_size;
 mod dialog_submit;
@@ -28,6 +29,7 @@ mod stats_panel;
 mod stats_screen;
 mod theme_editor;
 mod timer_view;
+mod times_plot;
 mod update_ui;
 
 const MIN_WIDTH: f32 = 910.;
