@@ -5,7 +5,7 @@
 //! mouse is released, not on every pixel.
 
 use cube_core::panels::{
-    DEFAULT_SIDEBAR_WIDTH, DEFAULT_STATS_WIDTH, GRAB_WIDTH, clamp_panel_width, fit_panels,
+    DEFAULT_SIDEBAR_WIDTH, DEFAULT_STATS_WIDTH, clamp_panel_width, fit_panels,
 };
 use gpui_kit::component::{ActiveTheme as _, InteractiveElementExt as _};
 use gpui_kit::*;
@@ -34,32 +34,45 @@ impl Render for NoGhost {
     }
 }
 
-/// The grab column between a panel and the timer. Dragging it resizes the
-/// panel, and double-clicking it restores the default width.
+/// Width of the grab strip, centred on the panel's border: half on each side.
+const GRAB_WIDTH: Pixels = px(10.);
+
+/// The strip that resizes a panel, centred on its border: 5 px on the panel's
+/// side and 5 px on the timer's side. Dragging it resizes the panel, and
+/// double-clicking it restores the default width.
 ///
-/// It sits in the row rather than over either neighbour, so it never covers
-/// the solve list's scrollbar or the timer's controls.
-pub(crate) fn render_grab_column(
+/// It is drawn over the row, last, and occludes, so the 5 px that land on the
+/// solve list only resize: they do not click solve rows or scroll the list.
+/// `panel_width` is the width the panel is drawn at.
+pub(crate) fn render_grab(
     side: PanelSide,
+    panel_width: Pixels,
     cx: &mut Context<CubeApp>,
 ) -> impl IntoElement + use<> {
-    let id = match side {
-        PanelSide::Sidebar => "sidebar-grab",
-        PanelSide::Stats => "stats-grab",
+    let (id, hover) = match side {
+        PanelSide::Sidebar => ("sidebar-grab", cx.theme().muted),
+        PanelSide::Stats => ("stats-grab", cx.theme().muted),
     };
-    let hover = cx.theme().muted;
-    div()
+    let half = GRAB_WIDTH / 2.;
+    let grab = div()
         .id(id)
-        .flex_none()
-        .w(px(GRAB_WIDTH as f32))
-        .h_full()
+        .absolute()
+        .top_0()
+        .bottom_0()
+        .w(GRAB_WIDTH)
         .cursor_col_resize()
         .occlude()
         .hover(move |grab| grab.bg(hover))
         .on_drag(PanelResize(side), |_, _, _, cx| cx.new(|_| NoGhost))
         .on_double_click(cx.listener(move |app, _, window, cx| {
             app.reset_panel_width(side, window, cx);
-        }))
+        }));
+    match side {
+        // The sidebar's border is its right edge, `panel_width` from the left.
+        PanelSide::Sidebar => grab.left(panel_width - half),
+        // The stats panel's border is its left edge, `panel_width` from the right.
+        PanelSide::Stats => grab.right(panel_width - half),
+    }
 }
 
 /// The width of the window's content, in whole pixels.
