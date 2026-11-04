@@ -66,6 +66,8 @@ with `Tab`, `Enter` and `Space`, `Enter` runs a dialog's primary action while `E
 | `S` | New session |
 | `F2` | Rename session |
 | `Shift + S` | Delete session |
+| `Ctrl + Z` | Undo the last solve or session deletion (repeatable) |
+| `Ctrl + Y` | Redo an undone deletion |
 | `A` | Show stats, or return to the timer |
 | `Ctrl + ,` | Open settings |
 | `F1` | Open the keyboard shortcuts |

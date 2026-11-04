@@ -553,12 +553,17 @@ impl CubeApp {
     }
 
     pub(crate) fn confirm_delete_solve(
-        &self,
+        &mut self,
         index: usize,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
         let strings = self.strings();
+        if !self.settings.confirm_delete {
+            self.delete_solve(index, window, cx);
+            self.focus.focus(window, cx);
+            return;
+        }
         let on_confirm = cx.listener(move |app: &mut Self, (): &(), window, cx| {
             app.delete_solve(index, window, cx);
             app.focus.focus(window, cx);

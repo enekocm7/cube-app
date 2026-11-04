@@ -616,6 +616,13 @@ impl Render for SettingsView {
                 |settings, value| settings.toasts = value,
                 cx,
             ),
+            self.switch(
+                "confirm-delete",
+                strings.setting_confirm_delete,
+                settings.confirm_delete,
+                |settings, value| settings.confirm_delete = value,
+                cx,
+            ),
         ];
         let updates = self.update_rows(strings, &settings, cx);
         let language = [h_flex()

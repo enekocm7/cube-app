@@ -29,6 +29,8 @@ pub enum Action {
     NewSession,
     RenameSession,
     DeleteSession,
+    UndoDelete,
+    RedoDelete,
     OpenStats,
     OpenSettings,
     ShowHelp,
@@ -36,7 +38,7 @@ pub enum Action {
 
 impl Action {
     /// Every action, in the order the help dialog lists them.
-    pub const ALL: [Self; 20] = [
+    pub const ALL: [Self; 22] = [
         Self::Timer,
         Self::Cancel,
         Self::NextScramble,
@@ -54,6 +56,8 @@ impl Action {
         Self::NewSession,
         Self::RenameSession,
         Self::DeleteSession,
+        Self::UndoDelete,
+        Self::RedoDelete,
         Self::OpenStats,
         Self::OpenSettings,
         Self::ShowHelp,
@@ -79,6 +83,8 @@ impl Action {
             Self::NewSession => "new_session",
             Self::RenameSession => "rename_session",
             Self::DeleteSession => "delete_session",
+            Self::UndoDelete => "undo_delete",
+            Self::RedoDelete => "redo_delete",
             Self::OpenStats => "open_stats",
             Self::OpenSettings => "open_settings",
             Self::ShowHelp => "show_help",
@@ -263,6 +269,8 @@ impl Default for Keybinds {
             (Action::NewSession, "s"),
             (Action::RenameSession, "F2"),
             (Action::DeleteSession, "Shift+S"),
+            (Action::UndoDelete, "Ctrl+Z"),
+            (Action::RedoDelete, "Ctrl+Y"),
             (Action::OpenStats, "a"),
             (Action::OpenSettings, "Ctrl+,"),
             (Action::ShowHelp, "F1"),

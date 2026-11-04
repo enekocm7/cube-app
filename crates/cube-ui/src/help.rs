@@ -34,7 +34,7 @@ const SOLVE_ACTIONS: [Action; 6] = [
     Action::PenaltyPlusTwo,
     Action::PenaltyDnf,
 ];
-const SESSION_ACTIONS: [Action; 7] = [
+const SESSION_ACTIONS: [Action; 9] = [
     Action::NextEvent,
     Action::PreviousEvent,
     Action::NextSession,
@@ -42,6 +42,8 @@ const SESSION_ACTIONS: [Action; 7] = [
     Action::NewSession,
     Action::RenameSession,
     Action::DeleteSession,
+    Action::UndoDelete,
+    Action::RedoDelete,
 ];
 const SCREEN_ACTIONS: [Action; 3] = [Action::OpenStats, Action::OpenSettings, Action::ShowHelp];
 
@@ -369,6 +371,8 @@ fn action_label(strings: &'static Strings, action: Action) -> &'static str {
         Action::NewSession => strings.new_session,
         Action::RenameSession => strings.rename_session,
         Action::DeleteSession => strings.delete_session,
+        Action::UndoDelete => strings.action_undo_delete,
+        Action::RedoDelete => strings.action_redo_delete,
         Action::OpenStats => strings.action_open_stats,
         Action::OpenSettings => strings.settings,
         Action::ShowHelp => strings.action_show_help,

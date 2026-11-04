@@ -83,6 +83,12 @@ impl History {
         })
     }
 
+    /// Puts a removed solve back at `index` (clamped to the end).
+    pub fn insert(&mut self, index: usize, solve: Solve) {
+        self.times.insert(index.min(self.times.len()), solve);
+        self.remark_single_records();
+    }
+
     /// Recomputes every record marker after a change that can reorder results.
     fn remark_single_records(&mut self) {
         let mut best = None;
@@ -103,6 +109,22 @@ mod tests {
 
     fn solve(ms: u64) -> Solve {
         Solve::new(ms, WcaEvent::Cube3x3, String::new(), Modifier::None)
+    }
+
+    #[test]
+    fn insert_restores_a_removed_solve() {
+        let mut history = History::new();
+        for ms in [3000, 2000, 1000] {
+            history.push(solve(ms));
+        }
+        let before = records(&history);
+        let removed = history.remove(1).unwrap();
+        history.insert(1, removed);
+        assert_eq!(history.len(), 3);
+        assert_eq!(history.solves()[1].effective_ms(), Some(2000));
+        assert_eq!(records(&history), before);
+        history.insert(99, solve(500));
+        assert_eq!(history.solves()[3].effective_ms(), Some(500));
     }
 
     fn records(history: &History) -> Vec<bool> {
