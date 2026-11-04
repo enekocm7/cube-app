@@ -16,13 +16,13 @@ nothing is selected.
 
 | Action | Default | Notes |
 |---|---|---|
-| Start or stop the timer | `Space` | Hold and release to start the solve. Pressing and releasing the digits with the left mouse button or a touch does the same |
+| Start or stop the timer | `Space` | Hold and release to start the solve. Pressing and releasing the digits with the left mouse button or a touch does the same while **Timer → Touch the digits to start or stop the timer** is on (off by default) |
 | Cancel the current attempt | `Esc` | Does not record the solve; on the stats or charts screen it returns to the timer |
 | New scramble | `N` | |
 | Turn inspection on or off | `I` | |
 | Show or hide the scramble preview | `P` | The same switch as the setting |
 | Turn manual mode on or off | `M` | Type a time from another timer. See [Manual mode](#manual-mode) |
-| Select the newer solve | `Up` | Moves the highlight up the list, or up the stats table |
+| Select the newer solve | `Up` | Moves the highlight up the list, or up the stats table. See [Charts](#charts) for the charts screen |
 | Select the older solve | `Down` | Moves the highlight down the list, or down the stats table |
 | Open the selected solve | `Enter` | Opens the details and edit dialog, from the solve list or the stats table |
 | Delete the selected solve | `D` | Asks for confirmation (can be turned off in settings) and shows an Undo toast. Each entry in the session dropdown also has a trash button, reachable with `Tab` and pressed with `Enter` or `Space` |
@@ -45,6 +45,14 @@ nothing is selected.
 | Show stats or the timer | `A` | Toggles the table of every solve's averages |
 | Show charts or the timer | `G` | |
 | Connect a Bluetooth timer | `B` | Also the Bluetooth icon in the title bar. See [Bluetooth timers](#bluetooth-timers) |
+| Show the next charts view | `V` | Cycles Trends, Calendar, Compare and All-time bests |
+| Filter charts by the next event | `F` | Cycles all events and every event with solves |
+| Filter charts by the next range | `R` | Cycles all solves, the last 50, 100 or 500 solves and the last 7, 30, 90 or 365 days |
+| Filter charts by custom dates | `Shift + R` | Asks for a first and last day as `YYYY-MM-DD` |
+| Chart one session or all of them | `W` | With all of them, solves merge by date and averages stay inside each session. `[` and `]` go back to one session |
+| Zoom in on the times chart | `Z` | Hold to keep zooming. See [Charts](#charts) |
+| Zoom out of the times chart | `Shift + Z` | Hold to keep zooming |
+| Reset the times chart zoom | `X` | |
 | Open settings | `Ctrl + ,` | |
 | Open the shortcuts panel | `F1` | |
 
@@ -56,6 +64,21 @@ actions fire once per press.
 
 The solves listed in an average's dialog are buttons: reach them with `Tab` and
 press `Enter` or `Space` to open that solve.
+
+## Charts
+
+`V`, `F`, `R`, `Shift + R`, `W`, `Z`, `Shift + Z` and `X` work on the charts screen
+and do nothing elsewhere.
+The arrow keys depend on the view:
+
+- On Calendar, `Left` and `Right` move the selected day by one and `Up` and
+  `Down` by a week. The line below the calendar shows that day's solves.
+- On every other view, `Up` and `Down` scroll.
+- On Trends, `Left` and `Right` pan the times chart while it is zoomed.
+
+With the mouse, turn the wheel over the times chart to zoom around the cursor and
+hold `Shift` to pan. Zoomed all the way out, turning the wheel down scrolls the
+page instead. Changing a filter resets the zoom.
 
 ## Manual mode
 

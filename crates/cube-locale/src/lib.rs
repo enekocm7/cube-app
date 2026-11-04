@@ -101,9 +101,38 @@ pub struct Strings {
     pub stat_solves: &'static str,
     pub stat_dnfs: &'static str,
     pub chart_times: &'static str,
-    pub chart_averages: &'static str,
     pub chart_distribution: &'static str,
     pub chart_empty: &'static str,
+    pub chart_view_trends: &'static str,
+    pub chart_view_calendar: &'static str,
+    pub chart_view_compare: &'static str,
+    pub chart_view_bests: &'static str,
+    pub chart_all_events: &'static str,
+    pub chart_all_sessions: &'static str,
+    pub chart_range_all: &'static str,
+    pub chart_range_last_solves: &'static str,
+    pub chart_range_last_days: &'static str,
+    pub chart_range_dates: &'static str,
+    pub chart_range_custom: &'static str,
+    pub chart_personal_best: &'static str,
+    pub chart_no_match: &'static str,
+    pub chart_solve: &'static str,
+    pub chart_year_summary: &'static str,
+    pub chart_busiest_day: &'static str,
+    pub chart_day: &'static str,
+    pub chart_previous_year: &'static str,
+    pub chart_next_year: &'static str,
+    pub chart_compare_means: &'static str,
+    pub chart_column_session: &'static str,
+    pub chart_column_event: &'static str,
+    pub chart_dates_title: &'static str,
+    pub chart_date_from: &'static str,
+    pub chart_date_to: &'static str,
+    pub chart_date_placeholder: &'static str,
+    pub chart_dates_invalid: &'static str,
+    pub chart_months: [&'static str; 12],
+    pub chart_zoom_range: &'static str,
+    pub chart_reset_zoom: &'static str,
     pub table_time: &'static str,
     pub table_empty: &'static str,
     pub mean_of: &'static str,
@@ -163,6 +192,7 @@ pub struct Strings {
     pub settings_data: &'static str,
     pub setting_inspection: &'static str,
     pub setting_inspection_audio: &'static str,
+    pub setting_touch_to_start: &'static str,
     pub setting_toasts: &'static str,
     pub setting_accurate: &'static str,
     pub setting_solve_list_ao5: &'static str,
@@ -210,6 +240,7 @@ pub struct Strings {
     pub help_section_events_sessions: &'static str,
     pub help_section_averages: &'static str,
     pub help_section_screens: &'static str,
+    pub help_section_charts: &'static str,
     pub action_timer: &'static str,
     pub action_cancel: &'static str,
     pub action_toggle_inspection: &'static str,
@@ -226,6 +257,14 @@ pub struct Strings {
     pub action_previous_session: &'static str,
     pub action_open_stats: &'static str,
     pub action_open_charts: &'static str,
+    pub action_next_chart_view: &'static str,
+    pub action_next_chart_event: &'static str,
+    pub action_next_chart_range: &'static str,
+    pub action_chart_dates: &'static str,
+    pub action_toggle_chart_sessions: &'static str,
+    pub action_chart_zoom_in: &'static str,
+    pub action_chart_zoom_out: &'static str,
+    pub action_chart_reset_zoom: &'static str,
     pub action_previous_average: &'static str,
     pub action_next_average: &'static str,
     pub action_open_average: &'static str,
@@ -413,6 +452,19 @@ mod tests {
     fn every_language_keeps_the_placeholders() {
         for language in Language::ALL {
             let strings = language.strings();
+            assert!(strings.chart_range_last_solves.contains("{count}"));
+            assert!(strings.chart_range_last_days.contains("{count}"));
+            assert!(strings.chart_range_dates.contains("{from}"));
+            assert!(strings.chart_range_dates.contains("{to}"));
+            assert!(strings.chart_solve.contains("{number}"));
+            assert!(strings.chart_zoom_range.contains("{first}"));
+            assert!(strings.chart_zoom_range.contains("{last}"));
+            assert!(strings.chart_year_summary.contains("{solves}"));
+            assert!(strings.chart_year_summary.contains("{days}"));
+            assert!(strings.chart_busiest_day.contains("{date}"));
+            assert!(strings.chart_busiest_day.contains("{count}"));
+            assert!(strings.chart_day.contains("{date}"));
+            assert!(strings.chart_day.contains("{count}"));
             assert!(strings.average_range.contains("{first}"));
             assert!(strings.average_range.contains("{last}"));
             assert!(strings.mean_of.contains("{size}"));

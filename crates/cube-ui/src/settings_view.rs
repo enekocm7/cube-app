@@ -780,6 +780,7 @@ impl Render for SettingsView {
             [
                 state(strings.setting_inspection, settings.inspection),
                 state(strings.setting_inspection_audio, settings.inspection_audio),
+                state(strings.setting_touch_to_start, settings.touch_to_start),
                 state(strings.setting_accurate, settings.accurate_3x3),
             ],
             [
@@ -795,6 +796,13 @@ impl Render for SettingsView {
                     strings.setting_inspection_audio,
                     settings.inspection_audio,
                     |settings, value| settings.inspection_audio = value,
+                    cx,
+                ),
+                self.switch(
+                    "touch-to-start",
+                    strings.setting_touch_to_start,
+                    settings.touch_to_start,
+                    |settings, value| settings.touch_to_start = value,
                     cx,
                 ),
                 self.switch(

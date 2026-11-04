@@ -313,25 +313,46 @@ impl<'a> AverageDetail<'a> {
     }
 }
 
-/// Splits the non-DNF solves into `buckets` equal-width ranges between the
-/// extremes, returning each range's start and how many solves fall in it.
-pub fn histogram(solves: &[Solve], buckets: usize) -> Vec<(u64, u32)> {
-    let times: Vec<u64> = solves.iter().filter_map(Solve::effective_ms).collect();
-    let (Some(&min), Some(&max)) = (times.iter().min(), times.iter().max()) else {
-        return Vec::new();
-    };
-    if buckets == 0 {
+/// One bar of the time distribution.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct HistogramBucket {
+    /// The bar's range start, in milliseconds.
+    pub start_ms: u64,
+    pub count: u32,
+    /// Whether the bar also holds every solve slower than the charted range.
+    /// The range stops at the bulk of the solves so a lone slow outlier does
+    /// not flatten the rest into one bar.
+    pub overflow: bool,
+}
+
+/// Splits the non-DNF solves into `buckets` equal-width ranges, returning one
+/// bar per range.
+///
+/// The ranges stop at the 95th percentile instead of the slowest solve; slower
+/// solves fold into the last bar, which says so through [`HistogramBucket::overflow`].
+pub fn histogram(solves: &[Solve], buckets: usize) -> Vec<HistogramBucket> {
+    let mut times: Vec<u64> = solves.iter().filter_map(Solve::effective_ms).collect();
+    if times.is_empty() || buckets == 0 {
         return Vec::new();
     }
-    let width = (max - min) / buckets as u64 + 1;
+    times.sort_unstable();
+    let min = times[0];
+    let cap = times[(times.len() * 19 / 20).min(times.len() - 1)];
+    let width = (cap - min) / buckets as u64 + 1;
     let mut counts = vec![0_u32; buckets];
-    for ms in times {
-        counts[((ms - min) / width) as usize] += 1;
+    for ms in &times {
+        let index = ((ms - min) / width) as usize;
+        counts[index.min(buckets - 1)] += 1;
     }
+    let overflow = times[times.len() - 1] > cap;
     counts
         .into_iter()
         .enumerate()
-        .map(|(index, count)| (min + index as u64 * width, count))
+        .map(|(index, count)| HistogramBucket {
+            start_ms: min + index as u64 * width,
+            count,
+            overflow: overflow && index == buckets - 1,
+        })
         .collect()
 }
 
@@ -712,15 +733,35 @@ mod tests {
         attempts.push(dnf());
         let buckets = histogram(&attempts, 12);
         assert_eq!(buckets.len(), 12);
-        assert_eq!(buckets.iter().map(|&(_, count)| count).sum::<u32>(), 3);
-        assert_eq!(buckets[0], (1_000, 2));
-        assert_eq!(buckets[11].1, 1);
+        assert_eq!(buckets.iter().map(|bucket| bucket.count).sum::<u32>(), 3);
+        assert_eq!(buckets[0].start_ms, 1_000);
+        assert_eq!(buckets[0].count, 2);
+        assert_eq!(buckets[11].count, 1);
+        assert!(buckets.iter().all(|bucket| !bucket.overflow));
     }
 
     #[test]
     fn the_histogram_handles_identical_times_and_no_times() {
-        assert_eq!(histogram(&solves(&[1_000, 1_000]), 4)[0], (1_000, 2));
+        let buckets = histogram(&solves(&[1_000, 1_000]), 4);
+        assert_eq!(buckets[0].start_ms, 1_000);
+        assert_eq!(buckets[0].count, 2);
+        assert!(buckets.iter().all(|bucket| !bucket.overflow));
         assert_eq!(histogram(&[dnf()], 4), []);
+    }
+
+    #[test]
+    fn a_lone_slow_solve_folds_into_the_last_bar() {
+        let mut times = vec![10_000; 100];
+        times.push(89_000);
+        let buckets = histogram(&solves(&times), 12);
+        assert_eq!(buckets.len(), 12);
+        assert_eq!(buckets.iter().map(|bucket| bucket.count).sum::<u32>(), 101);
+        // The bulk keeps its resolution instead of collapsing into one bar.
+        assert_eq!(buckets[0].start_ms, 10_000);
+        assert_eq!(buckets[0].count, 100);
+        assert_eq!(buckets[11].count, 1);
+        assert!(buckets[11].overflow);
+        assert!(buckets[..11].iter().all(|bucket| !bucket.overflow));
     }
 
     #[test]
