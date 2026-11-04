@@ -20,7 +20,7 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::CubeApp;
-use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
+use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_width};
 use crate::palette::Palette;
 use crate::scroll_fade::FadeScroll;
 
@@ -206,42 +206,44 @@ impl Render for SolveForm {
         let background = theme.background;
         let max_height = dialog_body_height(DialogSize::FORM, window);
 
-        FadeScroll::new("solve-form", background)
-            .track_focus(&self.focus)
-            .max_h(max_height)
-            .gap_3()
-            .on_mouse_down(
-                MouseButton::Left,
-                cx.listener(|form, _, window, cx| {
-                    // Clicking the dialog's empty space moves focus off any
-                    // field; presses inside fields stop below instead.
-                    form.focus.focus(window, cx);
-                }),
-            )
-            .child(self.render_event_and_date(cx))
-            .child(
-                v_flex()
-                    .gap_1()
-                    .child(field_label(strings.field_scramble, muted))
-                    .child(keep_focus("field-scramble", Textarea::new(&self.scramble)))
-                    .children(field_error(self.scramble_error.as_ref(), colors.red)),
-            )
-            .child(
-                v_flex()
-                    .gap_1()
-                    .child(field_label(strings.field_time, muted))
-                    .child(keep_focus("field-time", Input::new(&self.time)))
-                    .children(field_error(self.time_error.as_ref(), colors.red)),
-            )
-            .child(self.render_penalty_row(cx))
-            .child(
-                v_flex()
-                    .gap_1()
-                    .child(field_label(strings.field_comment, muted))
-                    .child(keep_focus("field-comment", Input::new(&self.comment)))
-                    .children(field_error(self.comment_error.as_ref(), colors.red)),
-            )
-            .child(self.render_history(cx))
+        dialog_body(
+            FadeScroll::new("solve-form", background)
+                .track_focus(&self.focus)
+                .max_h(max_height)
+                .gap_3()
+                .on_mouse_down(
+                    MouseButton::Left,
+                    cx.listener(|form, _, window, cx| {
+                        // Clicking the dialog's empty space moves focus off any
+                        // field; presses inside fields stop below instead.
+                        form.focus.focus(window, cx);
+                    }),
+                )
+                .child(self.render_event_and_date(cx))
+                .child(
+                    v_flex()
+                        .gap_1()
+                        .child(field_label(strings.field_scramble, muted))
+                        .child(keep_focus("field-scramble", Textarea::new(&self.scramble)))
+                        .children(field_error(self.scramble_error.as_ref(), colors.red)),
+                )
+                .child(
+                    v_flex()
+                        .gap_1()
+                        .child(field_label(strings.field_time, muted))
+                        .child(keep_focus("field-time", Input::new(&self.time)))
+                        .children(field_error(self.time_error.as_ref(), colors.red)),
+                )
+                .child(self.render_penalty_row(cx))
+                .child(
+                    v_flex()
+                        .gap_1()
+                        .child(field_label(strings.field_comment, muted))
+                        .child(keep_focus("field-comment", Input::new(&self.comment)))
+                        .children(field_error(self.comment_error.as_ref(), colors.red)),
+                )
+                .child(self.render_history(cx)),
+        )
     }
 }
 

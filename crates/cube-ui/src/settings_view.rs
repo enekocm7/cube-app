@@ -18,7 +18,7 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::CubeApp;
-use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
+use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_width};
 use crate::scroll_fade::FadeScroll;
 
 const ROW_MIN_HEIGHT: Pixels = px(44.);
@@ -617,16 +617,18 @@ impl Render for SettingsView {
 
         let max_height = dialog_body_height(DialogSize::STANDARD, window);
 
-        FadeScroll::new("settings-scroll", cx.theme().background)
-            .max_h(max_height)
-            .p_4()
-            .gap_5()
-            .child(section(strings.settings_timer, timer, cx))
-            .child(section(strings.settings_theme, theme_rows, cx))
-            .child(section(strings.settings_appearance, appearance, cx))
-            .child(section(strings.settings_updates, updates, cx))
-            .child(section(strings.setting_language, language, cx))
-            .child(section(strings.settings_data, data, cx))
+        dialog_body(
+            FadeScroll::new("settings-scroll", cx.theme().background)
+                .max_h(max_height)
+                .p_4()
+                .gap_5()
+                .child(section(strings.settings_timer, timer, cx))
+                .child(section(strings.settings_theme, theme_rows, cx))
+                .child(section(strings.settings_appearance, appearance, cx))
+                .child(section(strings.settings_updates, updates, cx))
+                .child(section(strings.setting_language, language, cx))
+                .child(section(strings.settings_data, data, cx)),
+        )
     }
 }
 

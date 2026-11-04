@@ -12,7 +12,7 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::{CubeApp, key_press};
-use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
+use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_width};
 use crate::palette::Palette;
 use crate::scroll_fade::FadeScroll;
 
@@ -309,41 +309,43 @@ impl Render for KeybindsView {
             })
             .collect();
 
-        FadeScroll::new("keybind-panel", cx.theme().background)
-            .track_focus(&self.focus)
-            .on_key_down(cx.listener(Self::on_key_down))
-            .max_h(max_height)
-            .p_4()
-            .gap_5()
-            .child(
-                div()
-                    .text_sm()
-                    .text_color(cx.theme().muted_foreground)
-                    .child(strings.help_any_key_stops),
-            )
-            .when(self.editing, |column| {
-                column.child(
+        dialog_body(
+            FadeScroll::new("keybind-panel", cx.theme().background)
+                .track_focus(&self.focus)
+                .on_key_down(cx.listener(Self::on_key_down))
+                .max_h(max_height)
+                .p_4()
+                .gap_5()
+                .child(
                     div()
+                        .text_sm()
+                        .text_color(cx.theme().muted_foreground)
+                        .child(strings.help_any_key_stops),
+                )
+                .when(self.editing, |column| {
+                    column.child(
+                        div()
+                            .text_xs()
+                            .text_color(cx.theme().muted_foreground)
+                            .child(strings.keybind_hint),
+                    )
+                })
+                .when_some(capture_hint, |column, hint| {
+                    column.child(div().text_xs().text_color(colors.yellow).child(hint))
+                })
+                .when_some(self.error.clone(), |column, error| {
+                    column.child(div().text_xs().text_color(colors.red).child(error))
+                })
+                .children(sections)
+                .child(
+                    div()
+                        .px_2()
+                        .pt_2()
                         .text_xs()
                         .text_color(cx.theme().muted_foreground)
-                        .child(strings.keybind_hint),
-                )
-            })
-            .when_some(capture_hint, |column, hint| {
-                column.child(div().text_xs().text_color(colors.yellow).child(hint))
-            })
-            .when_some(self.error.clone(), |column, error| {
-                column.child(div().text_xs().text_color(colors.red).child(error))
-            })
-            .children(sections)
-            .child(
-                div()
-                    .px_2()
-                    .pt_2()
-                    .text_xs()
-                    .text_color(cx.theme().muted_foreground)
-                    .child(strings.help_hint),
-            )
+                        .child(strings.help_hint),
+                ),
+        )
     }
 }
 
