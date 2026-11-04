@@ -130,7 +130,8 @@ Around the shortcuts:
 - Light and dark themes, plus cube-tui TOML themes with a color-picker editor. See [Themes](#themes).
 - Optional bundled [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) for the timer digits, all times, or
   the whole interface.
-- English and Spanish.
+- Sixteen languages, including English, Spanish, German, French, Japanese and Chinese. Dates and counts follow the
+  chosen language.
 - Resizable solve list and statistics panels. Drag the inner edge of a panel to resize it (180 to 350 px) and
   double-click the edge to restore its default width.
 - Dialogs size themselves to the window. Settings, solve details and the theme editor grow on a large screen and
@@ -155,7 +156,7 @@ Open settings with `Ctrl + ,`. They are saved to `cube-gui.toml` (see [Your data
 | **Theme** | Light, dark or system, and your theme files. See [Themes](#themes) |
 | **Appearance** | Font, scramble size, scramble preview, ao5 in the solve list, an always-visible solve list scrollbar, notifications, and confirmation before deleting |
 | **Updates** | Automatic checks, release channel and check frequency. See [Updates](#updates) |
-| **Language** | English or Spanish |
+| **Language** | Sixteen languages, including English and Spanish |
 | **Data** | Import and export csTimer sessions, and choose your own backup folder. See [Your data](#your-data) |
 
 Shortcuts are rebound from the `F1` panel instead. See [Keyboard shortcuts](#keyboard-shortcuts).

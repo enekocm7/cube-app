@@ -301,7 +301,7 @@ impl CubeApp {
                                 .w(px(36.))
                                 .text_xs()
                                 .text_color(muted)
-                                .child((index + 1).to_string()),
+                                .child(self.language().format_count((index + 1) as u64)),
                         )
                         .child(
                             div()
@@ -428,7 +428,10 @@ impl CubeApp {
         let message = strings
             .delete_session_confirm
             .replace("{name}", &self.session_label(index))
-            .replace("{count}", &self.session().len().to_string());
+            .replace(
+                "{count}",
+                &self.language().format_count(self.session().len() as u64),
+            );
         let on_confirm = cx.listener(move |app: &mut Self, (): &(), window, cx| {
             app.delete_session(index, window, cx);
             app.focus.focus(window, cx);

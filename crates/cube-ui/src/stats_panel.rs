@@ -147,8 +147,14 @@ impl CubeApp {
                 strings.stat_worst,
                 optional_ms(stats.worst.map(|(ms, _)| ms)),
             ),
-            summary(strings.stat_solves, stats.count.to_string()),
-            summary(strings.stat_dnfs, stats.dnf_count.to_string()),
+            summary(
+                strings.stat_solves,
+                self.language().format_count(stats.count as u64),
+            ),
+            summary(
+                strings.stat_dnfs,
+                self.language().format_count(stats.dnf_count as u64),
+            ),
         ]
     }
 }

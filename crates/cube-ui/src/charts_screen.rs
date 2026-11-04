@@ -265,14 +265,15 @@ impl CubeApp {
 
     fn render_range_filter(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
         let strings = self.strings();
+        let language = self.language();
         let entity = cx.entity().downgrade();
         let selected = self.chart_filter.range;
-        filter_button("chart-range", range_label(strings, selected)).dropdown_menu(
+        filter_button("chart-range", range_label(strings, language, selected)).dropdown_menu(
             move |mut menu, _, _| {
                 for range in ChartRange::PRESETS {
                     let entity = entity.clone();
                     menu = menu.item(
-                        PopupMenuItem::new(range_label(strings, range))
+                        PopupMenuItem::new(range_label(strings, language, range))
                             .checked(range == selected)
                             .on_click(move |_, window, cx| {
                                 entity
@@ -300,6 +301,7 @@ impl CubeApp {
 
     fn render_trends(&self, data: &ChartData, cx: &mut Context<Self>) -> AnyElement {
         let strings = self.strings();
+        let language = self.language();
         let colors = Palette::of(cx);
         let theme = cx.theme();
         let (muted, background, foreground) =
@@ -313,10 +315,12 @@ impl CubeApp {
         let overlays = [colors.orange, colors.yellow, foreground];
         let range = self.chart_range(data);
         let zoom_text = self.chart_zoom.and_then(|_| {
-            let first = data.points.get(range.start)?.axis.to_string();
+            let first = data.points.get(range.start)?.axis;
             let last = data.points.get(range.end.checked_sub(1)?)?.axis;
-            let text = strings.chart_zoom_range.replace("{first}", &first);
-            Some(text.replace("{last}", &last.to_string()))
+            let text = strings
+                .chart_zoom_range
+                .replace("{first}", &language.format_count(first as u64));
+            Some(text.replace("{last}", &language.format_count(last as u64)))
         });
         let times_plot = TimesPlot::new(
             Rc::clone(&data.points),
@@ -325,6 +329,7 @@ impl CubeApp {
             overlays,
             colors,
             strings,
+            language,
         )
         .report_bounds(&self.chart_plot_bounds)
         .session_labels(
@@ -400,6 +405,7 @@ impl CubeApp {
     /// A year of days, with the selected day's solves underneath.
     fn render_calendar(&self, data: &ChartData, cx: &mut Context<Self>) -> AnyElement {
         let strings = self.strings();
+        let language = self.language();
         let theme = cx.theme();
         let (muted, background) = (theme.muted_foreground, theme.background);
         if data.calendar.latest().is_none() {
@@ -411,18 +417,27 @@ impl CubeApp {
         let summary = data.calendar.year(year);
         let totals = strings
             .chart_year_summary
-            .replace("{solves}", &summary.solves.to_string())
-            .replace("{days}", &summary.active_days.to_string());
+            .replace(
+                "{solves}",
+                &language.format_count(u64::from(summary.solves)),
+            )
+            .replace(
+                "{days}",
+                &language.format_count(u64::from(summary.active_days)),
+            );
         let busiest = summary.busiest.map(|(day, count)| {
             strings
                 .chart_busiest_day
-                .replace("{date}", &charts::format_day(day))
-                .replace("{count}", &count.to_string())
+                .replace("{date}", &language.format_day(day))
+                .replace("{count}", &language.format_count(u64::from(count)))
         });
         let day_text = strings
             .chart_day
-            .replace("{date}", &charts::format_day(selected))
-            .replace("{count}", &data.calendar.count(selected).to_string());
+            .replace("{date}", &language.format_day(selected))
+            .replace(
+                "{count}",
+                &language.format_count(u64::from(data.calendar.count(selected))),
+            );
 
         FadeScroll::new("chart-calendar", background)
             .track(&self.chart_scroll)
@@ -512,6 +527,7 @@ impl CubeApp {
     /// Every session side by side, the fastest of each column in green.
     fn render_compare(&self, data: &ChartData, cx: &mut Context<Self>) -> AnyElement {
         let strings = self.strings();
+        let language = self.language();
         let colors = Palette::of(cx);
         let theme = cx.theme();
         let (muted, background) = (theme.muted_foreground, theme.background);
@@ -538,7 +554,7 @@ impl CubeApp {
                     .font_family(mono.clone())
                     .when(row.session == self.current, StyledExt::font_semibold)
                     .child(name_cell(self.session_label(row.session)))
-                    .child(value_cell(row.count.to_string()))
+                    .child(value_cell(language.format_count(row.count as u64)))
                     .children(values)
             })
             .collect();
@@ -596,6 +612,7 @@ impl CubeApp {
     /// Each event's best results, with the session each one came from.
     fn render_bests(&self, data: &ChartData, cx: &mut Context<Self>) -> AnyElement {
         let strings = self.strings();
+        let language = self.language();
         let theme = cx.theme();
         let (muted, background) = (theme.muted_foreground, theme.background);
         let mono = theme.mono_font_family.clone();
@@ -625,7 +642,9 @@ impl CubeApp {
                 .h_auto()
                 .py_1()
                 .child(name_cell(bests.event.name().to_owned()))
-                .child(value_cell(bests.count.to_string()).font_family(mono.clone()))
+                .child(
+                    value_cell(language.format_count(bests.count as u64)).font_family(mono.clone()),
+                )
                 .child(record_cell(bests.single))
                 .children(bests.averages.iter().map(|&record| record_cell(record)))
         });
@@ -915,19 +934,23 @@ fn event_label(strings: &'static Strings, event: Option<WcaEvent>) -> &'static s
     event.map_or(strings.chart_all_events, WcaEvent::name)
 }
 
-fn range_label(strings: &'static Strings, range: ChartRange) -> String {
+fn range_label(
+    strings: &'static Strings,
+    language: cube_locale::Language,
+    range: ChartRange,
+) -> String {
     match range {
         ChartRange::All => strings.chart_range_all.to_owned(),
         ChartRange::LastSolves(count) => strings
             .chart_range_last_solves
-            .replace("{count}", &count.to_string()),
+            .replace("{count}", &language.format_count(count as u64)),
         ChartRange::LastDays(count) => strings
             .chart_range_last_days
-            .replace("{count}", &count.to_string()),
+            .replace("{count}", &language.format_count(u64::from(count))),
         ChartRange::Dates { from, to } => strings
             .chart_range_dates
-            .replace("{from}", &charts::format_day(from))
-            .replace("{to}", &charts::format_day(to)),
+            .replace("{from}", &language.format_day(from))
+            .replace("{to}", &language.format_day(to)),
     }
 }
 

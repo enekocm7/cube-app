@@ -189,7 +189,7 @@ impl CubeApp {
                                 .text_color(muted)
                                 .text_right()
                                 .pr_2()
-                                .child((index + 1).to_string()),
+                                .child(self.language().format_count((index + 1) as u64)),
                         )
                         .child(
                             tile(("stats-time", index), false, ring)

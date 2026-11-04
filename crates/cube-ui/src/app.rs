@@ -373,12 +373,16 @@ impl CubeApp {
         }));
     }
 
-    /// Returns the active language's strings.
-    pub(crate) fn strings(&self) -> &'static Strings {
+    /// Returns the active interface language.
+    pub(crate) fn language(&self) -> Language {
         Language::from_code(&self.settings.language)
             .or_else(|| sys_locale::get_locale().and_then(|code| Language::from_code(&code)))
             .unwrap_or_default()
-            .strings()
+    }
+
+    /// Returns the active language's strings.
+    pub(crate) fn strings(&self) -> &'static Strings {
+        self.language().strings()
     }
 
     /// Returns the effective keyboard bindings.
@@ -393,10 +397,10 @@ impl CubeApp {
     /// Returns the name to show for the session at `index`.
     pub(crate) fn session_label(&self, index: usize) -> String {
         match self.sessions[index].name() {
-            "" => self
-                .strings()
-                .session_default_name
-                .replace("{number}", &(index + 1).to_string()),
+            "" => self.strings().session_default_name.replace(
+                "{number}",
+                &self.language().format_count((index + 1) as u64),
+            ),
             name => name.to_owned(),
         }
     }
@@ -1377,8 +1381,8 @@ impl CubeApp {
         let message = self
             .strings()
             .toast_import_done
-            .replace("{imported}", &imported.to_string())
-            .replace("{skipped}", &skipped.to_string());
+            .replace("{imported}", &self.language().format_count(imported as u64))
+            .replace("{skipped}", &self.language().format_count(skipped as u64));
         self.toast(&message, window, cx);
         cx.notify();
     }
@@ -1615,9 +1619,15 @@ impl CubeApp {
             let message = self
                 .strings()
                 .toast_history_merged
-                .replace("{added}", &summary.added.to_string())
-                .replace("{updated}", &summary.updated.to_string())
-                .replace("{kept}", &summary.kept.to_string());
+                .replace(
+                    "{added}",
+                    &self.language().format_count(summary.added as u64),
+                )
+                .replace(
+                    "{updated}",
+                    &self.language().format_count(summary.updated as u64),
+                )
+                .replace("{kept}", &self.language().format_count(summary.kept as u64));
             let toast = Notification::warning(message).placement(Anchor::BottomRight);
             window.push_notification(toast, cx);
         }

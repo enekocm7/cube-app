@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 use cube_core::charts::{ChartPoint, OVERLAY_SIZES};
 use cube_core::format::format_ms;
-use cube_locale::Strings;
+use cube_locale::{Language, Strings};
 use gpui_kit::component::ActiveTheme as _;
 use gpui_kit::component::plot::label::Text;
 use gpui_kit::component::plot::shape::Line;
@@ -125,6 +125,7 @@ pub(crate) struct TimesPlot {
     overlays: [Hsla; OVERLAY_SIZES.len()],
     colors: Palette,
     strings: &'static Strings,
+    language: Language,
 }
 
 impl TimesPlot {
@@ -135,6 +136,7 @@ impl TimesPlot {
         overlays: [Hsla; OVERLAY_SIZES.len()],
         colors: Palette,
         strings: &'static Strings,
+        language: Language,
     ) -> Self {
         Self {
             points,
@@ -145,6 +147,7 @@ impl TimesPlot {
             overlays,
             colors,
             strings,
+            language,
         }
     }
 
@@ -225,7 +228,12 @@ impl TimesPlot {
             .step_by(step)
             .map(|(index, point_at)| {
                 let origin = point(px(layout.x(index)), px(layout.bottom + 6.));
-                Text::new(point_at.axis.to_string(), origin, muted).align(TextAlign::Center)
+                Text::new(
+                    self.language.format_count(point_at.axis as u64),
+                    origin,
+                    muted,
+                )
+                .align(TextAlign::Center)
             });
         PlotLabel::new(times.chain(numbers).collect()).paint(&bounds, window, cx);
     }
@@ -370,7 +378,7 @@ impl Plot for TimesPlot {
         } else {
             self.colors.red
         };
-        let number = hovered.number.to_string();
+        let number = self.language.format_count(hovered.number as u64);
         let mut tooltip = Tooltip::new(cursor, bounds.size)
             .gap(px(8.))
             .cross_line(CrossLine::new(state.cross_line).height(layout.bottom))
