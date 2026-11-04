@@ -107,9 +107,20 @@ pub struct Strings {
     pub field_event: &'static str,
     pub date_unknown: &'static str,
     pub penalty_none: &'static str,
-    /// `{count}`: how many times the solve was edited.
-    pub edited_times: &'static str,
     pub invalid_time: &'static str,
+    pub invalid_duration: &'static str,
+    /// `{event}`: the event the scramble must match.
+    pub invalid_scramble: &'static str,
+    pub invalid_date: &'static str,
+    pub invalid_comment: &'static str,
+    pub date_hint: &'static str,
+    pub edit_history: &'static str,
+    pub history_empty: &'static str,
+    /// `{number}`: the revision; `{date}`: when it was saved.
+    pub history_revision: &'static str,
+    pub history_before: &'static str,
+    pub history_after: &'static str,
+    pub empty_value: &'static str,
 
     pub save: &'static str,
     pub cancel: &'static str,
@@ -231,7 +242,9 @@ mod tests {
             assert!(strings.delete_session_confirm.contains("{name}"));
             assert!(strings.delete_session_confirm.contains("{count}"));
             assert!(strings.session_default_name.contains("{number}"));
-            assert!(strings.edited_times.contains("{count}"));
+            assert!(strings.invalid_scramble.contains("{event}"));
+            assert!(strings.history_revision.contains("{number}"));
+            assert!(strings.history_revision.contains("{date}"));
             assert!(strings.toast_save_failed.contains("{error}"));
             assert!(strings.toast_load_failed.contains("{error}"));
             assert!(strings.toast_import_done.contains("{imported}"));

@@ -14,6 +14,7 @@ pub mod settings;
 pub mod solve;
 pub mod stats;
 pub mod timer;
+pub mod validation;
 
 pub use event::WcaEvent;
 pub use history::History;

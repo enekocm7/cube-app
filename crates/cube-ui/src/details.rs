@@ -2,9 +2,15 @@
 
 use chrono::{DateTime, Local};
 use cube_core::format::{format_ms, parse_time};
-use cube_core::{Modifier, Solve, SolveSnapshot};
+use cube_core::validation::{
+    format_rfc3339, parse_date, validate_comment, validate_duration, validate_scramble,
+};
+use cube_core::{Modifier, Solve, SolveChange, SolveSnapshot, WcaEvent};
+use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
-use gpui_kit::component::input::{Input, InputState};
+use gpui_kit::component::input::{Input, InputState, Textarea, TextareaState};
+use gpui_kit::component::menu::{DropdownMenu as _, PopupMenuItem};
+use gpui_kit::component::scroll::ScrollableElement as _;
 use gpui_kit::component::{ActiveTheme as _, Selectable as _, WindowExt as _, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
@@ -12,138 +18,387 @@ use gpui_kit::*;
 use crate::app::CubeApp;
 use crate::palette::Palette;
 
+/// The tallest the dialog body gets, however large the window is.
+const BODY_MAX_HEIGHT: Pixels = px(560.);
+/// The height the dialog needs around the body: its title, its footer and the
+/// margins it keeps from the window edges.
+const DIALOG_CHROME_HEIGHT: Pixels = px(220.);
+
+/// One saved edit, with only the fields it changed.
+struct HistoryEntry {
+    header: String,
+    rows: Vec<HistoryRow>,
+}
+
+/// One changed field of a saved edit.
+struct HistoryRow {
+    label: &'static str,
+    before: String,
+    after: String,
+    mono: bool,
+}
+
 /// The editable form shown inside the dialog.
 struct SolveForm {
     app: WeakEntity<CubeApp>,
     index: usize,
-    snapshot: SolveSnapshot,
-    edit_count: usize,
-    time: Entity<InputState>,
-    comment: Entity<InputState>,
+    changes: Vec<SolveChange>,
+    event: WcaEvent,
     modifier: Modifier,
-    time_invalid: bool,
+    time: Entity<InputState>,
+    scramble: Entity<TextareaState>,
+    date: Entity<InputState>,
+    comment: Entity<InputState>,
+    time_error: Option<String>,
+    scramble_error: Option<String>,
+    date_error: Option<String>,
+    comment_error: Option<String>,
     strings: &'static cube_locale::Strings,
 }
 
 impl SolveForm {
     /// Applies the form to the solve; returns whether the dialog may close.
     fn save(&mut self, window: &mut Window, cx: &mut Context<Self>) -> bool {
-        let Some(time_ms) = parse_time(&self.time.read(cx).value()) else {
-            self.time_invalid = true;
+        let strings = self.strings;
+        let event = self.event;
+        let modifier = self.modifier;
+        let time_text = self.time.read(cx).value().to_string();
+        let scramble_text = self.scramble.read(cx).value().to_string();
+        let date_text = self.date.read(cx).value().to_string();
+        let comment_text = self.comment.read(cx).value().to_string();
+        self.time_error = None;
+        self.scramble_error = None;
+        self.date_error = None;
+        self.comment_error = None;
+
+        let time_ms = match parse_time(&time_text) {
+            Some(time_ms) if validate_duration(time_ms, modifier) => Some(time_ms),
+            Some(_) => {
+                self.time_error = Some(strings.invalid_duration.to_owned());
+                None
+            }
+            None => {
+                self.time_error = Some(strings.invalid_time.to_owned());
+                None
+            }
+        };
+        self.scramble_error = (!validate_scramble(scramble_text.trim(), event))
+            .then(|| strings.invalid_scramble.replace("{event}", event.name()));
+        let solved_at_unix_ms = if let Some(solved_at_unix_ms) = parse_date(&date_text) {
+            Some(solved_at_unix_ms)
+        } else {
+            self.date_error = Some(strings.invalid_date.to_owned());
+            None
+        };
+        self.comment_error =
+            (!validate_comment(&comment_text)).then(|| strings.invalid_comment.to_owned());
+
+        let (Some(time_ms), Some(solved_at_unix_ms)) = (time_ms, solved_at_unix_ms) else {
             cx.notify();
             return false;
         };
+        if self.scramble_error.is_some() || self.comment_error.is_some() {
+            cx.notify();
+            return false;
+        }
         let after = SolveSnapshot {
             time_ms,
-            modifier: self.modifier,
-            comment: self.comment.read(cx).value().trim().to_owned(),
-            ..self.snapshot.clone()
+            event,
+            scramble: scramble_text.trim().to_owned(),
+            solved_at_unix_ms,
+            modifier,
+            comment: comment_text.trim().to_owned(),
         };
         let index = self.index;
         self.app
             .update(cx, |app, cx| app.edit_solve(index, after, window, cx))
             .is_ok()
     }
+
+    /// Snapshots the audit trail for rendering, newest first.
+    fn history_entries(&self) -> Vec<HistoryEntry> {
+        let strings = self.strings;
+        self.changes
+            .iter()
+            .enumerate()
+            .rev()
+            .map(|(index, change)| {
+                let header = strings
+                    .history_revision
+                    .replace("{number}", &(index + 1).to_string())
+                    .replace("{date}", &format_date(change.changed_at_unix_ms, strings));
+                let before = &change.before;
+                let after = &change.after;
+                let fields: [(&'static str, String, String, bool); 6] = [
+                    (
+                        strings.field_time,
+                        format_ms(before.time_ms),
+                        format_ms(after.time_ms),
+                        false,
+                    ),
+                    (
+                        strings.field_event,
+                        before.event.name().to_owned(),
+                        after.event.name().to_owned(),
+                        false,
+                    ),
+                    (
+                        strings.field_scramble,
+                        before.scramble.clone(),
+                        after.scramble.clone(),
+                        true,
+                    ),
+                    (
+                        strings.field_penalty,
+                        penalty_label(before.modifier, strings),
+                        penalty_label(after.modifier, strings),
+                        false,
+                    ),
+                    (
+                        strings.field_date,
+                        format_date(before.solved_at_unix_ms, strings),
+                        format_date(after.solved_at_unix_ms, strings),
+                        false,
+                    ),
+                    (
+                        strings.field_comment,
+                        before.comment.clone(),
+                        after.comment.clone(),
+                        false,
+                    ),
+                ];
+                let rows = fields
+                    .into_iter()
+                    .filter(|(_, before, after, _)| before != after)
+                    .map(|(label, before, after, mono)| HistoryRow {
+                        label,
+                        before,
+                        after,
+                        mono,
+                    })
+                    .collect();
+                HistoryEntry { header, rows }
+            })
+            .collect()
+    }
 }
 
 impl Render for SolveForm {
-    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let strings = self.strings;
         let colors = Palette::of(cx);
         let theme = cx.theme();
         let muted = theme.muted_foreground;
-        let mono = theme.mono_font_family.clone();
-        let label = |text: &'static str| div().text_xs().text_color(muted).child(text);
-        let penalty = |id: &'static str,
-                       text: &'static str,
-                       modifier: Modifier,
-                       current: Modifier,
-                       cx: &mut Context<Self>| {
-            Button::new(id)
-                .outline()
-                .label(text)
-                .selected(current == modifier)
-                .on_click(cx.listener(move |form, _, _, cx| {
-                    form.modifier = modifier;
-                    cx.notify();
-                }))
-        };
-        let current = self.modifier;
+        let max_height =
+            (window.viewport_size().height - DIALOG_CHROME_HEIGHT).min(BODY_MAX_HEIGHT);
 
-        v_flex()
-            .gap_3()
+        div().max_h(max_height).overflow_y_scrollbar().child(
+            v_flex()
+                .gap_3()
+                .child(self.render_event_and_date(cx))
+                .child(
+                    v_flex()
+                        .gap_1()
+                        .child(field_label(strings.field_scramble, muted))
+                        .child(Textarea::new(&self.scramble))
+                        .children(field_error(self.scramble_error.as_ref(), colors.red)),
+                )
+                .child(
+                    v_flex()
+                        .gap_1()
+                        .child(field_label(strings.field_time, muted))
+                        .child(Input::new(&self.time))
+                        .children(field_error(self.time_error.as_ref(), colors.red)),
+                )
+                .child(self.render_penalty_row(cx))
+                .child(
+                    v_flex()
+                        .gap_1()
+                        .child(field_label(strings.field_comment, muted))
+                        .child(Input::new(&self.comment))
+                        .children(field_error(self.comment_error.as_ref(), colors.red)),
+                )
+                .child(self.render_history(cx)),
+        )
+    }
+}
+
+impl SolveForm {
+    /// The event picker next to the date field.
+    fn render_event_and_date(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let strings = self.strings;
+        let muted = cx.theme().muted_foreground;
+        let red = Palette::of(cx).red;
+        let event = self.event;
+        let form = cx.entity().downgrade();
+        h_flex()
+            .gap_6()
             .child(
-                h_flex()
-                    .gap_6()
+                v_flex()
+                    .gap_1()
+                    .child(field_label(strings.field_event, muted))
                     .child(
-                        v_flex()
-                            .gap_1()
-                            .child(label(strings.field_event))
-                            .child(self.snapshot.event.name()),
-                    )
-                    .child(
-                        v_flex()
-                            .gap_1()
-                            .child(label(strings.field_date))
-                            .child(format_date(self.snapshot.solved_at_unix_ms, strings)),
+                        Button::new("solve-event")
+                            .outline()
+                            .label(event.name())
+                            .dropdown_caret(true)
+                            .dropdown_menu(move |mut menu, _, _| {
+                                for item in WcaEvent::ALL {
+                                    let form = form.clone();
+                                    menu = menu.item(
+                                        PopupMenuItem::new(item.name())
+                                            .checked(item == event)
+                                            .on_click(move |_, _, cx| {
+                                                form.update(
+                                                    cx,
+                                                    |form: &mut SolveForm,
+                                                     cx: &mut Context<SolveForm>| {
+                                                        form.event = item;
+                                                        form.scramble_error = None;
+                                                        cx.notify();
+                                                    },
+                                                )
+                                                .ok();
+                                            }),
+                                    );
+                                }
+                                menu
+                            }),
                     ),
             )
             .child(
-                v_flex().gap_1().child(label(strings.field_scramble)).child(
-                    div()
-                        .font_family(mono)
-                        .text_sm()
-                        .child(self.snapshot.scramble.clone()),
-                ),
-            )
-            .child(
                 v_flex()
                     .gap_1()
-                    .child(label(strings.field_time))
-                    .child(Input::new(&self.time))
-                    .when(self.time_invalid, |column| {
-                        column.child(
-                            div()
-                                .text_xs()
-                                .text_color(colors.red)
-                                .child(strings.invalid_time),
-                        )
-                    }),
+                    .child(field_label(strings.field_date, muted))
+                    .child(Input::new(&self.date))
+                    .child(div().text_xs().text_color(muted).child(strings.date_hint))
+                    .children(field_error(self.date_error.as_ref(), red)),
             )
+    }
+
+    /// The penalty choices.
+    fn render_penalty_row(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let strings = self.strings;
+        let muted = cx.theme().muted_foreground;
+        let current = self.modifier;
+        let penalty =
+            |id: &'static str, text: &'static str, modifier: Modifier, cx: &mut Context<Self>| {
+                Button::new(id)
+                    .outline()
+                    .label(text)
+                    .selected(current == modifier)
+                    .on_click(cx.listener(move |form, _, _, cx| {
+                        form.modifier = modifier;
+                        cx.notify();
+                    }))
+            };
+        v_flex()
+            .gap_1()
+            .child(field_label(strings.field_penalty, muted))
             .child(
-                v_flex().gap_1().child(label(strings.field_penalty)).child(
-                    h_flex()
-                        .gap_2()
-                        .child(penalty(
-                            "penalty-none",
-                            strings.penalty_none,
-                            Modifier::None,
-                            current,
-                            cx,
-                        ))
-                        .child(penalty("penalty-two", "+2", Modifier::PlusTwo, current, cx))
-                        .child(penalty("penalty-dnf", "DNF", Modifier::DNF, current, cx)),
-                ),
+                h_flex()
+                    .gap_2()
+                    .child(penalty(
+                        "penalty-none",
+                        strings.penalty_none,
+                        Modifier::None,
+                        cx,
+                    ))
+                    .child(penalty("penalty-two", "+2", Modifier::PlusTwo, cx))
+                    .child(penalty("penalty-dnf", "DNF", Modifier::DNF, cx)),
             )
-            .child(
+    }
+
+    /// Every saved edit, newest first, with only the fields it changed.
+    fn render_history(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let strings = self.strings;
+        let theme = cx.theme();
+        let muted = theme.muted_foreground;
+        let mono = theme.mono_font_family.clone();
+        let entries = self.history_entries();
+        v_flex()
+            .gap_1()
+            .child(field_label(strings.edit_history, muted))
+            .child(if entries.is_empty() {
+                div()
+                    .text_sm()
+                    .text_color(muted)
+                    .child(strings.history_empty)
+                    .into_any_element()
+            } else {
                 v_flex()
-                    .gap_1()
-                    .child(label(strings.field_comment))
-                    .child(Input::new(&self.comment)),
-            )
-            .when(self.edit_count > 0, |column| {
-                column.child(label_owned(
-                    strings
-                        .edited_times
-                        .replace("{count}", &self.edit_count.to_string()),
-                    muted,
-                ))
+                    .gap_3()
+                    .children(entries.into_iter().map(|entry| {
+                        v_flex()
+                            .gap_1()
+                            .child(div().text_xs().font_semibold().child(entry.header))
+                            .children(entry.rows.into_iter().map(|row| {
+                                let value_font = mono.clone();
+                                v_flex()
+                                    .child(field_label(row.label, muted))
+                                    .child(history_value(
+                                        strings.history_before,
+                                        &row.before,
+                                        row.mono,
+                                        value_font.clone(),
+                                        strings,
+                                    ))
+                                    .child(history_value(
+                                        strings.history_after,
+                                        &row.after,
+                                        row.mono,
+                                        value_font,
+                                        strings,
+                                    ))
+                            }))
+                            .into_any_element()
+                    }))
+                    .into_any_element()
             })
     }
 }
 
-fn label_owned(text: String, color: Hsla) -> impl IntoElement {
-    div().text_xs().text_color(color).child(text)
+/// A small muted caption above a field.
+fn field_label(text: &'static str, muted: Hsla) -> impl IntoElement {
+    div().text_xs().text_color(muted).child(text)
+}
+
+/// A validation message below a field, if there is one.
+fn field_error(message: Option<&String>, red: Hsla) -> Option<AnyElement> {
+    message.cloned().map(|message| {
+        div()
+            .text_xs()
+            .text_color(red)
+            .child(message)
+            .into_any_element()
+    })
+}
+
+fn history_value(
+    caption: &'static str,
+    value: &str,
+    mono: bool,
+    mono_font: SharedString,
+    strings: &'static cube_locale::Strings,
+) -> AnyElement {
+    let value = if value.is_empty() {
+        strings.empty_value.to_owned()
+    } else {
+        value.to_owned()
+    };
+    div()
+        .text_sm()
+        .when(mono, |line| line.font_family(mono_font))
+        .child(format!("{caption}: {value}"))
+        .into_any_element()
+}
+
+fn penalty_label(modifier: Modifier, strings: &'static cube_locale::Strings) -> String {
+    match modifier {
+        Modifier::None => strings.penalty_none.to_owned(),
+        Modifier::PlusTwo => "+2".to_owned(),
+        Modifier::DNF => "DNF".to_owned(),
+    }
 }
 
 /// Formats a solve's date in local time; solves from old saves may have none.
@@ -256,21 +511,34 @@ fn new_form(
     cx: &mut Context<CubeApp>,
 ) -> Entity<SolveForm> {
     let time = format_ms(solve.raw_ms());
+    let scramble = solve.scramble().to_owned();
+    let date = format_rfc3339(solve.solved_at_unix_ms());
     let comment = solve.comment().to_owned();
     let time = cx.new(|cx| InputState::new(window, cx).default_value(time));
+    let scramble = cx.new(|cx| {
+        TextareaState::new(window, cx)
+            .default_value(scramble)
+            .auto_grow(2, 4)
+    });
+    let date = cx.new(|cx| InputState::new(window, cx).default_value(date));
     let comment = cx.new(|cx| InputState::new(window, cx).default_value(comment));
-    let snapshot = solve.snapshot();
-    let edit_count = solve.changes().len();
+    let changes = solve.changes().to_vec();
+    let event = solve.event();
     let modifier = solve.modifier();
     cx.new(|_| SolveForm {
         app,
         index,
-        snapshot,
-        edit_count,
-        time,
-        comment,
+        changes,
+        event,
         modifier,
-        time_invalid: false,
+        time,
+        scramble,
+        date,
+        comment,
+        time_error: None,
+        scramble_error: None,
+        date_error: None,
+        comment_error: None,
         strings,
     })
 }

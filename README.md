@@ -15,7 +15,7 @@ solve history, so you can move between the terminal and the desktop without impo
   12 s audio cues warn you, and hold colors work like a stackmat's
 - Official WCA random-state scrambles for 12 events, generated with `tnoodle-rs`
 - Sessions with custom names
-- Solve history, with details, comments, penalties and edits that keep an audit trail
+- Solve history, with details you can edit (time, event, scramble, penalty, date and comment) and a full audit trail of every change
 - Current and best single, mo3, ao5, ao12, ao50 and ao100, plus mean, deviation and DNF count
 - Stats screen with charts of your times, your ao5 and their distribution
 - Import and export csTimer sessions, with file pickers, from Settings → Data
