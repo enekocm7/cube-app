@@ -6,6 +6,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use cube_core::cstimer::{self, ImportReport};
+use cube_core::history_writer::HistoryWriter;
 use cube_core::scramble::{self, ScrambleQueue};
 use cube_core::stats::{self, Average, AverageTable, SessionStats};
 use cube_core::window_state::WindowState;
@@ -146,7 +147,8 @@ pub struct CubeApp {
     undo_stack: Vec<Deleted>,
     /// Undone deletions Redo can repeat, until a new deletion clears them.
     redo_stack: Vec<Deleted>,
-    history_path: Option<PathBuf>,
+    /// Saves the history off the UI thread; `None` without a data directory.
+    history_writer: Option<Arc<HistoryWriter>>,
     settings_path: Option<PathBuf>,
     saving_blocked: bool,
     /// The newer release the update notification offers, if any.
@@ -230,7 +232,7 @@ impl CubeApp {
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
             keybinds,
-            history_path,
+            history_writer: history_path.map(|path| Arc::new(HistoryWriter::new(path))),
             settings_path,
             saving_blocked: load_error.is_some(),
             available: None,
@@ -256,6 +258,15 @@ impl CubeApp {
             .detach();
         cx.observe_window_bounds(window, Self::on_window_bounds_changed)
             .detach();
+        // Closing the window quits the app; hold it until the last save lands.
+        if let Some(writer) = app.history_writer.clone() {
+            cx.on_app_quit(move |_, cx| {
+                let writer = Arc::clone(&writer);
+                cx.background_executor()
+                    .spawn(async move { writer.flush() })
+            })
+            .detach();
+        }
         app
     }
 
@@ -332,6 +343,7 @@ impl CubeApp {
 
     fn tick(&mut self, window: &mut Window, cx: &mut Context<Self>) -> Duration {
         let now = Instant::now();
+        self.report_background_save_errors(window, cx);
         self.play_inspection_cues(now, window, cx);
         if let Some(outcome) = self.timer.tick(now) {
             self.finish_attempt(outcome, window, cx);
@@ -1383,14 +1395,27 @@ impl CubeApp {
         )
     }
 
-    fn save_history(&self, window: &mut Window, cx: &mut Context<Self>) {
+    fn save_history(&self, _window: &mut Window, _cx: &mut Context<Self>) {
         if self.saving_blocked {
             return;
         }
-        if let Some(path) = &self.history_path
-            && let Err(error) = persistence::save_history(path, &self.sessions)
-        {
-            self.report_save_error(&error, window, cx);
+        if let Some(writer) = &self.history_writer {
+            writer.save(self.sessions.clone());
+        }
+    }
+
+    /// Shows the failures of saves the background writer has finished.
+    fn report_background_save_errors(&self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(writer) = &self.history_writer else {
+            return;
+        };
+        for error in writer.take_errors() {
+            self.report_error(
+                self.strings().toast_save_failed,
+                &anyhow::anyhow!(error),
+                window,
+                cx,
+            );
         }
     }
 
