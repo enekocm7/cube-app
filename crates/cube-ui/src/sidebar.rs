@@ -119,6 +119,7 @@ impl CubeApp {
             .map(|index| self.session_label(index))
             .collect();
         let current = self.current;
+        let delete_label = self.strings().delete_session;
         let current_label = labels[current].clone();
 
         let session = h_flex()
@@ -140,11 +141,49 @@ impl CubeApp {
                                 let entity = entity.clone();
                                 let label = label.clone();
                                 menu = menu.item(
-                                    PopupMenuItem::element(move |_, _| {
-                                        div()
-                                            .max_w(SESSION_MENU_MAX_WIDTH)
-                                            .truncate()
-                                            .child(label.clone())
+                                    PopupMenuItem::element({
+                                        let entity = entity.clone();
+                                        move |_, _| {
+                                            let entity = entity.clone();
+                                            h_flex()
+                                                .w_full()
+                                                .gap_2()
+                                                .items_center()
+                                                .justify_between()
+                                                .child(
+                                                    div()
+                                                        .min_w_0()
+                                                        .max_w(SESSION_MENU_MAX_WIDTH)
+                                                        .truncate()
+                                                        .child(label.clone()),
+                                                )
+                                                .child(
+                                                    div()
+                                                        .flex_none()
+                                                        // Keep a press on the trash from also
+                                                        // selecting the session underneath.
+                                                        .on_mouse_down(MouseButton::Left, |_, _, cx| {
+                                                            cx.stop_propagation();
+                                                        })
+                                                        .child(
+                                                            Button::new(("session-menu-delete", index))
+                                                                .ghost()
+                                                                .xsmall()
+                                                                .icon(IconName::Trash)
+                                                                .tooltip(delete_label)
+                                                                .on_click(move |_, window, cx| {
+                                                                    cx.stop_propagation();
+                                                                    entity
+                                                                        .update(cx, |app, cx| {
+                                                                            app.confirm_delete_session_at(
+                                                                                index, window, cx,
+                                                                            );
+                                                                        })
+                                                                        .ok();
+                                                                }),
+                                                        ),
+                                                )
+                                        }
                                     })
                                     .checked(index == current)
                                     .on_click(
@@ -355,12 +394,24 @@ impl CubeApp {
     }
 
     pub(crate) fn confirm_delete_session(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.confirm_delete_session_at(self.current, window, cx);
+    }
+
+    /// Deletes the session at `index`, asking first when confirmations are on.
+    pub(crate) fn confirm_delete_session_at(
+        &mut self,
+        index: usize,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         let strings = self.strings();
         if self.sessions.len() <= 1 {
             self.toast(strings.last_session, window, cx);
             return;
         }
-        let index = self.current;
+        if index >= self.sessions.len() {
+            return;
+        }
         if !self.settings.confirm_delete {
             self.delete_session(index, window, cx);
             self.focus.focus(window, cx);

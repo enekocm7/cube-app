@@ -729,7 +729,13 @@ impl CubeApp {
             return None;
         }
         let history = self.sessions.remove(index);
-        let next = self.current.min(self.sessions.len() - 1);
+        // Removing an entry above the open one shifts it up a place.
+        let shifted = if index < self.current {
+            self.current - 1
+        } else {
+            self.current
+        };
+        let next = shifted.min(self.sessions.len() - 1);
         self.current = next;
         self.select_session(next, cx);
         self.save_history(window, cx);

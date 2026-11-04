@@ -20,7 +20,7 @@ nothing is selected.
 | Select the newer solve | `Up` | Moves the highlight up the list |
 | Select the older solve | `Down` | Moves the highlight down the list |
 | Open the selected solve | `Enter` | Opens the details and edit dialog |
-| Delete the selected solve | `D` | Asks for confirmation (can be turned off in settings) and shows an Undo toast |
+| Delete the selected solve | `D` | Asks for confirmation (can be turned off in settings) and shows an Undo toast. Each entry in the session dropdown also has a trash button, reachable with `Tab` and pressed with `Enter` or `Space` |
 | Toggle `+2` on the selected solve | `2` | |
 | Toggle DNF on the selected solve | `Shift + D` | |
 | Next event | `E` | |
