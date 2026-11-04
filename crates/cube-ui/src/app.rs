@@ -33,7 +33,8 @@ pub const MAX_SESSIONS: usize = 99;
 
 /// How often the display refreshes during an attempt.
 const ACTIVE_TICK: Duration = Duration::from_millis(16);
-/// How often background work is polled otherwise.
+/// How often time-based state is checked otherwise. Scrambles do not wait for
+/// this: they arrive through `ScrambleSignal`.
 const IDLE_TICK: Duration = Duration::from_millis(100);
 /// How long a scramble may take before the placeholder message shows.
 const GENERATING_DELAY: Duration = Duration::from_millis(500);
@@ -222,7 +223,8 @@ impl CubeApp {
                 window.push_notification(Notification::error(message).autohide(false), cx);
             });
         }
-        app.await_scramble(cx);
+        app.next_scramble(cx);
+        app.listen_for_scrambles(cx);
         app.start_ticking(window, cx);
         app.startup_update_tasks(window, cx);
         cx.observe_window_activation(window, Self::on_activation_changed)
@@ -258,7 +260,7 @@ impl CubeApp {
         }
     }
 
-    /// Drives time-based state: inspection expiry, display updates and scrambles.
+    /// Drives time-based state: inspection expiry and display updates.
     fn start_ticking(&self, window: &mut Window, cx: &mut Context<Self>) {
         cx.spawn_in(window, async move |this, cx| {
             let mut delay = IDLE_TICK;
@@ -280,14 +282,6 @@ impl CubeApp {
         if let Some(outcome) = self.timer.tick(now) {
             self.finish_attempt(outcome, window, cx);
         }
-        if self.scramble.is_none()
-            && let Some(scramble) = self.queue.try_next()
-        {
-            self.scramble = Some(scramble);
-            self.generating_visible = false;
-            self.generating_timer = None;
-            cx.notify();
-        }
         if self.timer.is_active() {
             cx.notify();
             ACTIVE_TICK
@@ -296,20 +290,47 @@ impl CubeApp {
         }
     }
 
-    /// Starts waiting for a scramble: the line stays blank, and only if none
-    /// arrives within `GENERATING_DELAY` does the placeholder appear.
-    fn await_scramble(&mut self, cx: &mut Context<Self>) {
-        self.generating_visible = false;
-        self.generating_timer = Some(cx.spawn(async move |this, cx| {
-            cx.background_executor().timer(GENERATING_DELAY).await;
-            this.update(cx, |app, cx| {
-                if app.scramble.is_none() {
-                    app.generating_visible = true;
-                    cx.notify();
+    /// Shows a scramble the moment the worker delivers one, if none is showing.
+    fn listen_for_scrambles(&self, cx: &mut Context<Self>) {
+        let mut signal = self.queue.signal();
+        cx.spawn(async move |this, cx| {
+            while signal.changed().await {
+                let updated = this.update(cx, |app, cx| {
+                    if app.scramble.is_none()
+                        && let Some(scramble) = app.queue.try_next()
+                    {
+                        app.scramble = Some(scramble);
+                        app.generating_visible = false;
+                        app.generating_timer = None;
+                        cx.notify();
+                    }
+                });
+                if updated.is_err() {
+                    break;
                 }
+            }
+        })
+        .detach();
+    }
+
+    /// Moves to the next scramble, right away if one is prepared. Otherwise the
+    /// line stays blank until `listen_for_scrambles` delivers one, and only if
+    /// none arrives within `GENERATING_DELAY` does the placeholder appear.
+    fn next_scramble(&mut self, cx: &mut Context<Self>) {
+        self.scramble = self.queue.try_next();
+        self.generating_visible = false;
+        self.generating_timer = self.scramble.is_none().then(|| {
+            cx.spawn(async move |this, cx| {
+                cx.background_executor().timer(GENERATING_DELAY).await;
+                this.update(cx, |app, cx| {
+                    if app.scramble.is_none() {
+                        app.generating_visible = true;
+                        cx.notify();
+                    }
+                })
+                .ok();
             })
-            .ok();
-        }));
+        });
     }
 
     /// Plays any inspection warnings whose time has come, without interrupting
@@ -522,7 +543,7 @@ impl CubeApp {
         let scramble = self.scramble.take().unwrap_or_default();
         let solve = Solve::new(time_ms, self.event, scramble, modifier);
         self.sessions[self.current].push(solve);
-        self.await_scramble(cx);
+        self.next_scramble(cx);
         self.last_result = Some(LastResult { time_ms, modifier });
         self.selected_solve = None;
         self.solves_changed(window, cx);
@@ -583,19 +604,17 @@ impl CubeApp {
     /// Replaces the scramble without recording anything.
     pub(crate) fn skip_scramble(&mut self, cx: &mut Context<Self>) {
         if !self.timer.is_active() {
-            self.scramble = None;
-            self.await_scramble(cx);
+            self.next_scramble(cx);
             cx.notify();
         }
     }
 
-    /// Switches event, discarding scrambles for the previous one.
+    /// Switches event, keeping the previous one's scramble for coming back.
     pub(crate) fn set_event(&mut self, event: WcaEvent, cx: &mut Context<Self>) {
         if event != self.event && !self.timer.is_active() {
             self.event = event;
-            self.scramble = None;
-            self.await_scramble(cx);
-            self.queue = ScrambleQueue::new(event);
+            self.queue.switch_event(event, self.scramble.take());
+            self.next_scramble(cx);
             cx.notify();
         }
     }
@@ -1077,12 +1096,16 @@ impl CubeApp {
         cx: &mut Context<Self>,
         change: impl FnOnce(&mut Settings),
     ) {
+        let accurate_3x3 = self.settings.accurate_3x3;
         change(&mut self.settings);
         self.keybinds = self.settings.keybinds();
         if !self.timer.is_active() {
             self.timer = self.settings.timer();
         }
-        scramble::set_accurate_3x3(self.settings.accurate_3x3);
+        if self.settings.accurate_3x3 != accurate_3x3 {
+            scramble::set_accurate_3x3(self.settings.accurate_3x3);
+            self.queue.discard(WcaEvent::Cube3x3);
+        }
         palette::apply(&self.settings, cx);
         self.save_settings(window, cx);
         window.refresh();
