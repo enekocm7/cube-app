@@ -1,12 +1,11 @@
-//! The central panel: scramble, digits and the latest result's actions.
+//! The central panel: scramble, digits and the finished time.
 
 use std::time::Instant;
 
 use cube_core::format::format_ms;
 use cube_core::{Action, Modifier, Readiness, TimerPhase};
-use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::tooltip::Tooltip;
-use gpui_kit::component::{ActiveTheme as _, Selectable as _, Sizable as _, h_flex, v_flex};
+use gpui_kit::component::{ActiveTheme as _, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
@@ -65,9 +64,6 @@ impl CubeApp {
                     )
                     .when_some(display.hint, |column, hint| {
                         column.child(div().text_sm().text_color(muted).child(hint))
-                    })
-                    .when_some(self.last_result.filter(|_| !attempt), |column, result| {
-                        column.child(self.render_result_actions(result, cx))
                     }),
             )
     }
@@ -145,12 +141,14 @@ impl CubeApp {
         let theme = cx.theme();
         let mono = theme.mono_font_family.clone();
         let muted = theme.muted_foreground;
-        let border = theme.border;
         let scramble_color = Palette::of(cx).scramble;
-        let text: SharedString = scramble
-            .clone()
-            .unwrap_or_else(|| strings.generating_scramble.to_owned())
-            .into();
+        // Blank while a scramble is prepared, so a fast one never flashes text.
+        // A no-break space keeps the line's height.
+        let text: SharedString = match &scramble {
+            Some(scramble) => scramble.clone().into(),
+            None if self.generating_visible => strings.generating_scramble.into(),
+            None => "\u{a0}".into(),
+        };
         // A new scramble is a new key, so the scroll area starts from its top.
         let scroll_id = text.clone();
 
@@ -159,8 +157,6 @@ impl CubeApp {
             .w_full()
             .min_h(line * SCRAMBLE_MIN_LINES)
             .pb_3()
-            .border_b_1()
-            .border_color(border)
             .child(
                 FadeScroll::new(scroll_id, theme.background)
                     .flex_1()
@@ -185,43 +181,6 @@ impl CubeApp {
                         app.focus.focus(window, cx);
                     }))
                     .child(text),
-            )
-    }
-
-    /// Penalty shortcuts for the attempt that just finished.
-    fn render_result_actions(
-        &self,
-        result: LastResult,
-        cx: &mut Context<Self>,
-    ) -> impl IntoElement + use<> {
-        let strings = self.strings();
-        let index = self.session().len().saturating_sub(1);
-        let penalty =
-            |id: &'static str, label: &'static str, modifier: Modifier, cx: &mut Context<Self>| {
-                Button::new(id)
-                    .outline()
-                    .small()
-                    .label(label)
-                    .tab_stop(false)
-                    .selected(result.modifier == modifier)
-                    .on_click(cx.listener(move |app, _, window, cx| {
-                        app.toggle_penalty(index, modifier, window, cx);
-                        app.focus.focus(window, cx);
-                    }))
-            };
-        h_flex()
-            .gap_2()
-            .child(penalty("last-plus-two", "+2", Modifier::PlusTwo, cx))
-            .child(penalty("last-dnf", "DNF", Modifier::DNF, cx))
-            .child(
-                Button::new("last-delete")
-                    .ghost()
-                    .small()
-                    .label(strings.delete)
-                    .tab_stop(false)
-                    .on_click(cx.listener(move |app, _, window, cx| {
-                        app.confirm_delete_solve(index, window, cx);
-                    })),
             )
     }
 }
