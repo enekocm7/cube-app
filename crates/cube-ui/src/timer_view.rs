@@ -146,7 +146,6 @@ impl CubeApp {
         let theme = cx.theme();
         let mono = theme.mono_font_family.clone();
         let muted = theme.muted_foreground;
-        let border = theme.border;
         let scramble_color = Palette::of(cx).scramble;
         let text: SharedString = scramble
             .clone()
@@ -160,8 +159,6 @@ impl CubeApp {
             .w_full()
             .min_h(SCRAMBLE_LINE * SCRAMBLE_MIN_LINES)
             .pb_3()
-            .border_b_1()
-            .border_color(border)
             .child(
                 FadeScroll::new(scroll_id, theme.background)
                     .flex_1()
