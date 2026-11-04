@@ -16,6 +16,7 @@ use gpui_kit::*;
 use crate::app::{CubeApp, average_label, format_average_at};
 use crate::dialog_size::{DialogSize, dialog_width};
 use crate::palette::Palette;
+use crate::scroll_fade::fading_scroll;
 
 /// The widest the session picker gets, however long the session's name is.
 const SESSION_MAX_WIDTH: Pixels = px(120.);
@@ -37,6 +38,7 @@ impl CubeApp {
         let count = self.session().len();
         let theme = cx.theme();
         let (border, muted) = (theme.border, theme.muted_foreground);
+        let background = theme.background;
         let show_average = self.settings.solve_list_ao5 && count > 0;
 
         v_flex()
@@ -82,9 +84,14 @@ impl CubeApp {
                     .flex_1()
                     .min_h_0()
                     .child(
-                        uniform_list("solves", count, cx.processor(Self::render_solve_rows))
-                            .size_full()
-                            .track_scroll(&self.solves_scroll),
+                        fading_scroll(
+                            uniform_list("solves", count, cx.processor(Self::render_solve_rows))
+                                .size_full()
+                                .track_scroll(&self.solves_scroll),
+                            &self.solves_scroll,
+                            background,
+                        )
+                        .size_full(),
                     )
                     .child(Scrollbar::vertical(&self.solves_scroll).mode(ScrollbarMode::Always))
                     .into_any_element()

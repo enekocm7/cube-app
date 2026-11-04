@@ -11,21 +11,18 @@ pub const DEFAULT_STATS_WIDTH: u32 = 250;
 pub const MIN_PANEL_WIDTH: u32 = 180;
 /// Room the timer keeps free, so the panels cannot take the whole window.
 pub const MIN_TIMER_WIDTH: u32 = 320;
-/// The grab column between a panel and the timer, in pixels. Each panel has one.
-pub const GRAB_WIDTH: u32 = 10;
 
 /// The widest a panel can be in a window `window_width` pixels wide, while the
 /// other panel is `other_width` pixels wide.
 ///
-/// The room left for it is the window less the other panel, the timer's minimum
-/// and both grab columns. Never narrower than [`MIN_PANEL_WIDTH`], even when the
+/// The room left for it is the window less the other panel and the timer's
+/// minimum. Never narrower than [`MIN_PANEL_WIDTH`], even when the
 /// window cannot fit that room: the panel keeps its minimum and the window
 /// clips instead of the panel collapsing.
 pub fn max_panel_width(window_width: u32, other_width: u32) -> u32 {
     window_width
         .saturating_sub(other_width)
         .saturating_sub(MIN_TIMER_WIDTH)
-        .saturating_sub(2 * GRAB_WIDTH)
         .max(MIN_PANEL_WIDTH)
 }
 
@@ -80,9 +77,9 @@ mod tests {
 
     #[test]
     fn the_window_limits_the_widest_panel() {
-        // 1000 px, less the other panel, the timer's room and both grab columns.
-        assert_eq!(max_panel_width(1000, 250), 410);
-        assert_eq!(clamp_panel_width(2000, 1000, 250), 410);
+        // 1000 px, less the other panel and the timer's room.
+        assert_eq!(max_panel_width(1000, 250), 430);
+        assert_eq!(clamp_panel_width(2000, 1000, 250), 430);
     }
 
     #[test]
@@ -98,7 +95,7 @@ mod tests {
     fn a_wide_sidebar_gives_way_to_the_stats_panel() {
         // The sidebar is capped by the stats panel; the stats panel then fits
         // beside the capped sidebar.
-        assert_eq!(fit_panels(800, 600, 250), (210, 250));
+        assert_eq!(fit_panels(800, 600, 250), (230, 250));
     }
 
     #[test]
@@ -110,8 +107,8 @@ mod tests {
                     assert!(sidebar >= MIN_PANEL_WIDTH);
                     assert!(stats >= MIN_PANEL_WIDTH);
                     assert!(
-                        window_width < 2 * MIN_PANEL_WIDTH + MIN_TIMER_WIDTH + 2 * GRAB_WIDTH
-                            || sidebar + stats + MIN_TIMER_WIDTH + 2 * GRAB_WIDTH <= window_width,
+                        window_width < 2 * MIN_PANEL_WIDTH + MIN_TIMER_WIDTH
+                            || sidebar + stats + MIN_TIMER_WIDTH <= window_width,
                         "{window_width}: {sidebar} + {stats} leaves no timer room"
                     );
                 }

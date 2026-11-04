@@ -13,7 +13,6 @@ use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::collapsible::Collapsible;
 use gpui_kit::component::input::{Input, InputState, Textarea, TextareaState};
 use gpui_kit::component::menu::{DropdownMenu as _, PopupMenuItem};
-use gpui_kit::component::scroll::ScrollableElement as _;
 use gpui_kit::component::{
     ActiveTheme as _, Selectable as _, Sizable as _, WindowExt as _, h_flex, v_flex,
 };
@@ -23,6 +22,7 @@ use gpui_kit::*;
 use crate::app::CubeApp;
 use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
 use crate::palette::Palette;
+use crate::scroll_fade::FadeScroll;
 
 /// One saved edit, with only the fields it changed.
 struct HistoryEntry {
@@ -203,13 +203,13 @@ impl Render for SolveForm {
         let colors = Palette::of(cx);
         let theme = cx.theme();
         let muted = theme.muted_foreground;
+        let background = theme.background;
         let max_height = dialog_body_height(DialogSize::FORM, window);
 
-        div()
-            .id("solve-form")
+        FadeScroll::new("solve-form", background)
             .track_focus(&self.focus)
             .max_h(max_height)
-            .overflow_y_scrollbar()
+            .gap_3()
             .on_mouse_down(
                 MouseButton::Left,
                 cx.listener(|form, _, window, cx| {
@@ -218,34 +218,30 @@ impl Render for SolveForm {
                     form.focus.focus(window, cx);
                 }),
             )
+            .child(self.render_event_and_date(cx))
             .child(
                 v_flex()
-                    .gap_3()
-                    .child(self.render_event_and_date(cx))
-                    .child(
-                        v_flex()
-                            .gap_1()
-                            .child(field_label(strings.field_scramble, muted))
-                            .child(keep_focus("field-scramble", Textarea::new(&self.scramble)))
-                            .children(field_error(self.scramble_error.as_ref(), colors.red)),
-                    )
-                    .child(
-                        v_flex()
-                            .gap_1()
-                            .child(field_label(strings.field_time, muted))
-                            .child(keep_focus("field-time", Input::new(&self.time)))
-                            .children(field_error(self.time_error.as_ref(), colors.red)),
-                    )
-                    .child(self.render_penalty_row(cx))
-                    .child(
-                        v_flex()
-                            .gap_1()
-                            .child(field_label(strings.field_comment, muted))
-                            .child(keep_focus("field-comment", Input::new(&self.comment)))
-                            .children(field_error(self.comment_error.as_ref(), colors.red)),
-                    )
-                    .child(self.render_history(cx)),
+                    .gap_1()
+                    .child(field_label(strings.field_scramble, muted))
+                    .child(keep_focus("field-scramble", Textarea::new(&self.scramble)))
+                    .children(field_error(self.scramble_error.as_ref(), colors.red)),
             )
+            .child(
+                v_flex()
+                    .gap_1()
+                    .child(field_label(strings.field_time, muted))
+                    .child(keep_focus("field-time", Input::new(&self.time)))
+                    .children(field_error(self.time_error.as_ref(), colors.red)),
+            )
+            .child(self.render_penalty_row(cx))
+            .child(
+                v_flex()
+                    .gap_1()
+                    .child(field_label(strings.field_comment, muted))
+                    .child(keep_focus("field-comment", Input::new(&self.comment)))
+                    .children(field_error(self.comment_error.as_ref(), colors.red)),
+            )
+            .child(self.render_history(cx))
     }
 }
 
@@ -344,6 +340,7 @@ impl SolveForm {
         let strings = self.strings;
         let theme = cx.theme();
         let muted = theme.muted_foreground;
+        let background = theme.background;
         let mono = theme.mono_font_family.clone();
         let count = self.changes.len();
         if count == 0 {
@@ -383,7 +380,9 @@ impl SolveForm {
                     })),
             )
             .content(
-                v_flex()
+                FadeScroll::new("history-list", background)
+                    .nested()
+                    .max_h(px(260.))
                     .gap_3()
                     .pt_1()
                     .children(entries.into_iter().map(|entry| {

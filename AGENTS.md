@@ -120,6 +120,30 @@ settings, import/export dialogs and help.
   files loading: `#[serde(default)]` on the struct, tolerate missing and
   unknown keys (see `missing_and_unknown_keys_are_tolerated`). Never share
   the file with cube-tui.
+- **Scrolling regions** use `cube-ui`'s `scroll_fade` helpers, never a bare
+  `overflow_y_scrollbar`/`overflow_y_scroll`, so every region fades the edge
+  past which content continues:
+  - `FadeScroll::new(id, background)` for a column of items. It owns the
+    scroll handle, the scrollbar and the edge fades, and takes the same
+    styles and children as a `v_flex`. Give each one a unique id, pass the
+    colour of the surface behind it (usually `cx.theme().background`), and
+    call `.nested()` when it sits inside another scroller so the wheel stays
+    in the inner region until it reaches an edge.
+  - `fading_scroll(list, &handle, background)` for a list that already tracks
+    its own handle, such as `uniform_list`. It returns a `Div`; size it
+    (`size_full`, `flex_1`, …) so the list has a viewport, and add the
+    scrollbar outside the wrapper.
+- **Dialogs and panels size themselves from the window**, never with
+  hard-coded widths or body heights:
+  - Dialogs use `cube_core::dialogs::DialogSize` (`COMPACT`, `STANDARD`,
+    `FORM`, `WIDE`) with `crate::dialog_size::dialog_width` for `.w(...)` and
+    `crate::dialog_size::dialog_body_height` for the scrolling body's
+    `max_h`. Add a size constant there when a new dialog needs one, and keep
+    its body scrollable.
+  - Side panels go through `cube_core::panels` (`fit_panels`,
+    `clamp_panel_width`, the `DEFAULT_*`/`MIN_*` values) and
+    `cube_ui::panel_resize`; don't measure or hard-code panel widths in a
+    view.
 - Timer/WCA behavior (inspection, hold-to-start, `+2`/DNF) lives in
   `cube-core::timer`; the UI only renders phases. Don't duplicate the rules
   in `cube-ui`.

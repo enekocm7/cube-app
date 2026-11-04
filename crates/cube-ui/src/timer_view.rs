@@ -5,7 +5,6 @@ use std::time::Instant;
 use cube_core::format::format_ms;
 use cube_core::{Action, Modifier, Readiness, TimerPhase};
 use gpui_kit::component::button::{Button, ButtonVariants as _};
-use gpui_kit::component::scroll::ScrollableElement as _;
 use gpui_kit::component::tooltip::Tooltip;
 use gpui_kit::component::{ActiveTheme as _, Selectable as _, Sizable as _, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
@@ -14,6 +13,7 @@ use gpui_kit::*;
 use crate::app::{CubeApp, LastResult};
 use crate::fonts;
 use crate::palette::Palette;
+use crate::scroll_fade::FadeScroll;
 
 /// Digit size of the timer.
 const DIGITS_SIZE: Pixels = px(112.);
@@ -152,6 +152,8 @@ impl CubeApp {
             .clone()
             .unwrap_or_else(|| strings.generating_scramble.to_owned())
             .into();
+        // A new scramble is a new key, so the scroll area starts from its top.
+        let scroll_id = text.clone();
 
         h_flex()
             .flex_none()
@@ -161,9 +163,7 @@ impl CubeApp {
             .border_b_1()
             .border_color(border)
             .child(
-                // Keyed by the text so that a new scramble starts from its top.
-                div()
-                    .id(text.clone())
+                FadeScroll::new(scroll_id, theme.background)
                     .flex_1()
                     .min_w_0()
                     .h_auto()
@@ -185,7 +185,6 @@ impl CubeApp {
                         }
                         app.focus.focus(window, cx);
                     }))
-                    .overflow_y_scrollbar()
                     .child(text),
             )
     }

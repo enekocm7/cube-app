@@ -15,6 +15,7 @@ mod fonts;
 mod help;
 mod palette;
 mod panel_resize;
+mod scroll_fade;
 mod settings_view;
 mod sidebar;
 mod stats_panel;

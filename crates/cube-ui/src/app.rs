@@ -21,7 +21,7 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::palette;
-use crate::panel_resize::{PanelSide, render_grab_column};
+use crate::panel_resize::{PanelSide, render_grab};
 use crate::stats_screen::ChartData;
 
 /// The most sessions cube-tui can display.
@@ -1024,6 +1024,7 @@ impl Render for CubeApp {
             Screen::Timer => {
                 let (sidebar_width, stats_width) = self.panel_widths(window);
                 h_flex()
+                    .relative()
                     .flex_1()
                     .min_h_0()
                     // A panel's edge can be dragged past the body, so the body hears the
@@ -1033,12 +1034,13 @@ impl Render for CubeApp {
                     .on_mouse_up_out(MouseButton::Left, cx.listener(Self::on_panel_release))
                     .when(!attempt, |row| {
                         row.child(self.render_sidebar(sidebar_width, cx))
-                            .child(render_grab_column(PanelSide::Sidebar, cx))
                     })
                     .child(self.render_timer(cx))
                     .when(!attempt, |row| {
-                        row.child(render_grab_column(PanelSide::Stats, cx))
-                            .child(self.render_stats_panel(stats_width, cx))
+                        row.child(self.render_stats_panel(stats_width, cx))
+                            // The grips go last so they sit above the panels they straddle.
+                            .child(render_grab(PanelSide::Sidebar, sidebar_width, cx))
+                            .child(render_grab(PanelSide::Stats, stats_width, cx))
                     })
                     .into_any_element()
             }
