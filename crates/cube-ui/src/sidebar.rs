@@ -407,13 +407,18 @@ impl CubeApp {
         });
     }
 
-    pub(crate) fn confirm_delete_session(&self, window: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn confirm_delete_session(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let strings = self.strings();
         if self.sessions.len() <= 1 {
             self.toast(strings.last_session, window, cx);
             return;
         }
         let index = self.current;
+        if !self.settings.confirm_delete {
+            self.delete_session(index, window, cx);
+            self.focus.focus(window, cx);
+            return;
+        }
         let message = strings
             .delete_session_confirm
             .replace("{name}", &self.session_label(index))

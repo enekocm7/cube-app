@@ -135,6 +135,11 @@ pub struct Strings {
     pub delete_solve: &'static str,
     pub delete_solve_confirm: &'static str,
     pub solve_deleted: &'static str,
+    pub action_undo_delete: &'static str,
+    pub action_redo_delete: &'static str,
+    pub setting_confirm_delete: &'static str,
+    pub undo: &'static str,
+    pub session_deleted: &'static str,
 
     pub settings_timer: &'static str,
     pub settings_appearance: &'static str,

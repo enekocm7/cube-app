@@ -138,6 +138,8 @@ pub struct Settings {
     /// A language code; empty follows the system language.
     pub language: String,
     pub toasts: bool,
+    /// Asks before deleting a solve or session; Undo works either way.
+    pub confirm_delete: bool,
     /// Keeps the 3x3x3 solver searching for shorter scrambles, like `TNoodle`.
     pub accurate_3x3: bool,
     /// Adds a rolling ao5 column to the solve list.
@@ -170,6 +172,7 @@ impl Default for Settings {
             theme_file: String::new(),
             language: String::new(),
             toasts: true,
+            confirm_delete: true,
             accurate_3x3: false,
             solve_list_ao5: false,
             always_show_scrollbar: false,

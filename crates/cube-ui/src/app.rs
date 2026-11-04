@@ -113,6 +113,10 @@ pub struct CubeApp {
     /// The solve selected with the keyboard, as an index into the session.
     pub(crate) selected_solve: Option<usize>,
     keybinds: Keybinds,
+    /// Deletions Undo can restore, oldest first.
+    undo_stack: Vec<Deleted>,
+    /// Undone deletions Redo can repeat, until a new deletion clears them.
+    redo_stack: Vec<Deleted>,
     history_path: Option<PathBuf>,
     settings_path: Option<PathBuf>,
     saving_blocked: bool,
@@ -124,6 +128,22 @@ pub struct CubeApp {
     /// Whether a panel edge has been dragged since the last release, so the
     /// new widths are saved once the mouse goes up.
     pub(crate) panel_resizing: bool,
+}
+
+/// How many deletions Undo remembers.
+const UNDO_LIMIT: usize = 100;
+
+/// Something deleted that can still be brought back.
+enum Deleted {
+    Solve {
+        session: usize,
+        index: usize,
+        solve: Solve,
+    },
+    Session {
+        index: usize,
+        history: History,
+    },
 }
 
 impl CubeApp {
@@ -162,6 +182,8 @@ impl CubeApp {
             chart_data: None,
             solves_scroll: UniformListScrollHandle::new(),
             selected_solve: None,
+            undo_stack: Vec::new(),
+            redo_stack: Vec::new(),
             keybinds,
             history_path,
             settings_path,
@@ -361,6 +383,8 @@ impl CubeApp {
             Action::NewSession => self.add_session(window, cx),
             Action::RenameSession => self.open_rename_session(window, cx),
             Action::DeleteSession => self.confirm_delete_session(window, cx),
+            Action::UndoDelete => self.undo_delete(window, cx),
+            Action::RedoDelete => self.redo_delete(window, cx),
             Action::OpenStats => {
                 self.screen = if self.screen == Screen::Stats {
                     Screen::Timer
@@ -647,13 +671,27 @@ impl CubeApp {
             self.toast(self.strings().last_session, window, cx);
             return;
         }
-        if index < self.sessions.len() {
-            self.sessions.remove(index);
-            let next = self.current.min(self.sessions.len() - 1);
-            self.current = next;
-            self.select_session(next, cx);
-            self.save_history(window, cx);
+        if let Some(history) = self.remove_session(index, window, cx) {
+            self.record_deletion(Deleted::Session { index, history }, window, cx);
         }
+    }
+
+    /// Removes a session and fixes the selection; the last one is kept.
+    fn remove_session(
+        &mut self,
+        index: usize,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Option<History> {
+        if self.sessions.len() <= 1 || index >= self.sessions.len() {
+            return None;
+        }
+        let history = self.sessions.remove(index);
+        let next = self.current.min(self.sessions.len() - 1);
+        self.current = next;
+        self.select_session(next, cx);
+        self.save_history(window, cx);
+        Some(history)
     }
 
     /// Toggles a penalty on a solve of the current session.
@@ -692,17 +730,151 @@ impl CubeApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.sessions[self.current].remove(index).is_some() {
-            self.last_result = None;
-            let count = self.session().len();
-            self.selected_solve = match self.selected_solve {
-                Some(selected) if selected > index => Some(selected - 1),
-                Some(selected) if selected == index => (count > 0).then(|| index.min(count - 1)),
-                selected => selected,
-            };
-            self.solves_changed(window, cx);
-            self.toast(self.strings().solve_deleted, window, cx);
+        let session = self.current;
+        if let Some(solve) = self.remove_solve(session, index, window, cx) {
+            self.record_deletion(
+                Deleted::Solve {
+                    session,
+                    index,
+                    solve,
+                },
+                window,
+                cx,
+            );
+        }
+    }
+
+    /// Removes a solve and fixes the selection.
+    fn remove_solve(
+        &mut self,
+        session: usize,
+        index: usize,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Option<Solve> {
+        let solve = self.sessions.get_mut(session)?.remove(index)?;
+        if session != self.current {
+            self.select_session(session, cx);
+        }
+        self.last_result = None;
+        let count = self.session().len();
+        self.selected_solve = match self.selected_solve {
+            Some(selected) if selected > index => Some(selected - 1),
+            Some(selected) if selected == index => (count > 0).then(|| index.min(count - 1)),
+            selected => selected,
+        };
+        self.solves_changed(window, cx);
+        cx.notify();
+        Some(solve)
+    }
+
+    /// Remembers a new deletion, drops the redo history and offers Undo.
+    fn record_deletion(&mut self, deleted: Deleted, window: &mut Window, cx: &mut Context<Self>) {
+        self.redo_stack.clear();
+        self.push_undo(deleted, window, cx);
+    }
+
+    fn push_undo(&mut self, deleted: Deleted, window: &mut Window, cx: &mut Context<Self>) {
+        let strings = self.strings();
+        let message = match deleted {
+            Deleted::Solve { .. } => strings.solve_deleted,
+            Deleted::Session { .. } => strings.session_deleted,
+        };
+        self.undo_stack.push(deleted);
+        if self.undo_stack.len() > UNDO_LIMIT {
+            self.undo_stack.remove(0);
+        }
+        self.offer_undo(message, window, cx);
+    }
+
+    /// Shows a toast with an Undo button.
+    ///
+    /// Shown even with toasts turned off: it is the only way back besides
+    /// the keyboard shortcut.
+    fn offer_undo(&self, message: &str, window: &mut Window, cx: &mut Context<Self>) {
+        let strings = self.strings();
+        let app = cx.entity();
+        let toast = Notification::info(message.to_owned())
+            .placement(Anchor::BottomRight)
+            .autohide(true)
+            .action(move |_, _, cx| {
+                let (app, note) = (app.clone(), cx.entity());
+                gpui_kit::component::button::Button::new("undo-delete")
+                    .label(strings.undo)
+                    .on_click(move |_, window, cx| {
+                        app.update(cx, |app, cx| app.undo_delete(window, cx));
+                        note.update(cx, |note, cx| note.dismiss(window, cx));
+                    })
+            });
+        window.push_notification(toast, cx);
+    }
+
+    /// Restores the most recent deletion that can still be restored.
+    pub(crate) fn undo_delete(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        while let Some(deleted) = self.undo_stack.pop() {
+            match deleted {
+                Deleted::Solve {
+                    session,
+                    index,
+                    solve,
+                } => {
+                    if session >= self.sessions.len() {
+                        continue;
+                    }
+                    let index = index.min(self.sessions[session].len());
+                    self.sessions[session].insert(index, solve.clone());
+                    if session != self.current {
+                        self.select_session(session, cx);
+                    }
+                    self.selected_solve = Some(index);
+                    self.redo_stack.push(Deleted::Solve {
+                        session,
+                        index,
+                        solve,
+                    });
+                    self.solves_changed(window, cx);
+                }
+                Deleted::Session { index, history } => {
+                    if self.sessions.len() >= MAX_SESSIONS {
+                        self.undo_stack.push(Deleted::Session { index, history });
+                        self.toast(self.strings().max_sessions, window, cx);
+                        return;
+                    }
+                    let index = index.min(self.sessions.len());
+                    self.redo_stack.push(Deleted::Session {
+                        index,
+                        history: history.clone(),
+                    });
+                    self.sessions.insert(index, history);
+                    self.select_session(index, cx);
+                    self.save_history(window, cx);
+                }
+            }
+            self.sync_last_result();
             cx.notify();
+            return;
+        }
+    }
+
+    /// Repeats the most recently undone deletion.
+    pub(crate) fn redo_delete(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        while let Some(deleted) = self.redo_stack.pop() {
+            let redone = match deleted {
+                Deleted::Solve { session, index, .. } => self
+                    .remove_solve(session, index, window, cx)
+                    .map(|solve| Deleted::Solve {
+                        session,
+                        index,
+                        solve,
+                    }),
+                Deleted::Session { index, .. } => self
+                    .remove_session(index, window, cx)
+                    .map(|history| Deleted::Session { index, history }),
+            };
+            if let Some(redone) = redone {
+                self.push_undo(redone, window, cx);
+                return;
+            }
         }
     }
 
