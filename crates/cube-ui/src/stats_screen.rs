@@ -4,13 +4,13 @@ use cube_core::Solve;
 use cube_core::format::format_ms;
 use cube_core::stats::{self, Average};
 use gpui_kit::component::chart::{BarChart, LineChart};
-use gpui_kit::component::scroll::ScrollableElement as _;
 use gpui_kit::component::{ActiveTheme as _, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::CubeApp;
 use crate::palette::Palette;
+use crate::scroll_fade::FadeScroll;
 
 const CHART_HEIGHT: Pixels = px(240.);
 /// Histogram buckets. Few enough to label, enough to show a shape.
@@ -106,13 +106,11 @@ impl CubeApp {
             .fill(move |_, _, _, _| colors.orange)
             .tick_margin(2);
 
-        v_flex()
-            .id("stats-screen")
+        FadeScroll::new("stats-screen", cx.theme().background)
             .flex_1()
             .min_h_0()
             .p_6()
             .gap_6()
-            .overflow_y_scrollbar()
             .child(section(strings.chart_times, times, cx))
             .when(!data.averages.is_empty(), |column| {
                 column.child(section(strings.chart_averages, averages, cx))

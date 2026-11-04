@@ -11,12 +11,12 @@ use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::dialog::DialogButtonProps;
 use gpui_kit::component::notification::Notification;
 use gpui_kit::component::progress::Progress as ProgressBar;
-use gpui_kit::component::scroll::ScrollableElement as _;
 use gpui_kit::component::{ActiveTheme as _, Sizable as _, WindowExt as _, h_flex, v_flex};
 use gpui_kit::*;
 
 use crate::app::CubeApp;
 use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
+use crate::scroll_fade::FadeScroll;
 
 /// Current time as a Unix timestamp, for update pacing.
 fn unix_now() -> i64 {
@@ -279,16 +279,15 @@ impl CubeApp {
             .replace("{version}", &release.version.to_string());
         let close_label = strings.close;
         let update_label = strings.update_now;
+        let fade = cx.theme().background;
         window.open_dialog(cx, move |dialog, window, _| {
             let entity = entity.clone();
             dialog
                 .title(title.clone())
                 .w(dialog_width(DialogSize::STANDARD, window))
                 .child(
-                    div()
-                        .id("release-notes")
+                    FadeScroll::new("release-notes", fade)
                         .max_h(dialog_body_height(DialogSize::STANDARD, window))
-                        .overflow_y_scrollbar()
                         .text_sm()
                         .child(notes.clone()),
                 )

@@ -14,6 +14,7 @@ mod dialog_size;
 mod fonts;
 mod palette;
 mod panel_resize;
+mod scroll_fade;
 mod settings_view;
 mod sidebar;
 mod stats_panel;

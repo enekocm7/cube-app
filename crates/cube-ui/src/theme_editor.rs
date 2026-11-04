@@ -11,7 +11,6 @@ use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::color_picker::{ColorPicker, ColorPickerEvent, ColorPickerState};
 use gpui_kit::component::input::{Input, InputEvent, InputState};
 use gpui_kit::component::menu::{DropdownMenu as _, PopupMenuItem};
-use gpui_kit::component::scroll::ScrollableElement as _;
 use gpui_kit::component::{
     ActiveTheme as _, Sizable as _, StyledExt as _, WindowExt as _, h_flex, v_flex,
 };
@@ -20,6 +19,7 @@ use gpui_kit::*;
 
 use crate::app::CubeApp;
 use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
+use crate::scroll_fade::FadeScroll;
 
 const ROW_MIN_HEIGHT: Pixels = px(44.);
 
@@ -423,8 +423,7 @@ impl Render for ThemeEditor {
             .collect();
         let max_height = dialog_body_height(DialogSize::WIDE, window);
 
-        v_flex()
-            .id("theme-editor")
+        FadeScroll::new("theme-editor", cx.theme().background)
             .max_h(max_height)
             .p_4()
             .gap_5()
@@ -445,7 +444,6 @@ impl Render for ThemeEditor {
                     .child(strings.theme_alpha_hint),
             )
             .child(self.render_preview(&colors, strings, cx))
-            .overflow_y_scrollbar()
     }
 }
 
