@@ -159,6 +159,7 @@ impl CubeApp {
                         }),
                 ),
             )
+            .child(div().flex_1())
             .child(self.render_session_actions(cx));
 
         h_flex().p_2().gap_2().justify_between().child(session)

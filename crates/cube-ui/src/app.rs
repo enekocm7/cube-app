@@ -939,15 +939,15 @@ impl CubeApp {
         let entity = cx.entity().downgrade();
         let event = self.event;
 
-        h_flex()
-            .occlude()
+        // The picker alone is centered; the scramble button hangs off its right edge
+        // so it does not pull the picker off the middle.
+        div()
+            .relative()
             .flex_none()
-            .gap_1()
             .child(
-                div().flex_none().child(
+                div().occlude().flex_none().child(
                     Button::new("event")
                         .text()
-                        .small()
                         .label(event.name())
                         .dropdown_caret(true)
                         .tab_stop(false)
@@ -969,17 +969,27 @@ impl CubeApp {
                 ),
             )
             .child(
-                Button::new("next-scramble")
-                    .ghost()
-                    .small()
-                    .flex_none()
-                    .icon(IconName::Redo)
-                    .tooltip(strings.new_scramble)
-                    .tab_stop(false)
-                    .on_click(cx.listener(|app, _, window, cx| {
-                        app.skip_scramble(cx);
-                        app.focus.focus(window, cx);
-                    })),
+                div()
+                    .absolute()
+                    .left_full()
+                    .top_0()
+                    .bottom_0()
+                    .ml_1()
+                    .child(
+                        h_flex().occlude().h_full().items_center().child(
+                            Button::new("next-scramble")
+                                .ghost()
+                                .small()
+                                .flex_none()
+                                .icon(IconName::Redo)
+                                .tooltip(strings.new_scramble)
+                                .tab_stop(false)
+                                .on_click(cx.listener(|app, _, window, cx| {
+                                    app.skip_scramble(cx);
+                                    app.focus.focus(window, cx);
+                                })),
+                        ),
+                    ),
             )
     }
 
@@ -1005,7 +1015,6 @@ impl CubeApp {
             h_flex()
                 .relative()
                 .w_full()
-                .pr_2()
                 .justify_between()
                 .child(
                     h_flex()
@@ -1040,6 +1049,7 @@ impl CubeApp {
                 .child(
                     h_flex()
                         .occlude()
+                        .mr_2()
                         .gap_1()
                         .child(
                             Button::new("open-help")
