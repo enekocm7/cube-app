@@ -82,6 +82,7 @@ pub const STRINGS: Strings = Strings {
     setting_toasts: "Mostrar notificaciones",
     setting_accurate: "Mezclas de 3x3x3 más cortas (tardan más en generarse)",
     setting_solve_list_ao5: "Mostrar ao5 en la lista de solves",
+    setting_always_show_scrollbar: "Mostrar siempre la barra de desplazamiento de la lista",
     setting_font: "Fuente",
     font_system: "Predeterminada del sistema",
     font_timer: "JetBrains Mono: solo temporizador",

@@ -93,7 +93,13 @@ impl CubeApp {
                         )
                         .size_full(),
                     )
-                    .child(Scrollbar::vertical(&self.solves_scroll).mode(ScrollbarMode::Always))
+                    .child(Scrollbar::vertical(&self.solves_scroll).mode(
+                        if self.settings.always_show_scrollbar {
+                            ScrollbarMode::Always
+                        } else {
+                            ScrollbarMode::Scrolling
+                        },
+                    ))
                     .into_any_element()
             })
     }
