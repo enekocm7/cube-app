@@ -8,6 +8,7 @@ use std::time::Duration;
 use serde::{Deserialize, Serialize};
 
 use crate::history::History;
+use crate::panels::{DEFAULT_SIDEBAR_WIDTH, DEFAULT_STATS_WIDTH};
 use crate::timer::{DEFAULT_HOLD, Timer};
 
 /// The color scheme to use.
@@ -116,6 +117,11 @@ pub struct Settings {
     pub solve_list_ao5: bool,
     /// Whether the start hint has been used, so it is no longer shown while idle.
     pub start_hint_seen: bool,
+    /// Width of the session and solve list, in pixels. Clamped to the window
+    /// when drawn; see [`crate::panels`].
+    pub sidebar_width: u32,
+    /// Width of the statistics panel, in pixels. Clamped to the window when drawn.
+    pub stats_panel_width: u32,
     pub updates: UpdateSettings,
 }
 
@@ -132,6 +138,8 @@ impl Default for Settings {
             accurate_3x3: false,
             solve_list_ao5: false,
             start_hint_seen: false,
+            sidebar_width: DEFAULT_SIDEBAR_WIDTH,
+            stats_panel_width: DEFAULT_STATS_WIDTH,
             updates: UpdateSettings::default(),
         }
     }
@@ -242,6 +250,30 @@ mod tests {
 
         updates.auto_check = false;
         assert!(!updates.check_due(1_000_000));
+    }
+
+    #[test]
+    fn panel_widths_default_and_survive_a_round_trip() {
+        let defaults = Settings::default();
+        assert_eq!(defaults.sidebar_width, DEFAULT_SIDEBAR_WIDTH);
+        assert_eq!(defaults.stats_panel_width, DEFAULT_STATS_WIDTH);
+
+        let settings = Settings {
+            sidebar_width: 420,
+            stats_panel_width: 310,
+            ..Settings::default()
+        };
+        let text = toml::to_string(&settings).unwrap();
+        let loaded: Settings = toml::from_str(&text).unwrap();
+        assert_eq!(loaded.sidebar_width, 420);
+        assert_eq!(loaded.stats_panel_width, 310);
+    }
+
+    #[test]
+    fn settings_files_without_panel_widths_keep_the_defaults() {
+        let settings: Settings = toml::from_str("inspection = false\nhold_ms = 300").unwrap();
+        assert_eq!(settings.sidebar_width, DEFAULT_SIDEBAR_WIDTH);
+        assert_eq!(settings.stats_panel_width, DEFAULT_STATS_WIDTH);
     }
 
     #[test]

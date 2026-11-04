@@ -47,6 +47,9 @@ cargo run --release
 
 Click a solve in the list to see its details or edit it.
 
+Drag the inner edge of the solve list or the statistics panel to resize it. Neither panel gets narrower than
+180 px, and double-click an edge to restore its default width. The widths are remembered between launches.
+
 The "Press space to start" hint is only shown until you start your first solve, so the timer stays clean once you
 know the controls.
 

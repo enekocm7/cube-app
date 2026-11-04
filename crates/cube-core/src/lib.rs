@@ -8,6 +8,7 @@ pub mod cstimer;
 pub mod event;
 pub mod format;
 pub mod history;
+pub mod panels;
 pub mod persistence;
 pub mod scramble;
 pub mod settings;
