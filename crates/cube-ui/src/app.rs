@@ -15,6 +15,10 @@ use cube_core::{
 use cube_locale::{Language, Strings};
 use cube_updater::Release;
 use gpui_kit::assets::IconName;
+use gpui_kit::component::Selectable as _;
+use gpui_kit::component::Sizable as _;
+use gpui_kit::component::button::{Button, ButtonVariants as _};
+use gpui_kit::component::menu::{DropdownMenu as _, PopupMenuItem};
 use gpui_kit::component::notification::Notification;
 use gpui_kit::component::{ActiveTheme as _, TitleBar, WindowExt as _, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
@@ -929,11 +933,57 @@ impl CubeApp {
         window.push_notification(Notification::error(message), cx);
     }
 
-    fn render_title_bar(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
-        use gpui_kit::component::Selectable as _;
-        use gpui_kit::component::Sizable as _;
-        use gpui_kit::component::button::{Button, ButtonVariants as _};
+    /// The current event and the control to skip its scramble.
+    pub(crate) fn render_event_picker(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
+        let strings = self.strings();
+        let entity = cx.entity().downgrade();
+        let event = self.event;
 
+        h_flex()
+            .occlude()
+            .flex_none()
+            .gap_1()
+            .child(
+                div().flex_none().child(
+                    Button::new("event")
+                        .text()
+                        .small()
+                        .label(event.name())
+                        .dropdown_caret(true)
+                        .tab_stop(false)
+                        .dropdown_menu(move |mut menu, _, _| {
+                            for item in WcaEvent::ALL {
+                                let entity = entity.clone();
+                                menu = menu.item(
+                                    PopupMenuItem::new(item.name())
+                                        .checked(item == event)
+                                        .on_click(move |_, _, cx| {
+                                            entity
+                                                .update(cx, |app, cx| app.set_event(item, cx))
+                                                .ok();
+                                        }),
+                                );
+                            }
+                            menu
+                        }),
+                ),
+            )
+            .child(
+                Button::new("next-scramble")
+                    .ghost()
+                    .small()
+                    .flex_none()
+                    .icon(IconName::Redo)
+                    .tooltip(strings.new_scramble)
+                    .tab_stop(false)
+                    .on_click(cx.listener(|app, _, window, cx| {
+                        app.skip_scramble(cx);
+                        app.focus.focus(window, cx);
+                    })),
+            )
+    }
+
+    fn render_title_bar(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
         let strings = self.strings();
         let tab =
             |id: &'static str, label: &'static str, screen: Screen, cx: &mut Context<Self>| {
@@ -953,6 +1003,7 @@ impl CubeApp {
             };
         TitleBar::new().child(
             h_flex()
+                .relative()
                 .w_full()
                 .pr_2()
                 .justify_between()
@@ -975,6 +1026,16 @@ impl CubeApp {
                                 .child(tab("nav-timer", strings.nav_timer, Screen::Timer, cx))
                                 .child(tab("nav-stats", strings.nav_stats, Screen::Stats, cx)),
                         ),
+                )
+                // Centered on the bar itself, not between the unequal sides. The
+                // overlay lets clicks through; only the group is occluded.
+                .child(
+                    h_flex()
+                        .absolute()
+                        .inset_0()
+                        .justify_center()
+                        .items_center()
+                        .child(self.render_event_picker(cx)),
                 )
                 .child(
                     h_flex()
