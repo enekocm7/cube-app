@@ -113,7 +113,7 @@ pub struct Strings {
     pub invalid_scramble: &'static str,
     pub invalid_date: &'static str,
     pub invalid_comment: &'static str,
-    pub date_hint: &'static str,
+    pub date_placeholder: &'static str,
     pub edit_history: &'static str,
     pub history_empty: &'static str,
     /// `{number}`: the revision; `{date}`: when it was saved.

@@ -5,8 +5,12 @@
 //! solve is a DNF, dates are RFC 3339 timestamps with a timezone (blank for
 //! unknown), comments are bounded plain text, and scrambles use the notation
 //! of their event.
+//!
+//! Dates also have a friendlier local `YYYY-MM-DD HH:MM` form for the desktop
+//! dialog, where milliseconds would only get in the way. It parses to the
+//! same millisecond timestamps, so stored solves stay compatible.
 
-use chrono::{DateTime, SecondsFormat};
+use chrono::{DateTime, Local, NaiveDateTime, SecondsFormat, TimeZone};
 
 use crate::event::WcaEvent;
 use crate::solve::Modifier;
@@ -57,6 +61,46 @@ pub fn format_rfc3339(unix_ms: u64) -> String {
         .map_or_else(String::new, |date| {
             date.to_rfc3339_opts(SecondsFormat::Millis, true)
         })
+}
+
+/// Formats Unix milliseconds as a local date and time for editing:
+/// `2026-11-02 00:07`.
+///
+/// Seconds and smaller units are left out: they don't matter for a solve's
+/// date. Returns an empty string when the date is unknown (`0`) or out of
+/// range, matching what [`parse_date_input`] reads back as unknown.
+pub fn format_date_input(unix_ms: u64) -> String {
+    if unix_ms == 0 {
+        return String::new();
+    }
+    i64::try_from(unix_ms)
+        .ok()
+        .and_then(DateTime::from_timestamp_millis)
+        .map_or_else(String::new, |date| {
+            date.with_timezone(&Local)
+                .format("%Y-%m-%d %H:%M")
+                .to_string()
+        })
+}
+
+/// Parses a local `YYYY-MM-DD HH:MM` date, optionally with `:SS` seconds.
+///
+/// Blank means the original solve date is unknown and parses as `0`.
+/// Returns `None` for anything else, including impossible calendar dates and
+/// dates before 1970. Ambiguous local times resolve to their earliest
+/// occurrence.
+pub fn parse_date_input(text: &str) -> Option<u64> {
+    let text = text.trim();
+    if text.is_empty() {
+        return Some(0);
+    }
+    let naive = NaiveDateTime::parse_from_str(text, "%Y-%m-%d %H:%M")
+        .or_else(|_| NaiveDateTime::parse_from_str(text, "%Y-%m-%d %H:%M:%S"))
+        .ok()?;
+    let date = Local.from_local_datetime(&naive).earliest()?;
+    u64::try_from(date.timestamp_millis())
+        .ok()
+        .filter(|&ms| ms > 0)
 }
 
 /// Checks a comment: at most 4096 characters, without terminal control
@@ -252,6 +296,32 @@ mod tests {
             parse_date(&format_rfc3339(1_760_000_000_000)),
             Some(1_760_000_000_000)
         );
+    }
+
+    #[test]
+    fn friendly_dates_cover_minute_precision_in_local_time() {
+        assert_eq!(parse_date_input(""), Some(0));
+        assert_eq!(parse_date_input("   "), Some(0));
+        let minute = parse_date_input("2026-11-02 00:07").unwrap();
+        assert_eq!(minute % 60_000, 0);
+        assert_eq!(format_date_input(minute), "2026-11-02 00:07");
+        assert_eq!(format_date_input(0), "");
+        // Seconds are accepted but never shown.
+        assert_eq!(
+            parse_date_input("2026-11-02 00:07:32").unwrap(),
+            minute + 32_000
+        );
+        for text in [
+            "yesterday",
+            "2026-11-02",
+            "00:07",
+            "2026-02-30 12:00",
+            "2026-13-01 00:00",
+            "1900-01-01 00:00",
+            "2026-11-02T00:07:32.275Z",
+        ] {
+            assert_eq!(parse_date_input(text), None, "{text}");
+        }
     }
 
     #[test]

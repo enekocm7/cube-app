@@ -3,15 +3,19 @@
 use chrono::{DateTime, Local};
 use cube_core::format::{format_ms, parse_time};
 use cube_core::validation::{
-    format_rfc3339, parse_date, validate_comment, validate_duration, validate_scramble,
+    format_date_input, parse_date, parse_date_input, validate_comment, validate_duration,
+    validate_scramble,
 };
 use cube_core::{Modifier, Solve, SolveChange, SolveSnapshot, WcaEvent};
 use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
+use gpui_kit::component::collapsible::Collapsible;
 use gpui_kit::component::input::{Input, InputState, Textarea, TextareaState};
 use gpui_kit::component::menu::{DropdownMenu as _, PopupMenuItem};
 use gpui_kit::component::scroll::ScrollableElement as _;
-use gpui_kit::component::{ActiveTheme as _, Selectable as _, WindowExt as _, h_flex, v_flex};
+use gpui_kit::component::{
+    ActiveTheme as _, Selectable as _, Sizable as _, WindowExt as _, h_flex, v_flex,
+};
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
@@ -45,6 +49,10 @@ struct SolveForm {
     changes: Vec<SolveChange>,
     event: WcaEvent,
     modifier: Modifier,
+    /// The solve's seconds and milliseconds, kept while the date field only
+    /// edits down to the minute: milliseconds don't matter for a date.
+    date_subminute_ms: u64,
+    history_expanded: bool,
     time: Entity<InputState>,
     scramble: Entity<TextareaState>,
     date: Entity<InputState>,
@@ -84,8 +92,17 @@ impl SolveForm {
         };
         self.scramble_error = (!validate_scramble(scramble_text.trim(), event))
             .then(|| strings.invalid_scramble.replace("{event}", event.name()));
-        let solved_at_unix_ms = if let Some(solved_at_unix_ms) = parse_date(&date_text) {
-            Some(solved_at_unix_ms)
+        let solved_at_unix_ms = if let Some(parsed) = parse_date_input(&date_text) {
+            // Minute-precision edits keep the solve's seconds and
+            // milliseconds; blank stays unknown.
+            if parsed == 0 || parsed % 60_000 != 0 {
+                Some(parsed)
+            } else {
+                Some(parsed + self.date_subminute_ms)
+            }
+        } else if let Some(parsed) = parse_date(&date_text) {
+            // A pasted RFC 3339 date is kept exactly as typed.
+            Some(parsed)
         } else {
             self.date_error = Some(strings.invalid_date.to_owned());
             None
@@ -235,6 +252,7 @@ impl SolveForm {
             .gap_6()
             .child(
                 v_flex()
+                    .flex_1()
                     .gap_1()
                     .child(field_label(strings.field_event, muted))
                     .child(
@@ -268,10 +286,10 @@ impl SolveForm {
             )
             .child(
                 v_flex()
+                    .flex_1()
                     .gap_1()
                     .child(field_label(strings.field_date, muted))
                     .child(Input::new(&self.date))
-                    .child(div().text_xs().text_color(muted).child(strings.date_hint))
                     .children(field_error(self.date_error.as_ref(), red)),
             )
     }
@@ -310,24 +328,46 @@ impl SolveForm {
     }
 
     /// Every saved edit, newest first, with only the fields it changed.
+    ///
+    /// The entries hide behind a toggle that counts them, so the dialog stays
+    /// short until the history is actually wanted.
     fn render_history(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let strings = self.strings;
         let theme = cx.theme();
         let muted = theme.muted_foreground;
         let mono = theme.mono_font_family.clone();
+        let count = self.changes.len();
+        if count == 0 {
+            return v_flex()
+                .gap_1()
+                .child(field_label(strings.edit_history, muted))
+                .child(
+                    div()
+                        .text_sm()
+                        .text_color(muted)
+                        .child(strings.history_empty),
+                )
+                .into_any_element();
+        }
         let entries = self.history_entries();
-        v_flex()
-            .gap_1()
-            .child(field_label(strings.edit_history, muted))
-            .child(if entries.is_empty() {
-                div()
-                    .text_sm()
-                    .text_color(muted)
-                    .child(strings.history_empty)
-                    .into_any_element()
-            } else {
+        Collapsible::new()
+            .open(self.history_expanded)
+            .child(
+                Button::new("history-toggle")
+                    .text()
+                    .small()
+                    .label(format!("{} ({count})", strings.edit_history))
+                    .dropdown_caret(true)
+                    .tab_stop(false)
+                    .on_click(cx.listener(|form, _, _, cx| {
+                        form.history_expanded = !form.history_expanded;
+                        cx.notify();
+                    })),
+            )
+            .content(
                 v_flex()
                     .gap_3()
+                    .pt_1()
                     .children(entries.into_iter().map(|entry| {
                         v_flex()
                             .gap_1()
@@ -352,9 +392,9 @@ impl SolveForm {
                                     ))
                             }))
                             .into_any_element()
-                    }))
-                    .into_any_element()
-            })
+                    })),
+            )
+            .into_any_element()
     }
 }
 
@@ -512,17 +552,23 @@ fn new_form(
 ) -> Entity<SolveForm> {
     let time = format_ms(solve.raw_ms());
     let scramble = solve.scramble().to_owned();
-    let date = format_rfc3339(solve.solved_at_unix_ms());
+    let date = format_date_input(solve.solved_at_unix_ms());
     let comment = solve.comment().to_owned();
+    let date_placeholder = strings.date_placeholder;
     let time = cx.new(|cx| InputState::new(window, cx).default_value(time));
     let scramble = cx.new(|cx| {
         TextareaState::new(window, cx)
             .default_value(scramble)
             .auto_grow(2, 4)
     });
-    let date = cx.new(|cx| InputState::new(window, cx).default_value(date));
+    let date = cx.new(|cx| {
+        InputState::new(window, cx)
+            .default_value(date)
+            .placeholder(date_placeholder)
+    });
     let comment = cx.new(|cx| InputState::new(window, cx).default_value(comment));
     let changes = solve.changes().to_vec();
+    let date_subminute_ms = solve.solved_at_unix_ms() % 60_000;
     let event = solve.event();
     let modifier = solve.modifier();
     cx.new(|_| SolveForm {
@@ -531,6 +577,8 @@ fn new_form(
         changes,
         event,
         modifier,
+        date_subminute_ms,
+        history_expanded: false,
         time,
         scramble,
         date,
