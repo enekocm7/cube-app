@@ -40,6 +40,22 @@ it cancels the attempt without recording it.
 Hold `N`, `Up` or `Down` to repeat the action until you release the key. Other
 actions fire once per press.
 
+## Keys inside dialogs
+
+These keys are fixed, and the shortcuts above stand down while a dialog is open.
+
+| Key | What it does |
+|---|---|
+| `Enter` | Runs the dialog's primary action: Save, Delete or Update now. A dialog with no primary action closes |
+| `Esc` | Cancels and closes the dialog, and never runs the primary action |
+| `Tab` / `Shift + Tab` | Moves between the dialog's controls |
+| `Enter` or `Space` on a focused control | Activates that control instead, so `Enter` on Cancel cancels |
+
+A form that fails validation stays open and shows the error. In a multi-line
+field `Enter` inserts a newline, and in an open menu it picks the highlighted
+item. While the shortcuts panel waits for a key, `Enter` and `Esc` go to the
+capture rather than the dialog.
+
 ## Changing shortcuts in the app
 
 Press `F1` (or use the keyboard icon in the title bar) to open the shortcuts

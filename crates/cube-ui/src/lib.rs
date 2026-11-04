@@ -11,6 +11,7 @@ mod app;
 mod audio;
 mod details;
 mod dialog_size;
+mod dialog_submit;
 mod fonts;
 mod help;
 mod palette;
@@ -30,6 +31,7 @@ pub fn run() {
         .with_assets(gpui_kit::assets::AllAssets)
         .run(|cx| {
             gpui_kit::init(cx);
+            dialog_submit::assert_no_dialog_key_conflicts(cx);
             let state = app::Loaded::load();
             palette::apply(&state.settings, cx);
 

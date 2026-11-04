@@ -84,6 +84,11 @@ settings, import/export dialogs and help.
   in `docs/keybinds.md`. That panel is also the editor: keep its pencil, trash
   and capture controls reachable with `Tab` and activatable with `Enter` or
   `Space`; do not make the mouse the only way to reach a control.
+- Every dialog routes Enter through `cube_ui::dialog_submit`
+  (`submit_on_enter` or `close_on_enter`), never a bare `on_ok`, and shares one
+  `Submit` closure between Enter and its footer button. That closure closes the
+  dialog itself. Key bindings fire before a focused control sees the key, so
+  the helper is what lets Enter on a focused Cancel button cancel.
 - Bindings are validated before they are saved: the key must be understood, it
   must not already belong to another action, the timer key must be unmodified,
   and the timer key cannot be removed. Show the user a specific error rather

@@ -12,6 +12,7 @@ use gpui_kit::*;
 
 use crate::app::{CubeApp, key_press};
 use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_title, dialog_width};
+use crate::dialog_submit::{close_action, route_enter};
 use crate::palette::Palette;
 use crate::scroll_fade::FadeScroll;
 
@@ -405,11 +406,29 @@ impl CubeApp {
             let editing = view.read(cx).editing;
             let edit_view = view.clone();
             let content_view = view.clone();
+            let (enter_view, escape_view) = (view.clone(), view.clone());
+            let close = close_action();
             let title = dialog_title(strings.help_title, strings.close);
             dialog
                 .title(title)
                 .close_button(false)
                 .w(dialog_width(DIALOG_SIZE, window))
+                // Key bindings fire first, so a key being captured has to be
+                // passed on or it would reach the dialog instead of the view.
+                .on_ok(move |_, window, cx| {
+                    if enter_view.read(cx).capturing.is_some() {
+                        cx.propagate();
+                        return false;
+                    }
+                    route_enter(&close, window, cx)
+                })
+                .on_cancel(move |_, _, cx| {
+                    let capturing = escape_view.read(cx).capturing.is_some();
+                    if capturing {
+                        cx.propagate();
+                    }
+                    !capturing
+                })
                 .content(move |content, _, cx| {
                     content
                         .px_0()
