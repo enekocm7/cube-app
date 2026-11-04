@@ -10,7 +10,6 @@ use gpui_kit::assets::IconName;
 use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::menu::{DropdownMenu as _, PopupMenuItem};
-use gpui_kit::component::scroll::ScrollableElement as _;
 use gpui_kit::component::switch::Switch;
 use gpui_kit::component::{
     ActiveTheme as _, Selectable as _, Sizable as _, WindowExt as _, h_flex, v_flex,
@@ -20,6 +19,7 @@ use gpui_kit::*;
 
 use crate::app::CubeApp;
 use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
+use crate::scroll_fade::FadeScroll;
 
 const ROW_MIN_HEIGHT: Pixels = px(44.);
 
@@ -617,8 +617,7 @@ impl Render for SettingsView {
 
         let max_height = dialog_body_height(DialogSize::STANDARD, window);
 
-        v_flex()
-            .id("settings-body")
+        FadeScroll::new("settings-scroll", cx.theme().background)
             .max_h(max_height)
             .p_4()
             .gap_5()
@@ -628,7 +627,6 @@ impl Render for SettingsView {
             .child(section(strings.settings_updates, updates, cx))
             .child(section(strings.setting_language, language, cx))
             .child(section(strings.settings_data, data, cx))
-            .overflow_y_scrollbar()
     }
 }
 
