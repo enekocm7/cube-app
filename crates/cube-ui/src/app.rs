@@ -6,6 +6,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use cube_core::cstimer::{self, ImportReport};
+use cube_core::history_writer::{HistoryWriter, Merge, WriterEvent};
 use cube_core::persistence::{self, HistoryStore};
 use cube_core::scramble::{self, ScrambleQueue};
 use cube_core::stats::{self, Average, AverageTable, SessionStats};
@@ -180,8 +181,10 @@ pub struct CubeApp {
     undo_stack: Vec<Deleted>,
     /// Undone deletions Redo can repeat, until a new deletion clears them.
     redo_stack: Vec<Deleted>,
-    /// The history on disk; `None` keeps saving off.
-    history: Option<HistoryStore>,
+    /// Saves the history off the UI thread; `None` keeps saving off.
+    history_writer: Option<Arc<HistoryWriter>>,
+    /// A background merge waiting for the timer and any dialog to finish.
+    pending_merge: Option<Merge>,
     settings_path: Option<PathBuf>,
     /// The newer release the update notification offers, if any.
     pub(crate) available: Option<Arc<Release>>,
@@ -266,7 +269,8 @@ impl CubeApp {
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
             keybinds,
-            history,
+            history_writer: history.map(|store| Arc::new(HistoryWriter::new(store))),
+            pending_merge: None,
             settings_path,
             available: None,
             update_checking: false,
@@ -304,6 +308,15 @@ impl CubeApp {
             .detach();
         cx.observe_window_bounds(window, Self::on_window_bounds_changed)
             .detach();
+        // Closing the window quits the app; hold it until the last save lands.
+        if let Some(writer) = app.history_writer.clone() {
+            cx.on_app_quit(move |_, cx| {
+                let writer = Arc::clone(&writer);
+                cx.background_executor()
+                    .spawn(async move { writer.flush() })
+            })
+            .detach();
+        }
         app
     }
 
@@ -380,6 +393,7 @@ impl CubeApp {
 
     fn tick(&mut self, window: &mut Window, cx: &mut Context<Self>) -> Duration {
         let now = Instant::now();
+        self.handle_writer_events(window, cx);
         self.play_inspection_cues(now, window, cx);
         if let Some(outcome) = self.timer.tick(now) {
             self.finish_attempt(outcome, window, cx);
@@ -672,7 +686,7 @@ impl CubeApp {
         } else if !self.timer.is_active() && !window.has_active_dialog(cx) {
             // Coming back from cube-tui, say. An open dialog may hold a solve's
             // index, so with one open the next save does the merging instead.
-            self.refresh_history(window, cx);
+            self.refresh_history();
         }
     }
 
@@ -1381,9 +1395,12 @@ impl CubeApp {
         change: impl FnOnce(&mut Settings),
     ) {
         let accurate_3x3 = self.settings.accurate_3x3;
+        let user_backups = self.settings.user_backups();
         change(&mut self.settings);
-        if let Some(store) = &mut self.history {
-            store.set_user_backups(self.settings.user_backups());
+        if let Some(writer) = &self.history_writer
+            && self.settings.user_backups() != user_backups
+        {
+            writer.set_user_backups(self.settings.user_backups());
         }
         self.keybinds = self.settings.keybinds();
         if !self.timer.is_active() {
@@ -1438,56 +1455,63 @@ impl CubeApp {
         )
     }
 
-    fn save_history(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        if let Some(store) = &mut self.history {
-            let saved = store.save(&mut self.sessions);
-            self.finish_sync(saved, window, cx);
+    fn save_history(&self, _window: &mut Window, _cx: &mut Context<Self>) {
+        if let Some(writer) = &self.history_writer {
+            writer.save(self.sessions.clone());
         }
     }
 
     /// Picks up what another app wrote to the history since the last save.
-    fn refresh_history(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        if let Some(store) = &mut self.history {
-            let refreshed = store.refresh(&mut self.sessions);
-            self.finish_sync(refreshed, window, cx);
+    fn refresh_history(&self) {
+        if let Some(writer) = &self.history_writer {
+            writer.refresh(self.sessions.clone());
         }
     }
 
-    /// Reports the result of a save, catching up with any merge in it.
-    fn finish_sync(
-        &mut self,
-        result: anyhow::Result<Option<MergeSummary>>,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        match result {
-            Ok(Some(summary)) => self.history_merged(summary, window, cx),
-            Ok(None) => {}
-            Err(error) => self.report_save_error(&error, window, cx),
+    /// Handles what the background writer finished since the last tick.
+    fn handle_writer_events(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(writer) = self.history_writer.clone() else {
+            return;
+        };
+        for event in writer.take_events() {
+            match event {
+                WriterEvent::Merged(merge) => self.pending_merge = Some(merge),
+                WriterEvent::SaveFailed(error) => {
+                    let error = anyhow::anyhow!(error);
+                    self.report_save_error(&error, window, cx);
+                }
+                WriterEvent::BackupFailed(error) => {
+                    self.report_backup_error(&anyhow::anyhow!(error), window, cx);
+                }
+                WriterEvent::BackedUp(path) => {
+                    let path = path.display().to_string();
+                    let message = self.strings().toast_backup_done.replace("{path}", &path);
+                    self.toast(&message, window, cx);
+                }
+            }
         }
-        let backup_error = self
-            .history
-            .as_mut()
-            .and_then(HistoryStore::take_backup_error);
-        if let Some(error) = backup_error {
-            self.report_backup_error(&error, window, cx);
+        // An attempt in progress and an open dialog both rely on the solves
+        // staying where they are. If either saves first, this merge is stale
+        // and the writer sends a new one.
+        if self.timer.is_active() || window.has_active_dialog(cx) {
+            return;
+        }
+        if let Some(merge) = self.pending_merge.take()
+            && let Some((sessions, summary)) = writer.adopt(merge)
+        {
+            self.sessions = sessions;
+            self.history_merged(summary, window, cx);
         }
     }
 
     /// Copies the history into the user's backup folder.
-    pub(crate) fn back_up_now(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        self.refresh_history(window, cx);
-        let backup = self.history.as_ref().map_or_else(
-            || Err(anyhow::anyhow!("Your solves are not loaded.")),
-            HistoryStore::back_up_now,
-        );
-        match backup {
-            Ok(path) => {
-                let path = path.display().to_string();
-                let message = self.strings().toast_backup_done.replace("{path}", &path);
-                self.toast(&message, window, cx);
-            }
-            Err(error) => self.report_backup_error(&error, window, cx),
+    pub(crate) fn back_up_now(&self, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(writer) = &self.history_writer {
+            writer.refresh(self.sessions.clone());
+            writer.back_up();
+        } else {
+            let error = anyhow::anyhow!("Your solves are not loaded.");
+            self.report_backup_error(&error, window, cx);
         }
     }
 

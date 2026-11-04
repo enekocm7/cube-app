@@ -10,6 +10,7 @@ pub mod dialogs;
 pub mod event;
 pub mod format;
 pub mod history;
+pub mod history_writer;
 pub mod keybind;
 pub mod manual_entry;
 pub mod merge;

@@ -101,7 +101,7 @@ const STALE_TEMPORARY_AGE: Duration = Duration::from_hours(1);
 struct CurrentFile {
     /// `None` when the file does not exist.
     bytes: Option<Vec<u8>>,
-    /// The file's sessions, when someone else changed it.
+    /// The file's sessions, when they were asked for or someone else changed it.
     theirs: Option<Vec<History>>,
 }
 
@@ -118,6 +118,12 @@ pub struct HistoryStore {
     user_backups_failing: bool,
     /// A backup failure the user has not been told about.
     backup_error: Option<anyhow::Error>,
+    /// How many merges have happened. The caller may not have taken in the
+    /// latest yet, so each save says how many of them its sessions contain.
+    merges: u64,
+    /// The sessions as handed to the latest merge, before it. For a caller who
+    /// has not taken that merge in, they are the last version both sides share.
+    merge_base: Option<Vec<u8>>,
 }
 
 impl HistoryStore {
@@ -146,28 +152,53 @@ impl HistoryStore {
             user_backups: None,
             user_backups_failing: false,
             backup_error: None,
+            merges: 0,
+            merge_base: None,
         };
         Ok((store, sessions))
     }
 
+    /// Returns how many merges have happened, to compare with what a caller
+    /// has taken in.
+    pub const fn merges(&self) -> u64 {
+        self.merges
+    }
+
     /// Saves `sessions`, first merging in anything another app wrote.
+    ///
+    /// `seen_merges` is how many merges `sessions` contains. When it is behind,
+    /// the file has solves `sessions` never had, not solves it deleted, so they
+    /// are merged in as well.
     ///
     /// Returns what a merge did, in which case `sessions` changed. When the
     /// file cannot be read it is left alone, and `sessions` go to a sibling
     /// file so they survive the app closing.
-    pub fn save(&mut self, sessions: &mut Vec<History>) -> Result<Option<MergeSummary>> {
-        let current = match self.read_current() {
+    pub fn save(
+        &mut self,
+        sessions: &mut Vec<History>,
+        seen_merges: u64,
+    ) -> Result<Option<MergeSummary>> {
+        let behind = seen_merges != self.merges;
+        let current = match self.read_current(behind) {
             Ok(current) => current,
             Err(error) => return Err(self.keep_unsaved(sessions, error)),
         };
-        let summary = match current.theirs {
+        let theirs = match current.theirs {
+            // The file went missing, but what it last held still counts.
+            None if behind => Some(self.parse_known(self.synced.as_deref())?),
+            theirs => theirs,
+        };
+        let summary = match theirs {
             Some(theirs) => {
-                let base = self
-                    .synced
-                    .as_deref()
-                    .map(|bytes| parse_history(bytes, &self.path))
-                    .transpose()?
-                    .unwrap_or_default();
+                let base = if behind {
+                    self.merge_base.as_deref()
+                } else {
+                    self.synced.as_deref()
+                };
+                let base = self.parse_known(base)?;
+                let line = serde_json::to_vec(sessions).context("Could not serialize solves")?;
+                self.merge_base = Some(line);
+                self.merges += 1;
                 Some(merge::merge(&base, sessions, &theirs))
             }
             None => None,
@@ -186,12 +217,21 @@ impl HistoryStore {
     }
 
     /// Merges in anything another app wrote, saving the result. Does nothing
-    /// when the file is as this app left it.
-    pub fn refresh(&mut self, sessions: &mut Vec<History>) -> Result<Option<MergeSummary>> {
+    /// when the file is as this app left it and `sessions` has seen every merge.
+    pub fn refresh(
+        &mut self,
+        sessions: &mut Vec<History>,
+        seen_merges: u64,
+    ) -> Result<Option<MergeSummary>> {
         match read_if_present(&self.path) {
-            Ok(current) if current == self.synced => Ok(None),
-            _ => self.save(sessions),
+            Ok(current) if current == self.synced && seen_merges == self.merges => Ok(None),
+            _ => self.save(sessions, seen_merges),
         }
+    }
+
+    /// Parses a history this store read or wrote itself.
+    fn parse_known(&self, bytes: Option<&[u8]>) -> Result<Vec<History>> {
+        bytes.map_or_else(|| Ok(Vec::new()), |bytes| parse_history(bytes, &self.path))
     }
 
     /// Sets the folder for the user's own backups; `None` turns them off.
@@ -241,18 +281,19 @@ impl HistoryStore {
         }
     }
 
-    /// Reads the file, also parsing it when someone else changed it.
+    /// Reads the file, also parsing it when someone else changed it or when
+    /// `always_parse` asks for it.
     ///
     /// cube-tui does not write atomically, so a file that fails to parse may
     /// just be half written and is given a moment to finish.
-    fn read_current(&self) -> Result<CurrentFile> {
+    fn read_current(&self, always_parse: bool) -> Result<CurrentFile> {
         let mut attempt = 1;
         loop {
             let read = read_if_present(&self.path)
                 .with_context(|| format!("Could not read {}", self.path.display()))
                 .and_then(|bytes| {
                     let theirs = match &bytes {
-                        Some(bytes) if self.synced.as_ref() != Some(bytes) => {
+                        Some(bytes) if always_parse || self.synced.as_ref() != Some(bytes) => {
                             Some(parse_history(bytes, &self.path)?)
                         }
                         _ => None,
@@ -601,7 +642,7 @@ mod tests {
         let (mut store, mut sessions) = HistoryStore::open(&path).unwrap();
         assert!(sessions.is_empty());
         sessions = serde_json::from_str(CUBE_TUI_SAVE).unwrap();
-        assert!(store.save(&mut sessions).unwrap().is_none());
+        assert!(store.save(&mut sessions, store.merges()).unwrap().is_none());
         let (_, loaded) = HistoryStore::open(&path).unwrap();
         assert_eq!(loaded.len(), 2);
         assert_eq!(loaded[0].solves()[0].raw_ms(), 12_345);
@@ -625,7 +666,7 @@ mod tests {
 
         write_like_cube_tui(&path, &[session(&[10, 20])]);
         sessions[0].push(solve(30));
-        let summary = store.save(&mut sessions).unwrap().unwrap();
+        let summary = store.save(&mut sessions, store.merges()).unwrap().unwrap();
 
         assert_eq!(summary.added, 1);
         assert_eq!(times(&sessions), [10, 20, 30]);
@@ -639,14 +680,27 @@ mod tests {
         let path = temporary_history();
         let (mut store, _) = HistoryStore::open(&path).unwrap();
         let mut sessions = vec![session(&[10])];
-        store.save(&mut sessions).unwrap();
-        assert!(store.refresh(&mut sessions).unwrap().is_none());
+        store.save(&mut sessions, store.merges()).unwrap();
+        assert!(
+            store
+                .refresh(&mut sessions, store.merges())
+                .unwrap()
+                .is_none()
+        );
 
         write_like_cube_tui(&path, &[session(&[10, 20])]);
-        let summary = store.refresh(&mut sessions).unwrap().unwrap();
+        let summary = store
+            .refresh(&mut sessions, store.merges())
+            .unwrap()
+            .unwrap();
         assert_eq!(summary.added, 1);
         assert_eq!(times(&sessions), [10, 20]);
-        assert!(store.refresh(&mut sessions).unwrap().is_none());
+        assert!(
+            store
+                .refresh(&mut sessions, store.merges())
+                .unwrap()
+                .is_none()
+        );
         remove_folder_of(&path);
     }
 
@@ -655,9 +709,14 @@ mod tests {
         let path = temporary_history();
         let (mut store, _) = HistoryStore::open(&path).unwrap();
         let mut sessions = vec![session(&[10])];
-        store.save(&mut sessions).unwrap();
+        store.save(&mut sessions, store.merges()).unwrap();
         fs::remove_file(&path).unwrap();
-        assert!(store.refresh(&mut sessions).unwrap().is_none());
+        assert!(
+            store
+                .refresh(&mut sessions, store.merges())
+                .unwrap()
+                .is_none()
+        );
         assert_eq!(times(&HistoryStore::open(&path).unwrap().1), [10]);
         remove_folder_of(&path);
     }
@@ -667,10 +726,10 @@ mod tests {
         let path = temporary_history();
         let (mut store, _) = HistoryStore::open(&path).unwrap();
         let mut sessions = vec![session(&[10])];
-        store.save(&mut sessions).unwrap();
+        store.save(&mut sessions, store.merges()).unwrap();
 
         fs::write(&path, "[{ half written").unwrap();
-        let error = store.save(&mut sessions).unwrap_err();
+        let error = store.save(&mut sessions, store.merges()).unwrap_err();
 
         let unsaved = path.with_extension("unsaved.json");
         assert!(format!("{error:#}").contains("unsaved.json"));
@@ -687,7 +746,7 @@ mod tests {
         let original = fs::read(&path).unwrap();
         let (mut store, mut sessions) = HistoryStore::open(&path).unwrap();
         sessions[0].push(solve(20));
-        store.save(&mut sessions).unwrap();
+        store.save(&mut sessions, store.merges()).unwrap();
 
         let backup = latest_backup(&path).unwrap();
         assert_eq!(fs::read(backup).unwrap(), original);
@@ -738,7 +797,7 @@ mod tests {
         let (mut store, mut sessions) = HistoryStore::open(&path).unwrap();
         store.set_user_backups(Some(folder.clone()));
         sessions[0].push(solve(20));
-        store.save(&mut sessions).unwrap();
+        store.save(&mut sessions, store.merges()).unwrap();
 
         let backups = list_backups(&folder).unwrap();
         assert_eq!(backups.len(), 1);
@@ -757,12 +816,12 @@ mod tests {
         store.set_user_backups(Some(not_a_folder));
 
         sessions[0].push(solve(20));
-        store.save(&mut sessions).unwrap();
+        store.save(&mut sessions, store.merges()).unwrap();
         assert!(store.take_backup_error().is_some());
         assert_eq!(times(&HistoryStore::open(&path).unwrap().1), [10, 20]);
 
         sessions[0].push(solve(30));
-        store.save(&mut sessions).unwrap();
+        store.save(&mut sessions, store.merges()).unwrap();
         assert!(store.take_backup_error().is_none());
         remove_folder_of(&path);
     }
@@ -777,7 +836,7 @@ mod tests {
         assert!(store.back_up_now().is_err());
 
         let mut sessions = vec![session(&[10])];
-        store.save(&mut sessions).unwrap();
+        store.save(&mut sessions, store.merges()).unwrap();
         let manual = store.back_up_now().unwrap();
         assert_eq!(fs::read(&manual).unwrap(), fs::read(&path).unwrap());
 
