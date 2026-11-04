@@ -198,6 +198,10 @@ pub struct Strings {
     pub action_open_stats: &'static str,
     pub action_show_help: &'static str,
     pub unassigned: &'static str,
+    pub search_placeholder: &'static str,
+    pub search_no_results: &'static str,
+    pub search_on: &'static str,
+    pub search_off: &'static str,
 
     pub settings_keybindings: &'static str,
     pub keybind_hint: &'static str,

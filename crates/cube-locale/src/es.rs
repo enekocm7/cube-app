@@ -134,6 +134,10 @@ pub const STRINGS: Strings = Strings {
     action_open_stats: "Ver estadísticas o el temporizador",
     action_show_help: "Mostrar estos atajos",
     unassigned: "Sin asignar",
+    search_placeholder: "Buscar",
+    search_no_results: "No se encontraron resultados.",
+    search_on: "activado",
+    search_off: "desactivado",
 
     settings_keybindings: "Atajos de teclado",
     keybind_hint: "Usa el lápiz para cambiar un atajo y la papelera para quitarlo. La tecla del cronómetro no se puede quitar ni usar modificadores.",

@@ -26,6 +26,7 @@ use crate::app::CubeApp;
 use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_title, dialog_width};
 use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
 use crate::scroll_fade::FadeScroll;
+use crate::search_bar::{BAR_HEIGHT, focus_on_slash, new_search, query, search_bar};
 
 const ROW_MIN_HEIGHT: Pixels = px(44.);
 
@@ -39,6 +40,10 @@ struct SettingsView {
     scramble_pt: Entity<InputState>,
     /// Whether the text in `scramble_pt` is not a valid size.
     scramble_pt_invalid: bool,
+    /// Filters the rows by label and visible value.
+    search: Entity<InputState>,
+    /// Holds focus so `/` reaches the dialog before anything is clicked.
+    focus: FocusHandle,
 }
 
 impl SettingsView {
@@ -639,6 +644,7 @@ impl SettingsView {
 }
 
 impl Render for SettingsView {
+    #[allow(clippy::too_many_lines, reason = "one tagged row list per section")]
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         // Theme files can be added, renamed or deleted while the dialog is
         // open, so read them again on every render.
@@ -648,33 +654,90 @@ impl Render for SettingsView {
         let settings = app.settings.clone();
 
         let languages = self.languages(&settings.language, cx);
+        let theme_files: Vec<String> = self
+            .themes
+            .iter()
+            .map(|entry| theme::display_name(&entry.name).to_owned())
+            .collect();
+        let state = |label: &str, on: bool| {
+            format!(
+                "{label} {}",
+                if on {
+                    strings.search_on
+                } else {
+                    strings.search_off
+                }
+            )
+        };
+
+        let timer = tagged(
+            [
+                state(strings.setting_inspection, settings.inspection),
+                state(strings.setting_inspection_audio, settings.inspection_audio),
+                state(strings.setting_accurate, settings.accurate_3x3),
+            ],
+            [
+                self.switch(
+                    "inspection",
+                    strings.setting_inspection,
+                    settings.inspection,
+                    |settings, value| settings.inspection = value,
+                    cx,
+                ),
+                self.switch(
+                    "inspection-audio",
+                    strings.setting_inspection_audio,
+                    settings.inspection_audio,
+                    |settings, value| settings.inspection_audio = value,
+                    cx,
+                ),
+                self.switch(
+                    "accurate",
+                    strings.setting_accurate,
+                    settings.accurate_3x3,
+                    |settings, value| settings.accurate_3x3 = value,
+                    cx,
+                ),
+            ],
+        );
+
+        let mut theme_texts = vec![
+            format!(
+                "{} {} {} {}",
+                strings.setting_theme,
+                strings.theme_system,
+                strings.theme_light,
+                strings.theme_dark
+            ),
+            format!("{} {}", strings.custom_themes, strings.new_theme),
+        ];
         let mut theme_rows = vec![
             self.theme_row(&settings, strings, cx),
             Self::new_theme_row(strings, cx),
         ];
         theme_rows.extend(self.theme_list_rows(&settings, strings, cx));
+        if theme_files.is_empty() {
+            theme_texts.push(strings.no_themes.to_owned());
+        } else {
+            theme_texts.extend(theme_files);
+        }
+        let themes = tagged(theme_texts, theme_rows);
 
-        let timer = [
-            self.switch(
-                "inspection",
-                strings.setting_inspection,
-                settings.inspection,
-                |settings, value| settings.inspection = value,
-                cx,
+        let mut appearance_texts = vec![
+            state(strings.setting_solve_list_ao5, settings.solve_list_ao5),
+            state(
+                strings.setting_always_show_scrollbar,
+                settings.always_show_scrollbar,
             ),
-            self.switch(
-                "inspection-audio",
-                strings.setting_inspection_audio,
-                settings.inspection_audio,
-                |settings, value| settings.inspection_audio = value,
-                cx,
+            format!(
+                "{} {}",
+                strings.setting_font,
+                font_label(strings, settings.font)
             ),
-            self.switch(
-                "accurate",
-                strings.setting_accurate,
-                settings.accurate_3x3,
-                |settings, value| settings.accurate_3x3 = value,
-                cx,
+            format!(
+                "{} {}",
+                strings.setting_scramble_size,
+                scramble_size_label(strings, settings.scramble_size)
             ),
         ];
         let mut appearance = vec![
@@ -696,14 +759,25 @@ impl Render for SettingsView {
             self.scramble_size_row(&settings, strings),
         ];
         if settings.scramble_size == ScrambleSize::Custom {
-            appearance.extend(self.custom_scramble_rows(strings));
+            let custom = self.custom_scramble_rows(strings);
+            appearance_texts.extend(
+                custom
+                    .iter()
+                    .map(|_| strings.setting_scramble_custom.to_owned()),
+            );
+            appearance.extend(custom);
         }
+        appearance_texts.push(state(strings.setting_toasts, settings.toasts));
         appearance.push(self.switch(
             "toasts",
             strings.setting_toasts,
             settings.toasts,
             |settings, value| settings.toasts = value,
             cx,
+        ));
+        appearance_texts.push(state(
+            strings.setting_confirm_delete,
+            settings.confirm_delete,
         ));
         appearance.push(self.switch(
             "confirm-delete",
@@ -712,30 +786,117 @@ impl Render for SettingsView {
             |settings, value| settings.confirm_delete = value,
             cx,
         ));
-        let updates = self.update_rows(strings, &settings, cx);
-        let language = [h_flex()
-            .min_h(ROW_MIN_HEIGHT)
-            .px_3()
-            .gap_2()
-            .children(languages)
-            .into_any_element()];
-        let data = self.data_rows(strings, cx);
+        let appearance = tagged(appearance_texts, appearance);
+
+        let mut update_texts = vec![
+            state(strings.setting_check_updates, settings.updates.auto_check),
+            format!(
+                "{} {} {}",
+                strings.setting_update_channel,
+                strings.update_channel_stable,
+                strings.update_channel_prerelease
+            ),
+            format!(
+                "{} {} {} {}",
+                strings.setting_update_frequency,
+                strings.update_frequency_start,
+                strings.update_frequency_daily,
+                strings.update_frequency_weekly
+            ),
+            strings.setting_check_now.to_owned(),
+        ];
+        if let Some(version) = &settings.updates.skipped_version {
+            update_texts.push(format!(
+                "{} {}",
+                strings.setting_skipping.replace("{version}", version),
+                strings.setting_clear_skip
+            ));
+        }
+        let updates = tagged(update_texts, self.update_rows(strings, &settings, cx));
+
+        let language_text = Language::ALL
+            .into_iter()
+            .map(Language::native_name)
+            .fold(strings.setting_language.to_owned(), |all, name| {
+                format!("{all} {name}")
+            });
+        let language = tagged(
+            [language_text],
+            [h_flex()
+                .min_h(ROW_MIN_HEIGHT)
+                .px_3()
+                .gap_2()
+                .children(languages)
+                .into_any_element()],
+        );
+
+        let data = tagged(
+            [
+                format!("{} {}", strings.setting_import, strings.import_button),
+                format!("{} {}", strings.setting_export, strings.export_button),
+            ],
+            self.data_rows(strings, cx),
+        );
+
+        let search = query(&self.search, cx);
+        let sections: Vec<AnyElement> = [
+            (strings.settings_timer, timer),
+            (strings.settings_theme, themes),
+            (strings.settings_appearance, appearance),
+            (strings.settings_updates, updates),
+            (strings.setting_language, language),
+            (strings.settings_data, data),
+        ]
+        .into_iter()
+        .filter_map(|(heading, rows)| {
+            // A heading that matches keeps its whole section.
+            let whole = cube_core::search::matches(&search, &[heading]);
+            let rows: Vec<AnyElement> = rows
+                .into_iter()
+                .filter(|(text, _)| whole || cube_core::search::matches(&search, &[text]))
+                .map(|(_, row)| row)
+                .collect();
+            (!rows.is_empty()).then(|| section(heading, rows, cx).into_any_element())
+        })
+        .collect();
+        let no_results = sections.is_empty();
 
         let max_height = dialog_body_height(DialogSize::STANDARD, window);
 
         dialog_body(
-            FadeScroll::new("settings-scroll", cx.theme().background)
-                .max_h(max_height)
-                .p_4()
-                .gap_5()
-                .child(section(strings.settings_timer, timer, cx))
-                .child(section(strings.settings_theme, theme_rows, cx))
-                .child(section(strings.settings_appearance, appearance, cx))
-                .child(section(strings.settings_updates, updates, cx))
-                .child(section(strings.setting_language, language, cx))
-                .child(section(strings.settings_data, data, cx)),
+            v_flex()
+                .track_focus(&self.focus)
+                .on_key_down(cx.listener(|view, event: &KeyDownEvent, window, cx| {
+                    if focus_on_slash(event, &view.search, window, cx) {
+                        cx.stop_propagation();
+                    }
+                }))
+                .child(search_bar(&self.search, cx))
+                .child(
+                    FadeScroll::new("settings-scroll", cx.theme().background)
+                        .max_h(max_height - BAR_HEIGHT)
+                        .p_4()
+                        .gap_5()
+                        .children(sections)
+                        .when(no_results, |column| {
+                            column.child(
+                                div()
+                                    .text_sm()
+                                    .text_color(cx.theme().muted_foreground)
+                                    .child(strings.search_no_results),
+                            )
+                        }),
+                ),
         )
     }
+}
+
+/// Pairs each row with the text the search matches it against.
+fn tagged(
+    texts: impl IntoIterator<Item = String>,
+    rows: impl IntoIterator<Item = AnyElement>,
+) -> Vec<(String, AnyElement)> {
+    texts.into_iter().zip(rows).collect()
 }
 
 /// A heading above a card of rows, split by hairlines.
@@ -827,6 +988,7 @@ impl CubeApp {
         let _ = persistence::ensure_default_theme();
         let themes = persistence::list_themes().unwrap_or_default();
         let custom = self.settings.scramble_custom_pt;
+        let strings = self.strings();
         let scramble_pt = cx.new(|cx| {
             InputState::new(window, cx)
                 .default_value(custom.map_or_default(|pt| pt.to_string()))
@@ -835,6 +997,7 @@ impl CubeApp {
         let view = cx.new(|cx| {
             cx.observe(&app, |_: &mut SettingsView, _, cx| cx.notify())
                 .detach();
+            let search = new_search(strings, window, cx);
             cx.subscribe_in(
                 &scramble_pt,
                 window,
@@ -861,12 +1024,19 @@ impl CubeApp {
                 themes,
                 scramble_pt: scramble_pt.clone(),
                 scramble_pt_invalid: false,
+                search,
+                focus: cx.focus_handle(),
             }
         });
         let strings_app = cx.entity();
+        let first_build = std::cell::Cell::new(true);
         window.open_dialog(cx, move |dialog, window, cx| {
             let strings = strings_app.read(cx).strings();
             let view = view.clone();
+            if first_build.replace(false) {
+                let focus = view.read(cx).focus.clone();
+                focus.focus(window, cx);
+            }
             dialog
                 .title(dialog_title(
                     div().text_lg().child(strings.settings),

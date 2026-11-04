@@ -85,6 +85,10 @@ danger-coloured trash can to remove its shortcut. Bindings can also be edited by
 in `cube-gui.toml`; [docs/keybinds.md](docs/keybinds.md) documents every action, the key syntax and the validation
 rules.
 
+The shortcuts panel and the settings dialog both start with a search field. Press `/` to jump straight to it (or reach it with `Tab`). Type to
+filter rows by label or current value, such as `space`, `ctrl` or `unassigned` for shortcuts, or `dark` or `off` for
+settings; matching ignores case and uses the interface language. Sections with no match are hidden.
+
 Drag the inner edge of the solve list or the statistics panel to resize it. Neither panel gets
 narrower than 180 px or wider than 350 px, and double-click an edge to restore its default width. The widths are
 remembered between launches.
