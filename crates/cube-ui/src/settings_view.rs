@@ -18,7 +18,7 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::CubeApp;
-use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
+use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_title, dialog_width};
 use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
 use crate::scroll_fade::FadeScroll;
 
@@ -478,7 +478,8 @@ impl SettingsView {
                 }
             });
             dialog
-                .title(strings.delete_theme)
+                .title(dialog_title(strings.delete_theme, strings.close))
+                .close_button(false)
                 .w(dialog_width(DialogSize::COMPACT, window))
                 .submit_on_enter(&delete)
                 .child(message.clone())
@@ -600,6 +601,13 @@ impl Render for SettingsView {
                 |settings, value| settings.solve_list_ao5 = value,
                 cx,
             ),
+            self.switch(
+                "always-show-scrollbar",
+                strings.setting_always_show_scrollbar,
+                settings.always_show_scrollbar,
+                |settings, value| settings.always_show_scrollbar = value,
+                cx,
+            ),
             self.font_row(&settings, strings),
             self.switch(
                 "toasts",
@@ -620,16 +628,18 @@ impl Render for SettingsView {
 
         let max_height = dialog_body_height(DialogSize::STANDARD, window);
 
-        FadeScroll::new("settings-scroll", cx.theme().background)
-            .max_h(max_height)
-            .p_4()
-            .gap_5()
-            .child(section(strings.settings_timer, timer, cx))
-            .child(section(strings.settings_theme, theme_rows, cx))
-            .child(section(strings.settings_appearance, appearance, cx))
-            .child(section(strings.settings_updates, updates, cx))
-            .child(section(strings.setting_language, language, cx))
-            .child(section(strings.settings_data, data, cx))
+        dialog_body(
+            FadeScroll::new("settings-scroll", cx.theme().background)
+                .max_h(max_height)
+                .p_4()
+                .gap_5()
+                .child(section(strings.settings_timer, timer, cx))
+                .child(section(strings.settings_theme, theme_rows, cx))
+                .child(section(strings.settings_appearance, appearance, cx))
+                .child(section(strings.settings_updates, updates, cx))
+                .child(section(strings.setting_language, language, cx))
+                .child(section(strings.settings_data, data, cx)),
+        )
     }
 }
 
@@ -722,7 +732,11 @@ impl CubeApp {
             let strings = strings_app.read(cx).strings();
             let view = view.clone();
             dialog
-                .title(div().text_lg().pb_2().child(strings.settings))
+                .title(dialog_title(
+                    div().text_lg().child(strings.settings),
+                    strings.close,
+                ))
+                .close_button(false)
                 .w(dialog_width(DialogSize::STANDARD, window))
                 .close_on_enter()
                 .content(move |content, _, cx| {

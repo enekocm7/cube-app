@@ -142,6 +142,8 @@ pub struct Settings {
     pub accurate_3x3: bool,
     /// Adds a rolling ao5 column to the solve list.
     pub solve_list_ao5: bool,
+    /// Keeps the solve list scrollbar visible instead of only while scrolling.
+    pub always_show_scrollbar: bool,
     /// Which text uses the bundled `JetBrains Mono`.
     pub font: FontChoice,
     /// Whether the start hint has been used, so it is no longer shown while idle.
@@ -170,6 +172,7 @@ impl Default for Settings {
             toasts: true,
             accurate_3x3: false,
             solve_list_ao5: false,
+            always_show_scrollbar: false,
             font: FontChoice::default(),
             start_hint_seen: false,
             keybindings: BTreeMap::new(),
@@ -254,6 +257,23 @@ mod tests {
         assert_eq!(settings.font, FontChoice::Timer);
         let settings: Settings = toml::from_str("font = 'whole'").unwrap();
         assert_eq!(settings.font, FontChoice::Whole);
+    }
+
+    #[test]
+    fn the_scrollbar_is_transient_by_default_and_round_trips() {
+        assert!(!Settings::default().always_show_scrollbar);
+        let settings: Settings = toml::from_str("").unwrap();
+        assert!(!settings.always_show_scrollbar);
+        let on = Settings {
+            always_show_scrollbar: true,
+            ..Settings::default()
+        };
+        let text = toml::to_string(&on).unwrap();
+        assert!(
+            toml::from_str::<Settings>(&text)
+                .unwrap()
+                .always_show_scrollbar
+        );
     }
 
     #[test]

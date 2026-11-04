@@ -145,6 +145,7 @@ pub struct Strings {
     pub setting_toasts: &'static str,
     pub setting_accurate: &'static str,
     pub setting_solve_list_ao5: &'static str,
+    pub setting_always_show_scrollbar: &'static str,
     pub setting_font: &'static str,
     pub font_system: &'static str,
     pub font_timer: &'static str,

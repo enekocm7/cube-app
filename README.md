@@ -90,6 +90,9 @@ remembered between launches.
 The start hint is only shown until you start your first solve, so the timer stays clean once you
 know the controls. It names whichever key the timer is bound to.
 
+The solve list scrollbar only appears while you scroll; turn on **Settings → Appearance → Always show the solve
+list scrollbar** to keep it visible.
+
 Times use the system's monospace font. **Settings → Appearance → Font** can switch to
 [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) for the timer only, for every time, or for the whole
 interface; the font is bundled under the SIL Open Font License and stays off by default.

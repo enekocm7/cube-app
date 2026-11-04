@@ -4,6 +4,13 @@
 //! may take, so every dialog grows and shrinks by the same rules and the
 //! arithmetic can be tested without GPUI.
 
+/// Space kept between a dialog's scrolling body and the divider above its
+/// footer, so the last row never sits flush against the line.
+///
+/// Padding inside a scroll region scrolls away, so this gap is reserved
+/// outside the viewport and taken out of the body height.
+pub const BODY_INSET: f32 = 12.;
+
 /// The size rules of one dialog: a share of the window, kept between a floor
 /// and a ceiling.
 #[derive(Clone, Copy, Debug)]
@@ -87,7 +94,7 @@ impl DialogSize {
     /// small one scrolls the body instead of pushing the footer out of the
     /// dialog.
     pub fn body_height(self, viewport_height: f32) -> f32 {
-        let room = (viewport_height - self.chrome_height).max(0.0);
+        let room = (viewport_height - self.chrome_height - BODY_INSET).max(0.0);
         (viewport_height * self.body_share)
             .clamp(self.min_body_height, self.max_body_height)
             .min(room)
@@ -136,6 +143,7 @@ mod tests {
     #[test]
     fn the_body_is_proportional_and_grows_with_the_window() {
         close(DialogSize::STANDARD.body_height(760.0), 494.0);
+        close(DialogSize::STANDARD.body_height(2160.0), 760.0);
         assert!(DialogSize::WIDE.body_height(2160.0) > DialogSize::WIDE.body_height(760.0));
     }
 
@@ -144,7 +152,7 @@ mod tests {
         for size in SIZES {
             for viewport in [0.0, 120.0, 560.0, 760.0, 2160.0] {
                 let body = size.body_height(viewport);
-                let room = (viewport - size.chrome_height).max(0.0);
+                let room = (viewport - size.chrome_height - BODY_INSET).max(0.0);
                 assert!(
                     body <= room,
                     "{viewport}: {body} does not fit in the {room} left for a body"

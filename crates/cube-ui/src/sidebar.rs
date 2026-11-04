@@ -14,7 +14,7 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::{CubeApp, average_label, format_average_at};
-use crate::dialog_size::{DialogSize, dialog_width};
+use crate::dialog_size::{DialogSize, dialog_title, dialog_width};
 use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
 use crate::palette::Palette;
 use crate::scroll_fade::fading_scroll;
@@ -26,6 +26,11 @@ const SESSION_MAX_WIDTH: Pixels = px(120.);
 const SESSION_MENU_MAX_WIDTH: Pixels = px(260.);
 
 const AVERAGE_WIDTH: Pixels = px(64.);
+
+/// Extra right padding while the average column is shown, so the averages
+/// clear the overlay scrollbar instead of touching it.
+const AVERAGE_SCROLLBAR_GUTTER: Pixels = px(10.);
+
 /// The rolling average the solve list can show.
 const LIST_AVERAGE_SIZE: usize = 5;
 
@@ -53,6 +58,9 @@ impl CubeApp {
                 h_flex()
                     .px_3()
                     .py_2()
+                    .when(show_average, |header| {
+                        header.pr(px(12.) + AVERAGE_SCROLLBAR_GUTTER)
+                    })
                     .justify_between()
                     .border_t_1()
                     .border_color(border)
@@ -94,7 +102,13 @@ impl CubeApp {
                         )
                         .size_full(),
                     )
-                    .child(Scrollbar::vertical(&self.solves_scroll).mode(ScrollbarMode::Always))
+                    .child(Scrollbar::vertical(&self.solves_scroll).mode(
+                        if self.settings.always_show_scrollbar {
+                            ScrollbarMode::Always
+                        } else {
+                            ScrollbarMode::Scrolling
+                        },
+                    ))
                     .into_any_element()
             })
     }
@@ -279,6 +293,9 @@ impl CubeApp {
                         .w_full()
                         .h(px(28.))
                         .px_3()
+                        .when(show_average, |row| {
+                            row.pr(px(12.) + AVERAGE_SCROLLBAR_GUTTER)
+                        })
                         .gap_2()
                         .text_sm()
                         .font_family(mono.clone())
@@ -346,7 +363,8 @@ impl CubeApp {
                 window.close_dialog(cx);
             });
             dialog
-                .title(strings.rename_session)
+                .title(dialog_title(strings.rename_session, strings.close))
+                .close_button(false)
                 .w(dialog_width(DialogSize::COMPACT, window))
                 .submit_on_enter(&save)
                 .child(Input::new(&input))
@@ -407,7 +425,8 @@ impl CubeApp {
                 on_confirm(&(), window, cx);
             });
             dialog
-                .title(title)
+                .title(dialog_title(title, strings.close))
+                .close_button(false)
                 .w(dialog_width(DialogSize::COMPACT, window))
                 .submit_on_enter(&confirm)
                 .child(message.clone())

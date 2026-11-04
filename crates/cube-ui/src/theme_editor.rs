@@ -18,7 +18,7 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::CubeApp;
-use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
+use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_title, dialog_width};
 use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
 use crate::scroll_fade::FadeScroll;
 
@@ -424,27 +424,29 @@ impl Render for ThemeEditor {
             .collect();
         let max_height = dialog_body_height(DialogSize::WIDE, window);
 
-        FadeScroll::new("theme-editor", cx.theme().background)
-            .max_h(max_height)
-            .p_4()
-            .gap_5()
-            .child(row(
-                strings.theme_name,
-                div()
-                    .w(px(330.))
-                    .child(Input::new(&self.name).small().w_full()),
-            ))
-            .when_some(self.error.clone(), |body, error| {
-                body.child(div().text_sm().text_color(danger).child(error))
-            })
-            .child(section(strings.theme_colors, rows, cx))
-            .child(
-                div()
-                    .text_xs()
-                    .text_color(muted)
-                    .child(strings.theme_alpha_hint),
-            )
-            .child(self.render_preview(&colors, strings, cx))
+        dialog_body(
+            FadeScroll::new("theme-editor", cx.theme().background)
+                .max_h(max_height)
+                .p_4()
+                .gap_5()
+                .child(row(
+                    strings.theme_name,
+                    div()
+                        .w(px(330.))
+                        .child(Input::new(&self.name).small().w_full()),
+                ))
+                .when_some(self.error.clone(), |body, error| {
+                    body.child(div().text_sm().text_color(danger).child(error))
+                })
+                .child(section(strings.theme_colors, rows, cx))
+                .child(
+                    div()
+                        .text_xs()
+                        .text_color(muted)
+                        .child(strings.theme_alpha_hint),
+                )
+                .child(self.render_preview(&colors, strings, cx)),
+        )
     }
 }
 
@@ -578,11 +580,15 @@ impl CubeApp {
                 save_view.update(cx, |editor, cx| editor.save(window, cx));
             });
             dialog
-                .title(div().text_lg().pb_2().child(if is_new {
-                    strings.new_theme
-                } else {
-                    strings.edit_theme
-                }))
+                .title(dialog_title(
+                    div().text_lg().child(if is_new {
+                        strings.new_theme
+                    } else {
+                        strings.edit_theme
+                    }),
+                    strings.close,
+                ))
+                .close_button(false)
                 .w(dialog_width(DialogSize::WIDE, window))
                 .submit_on_enter(&save)
                 .content(move |content, _, cx| {

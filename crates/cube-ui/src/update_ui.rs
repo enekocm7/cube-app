@@ -15,7 +15,7 @@ use gpui_kit::component::{ActiveTheme as _, Sizable as _, WindowExt as _, h_flex
 use gpui_kit::*;
 
 use crate::app::CubeApp;
-use crate::dialog_size::{DialogSize, dialog_body_height, dialog_width};
+use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_title, dialog_width};
 use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
 use crate::scroll_fade::FadeScroll;
 
@@ -290,15 +290,16 @@ impl CubeApp {
                     .ok();
             });
             dialog
-                .title(title.clone())
+                .title(dialog_title(title.clone(), close_label))
+                .close_button(false)
                 .w(dialog_width(DialogSize::STANDARD, window))
                 .submit_on_enter(&update)
-                .child(
+                .child(dialog_body(
                     FadeScroll::new("release-notes", fade)
                         .max_h(dialog_body_height(DialogSize::STANDARD, window))
                         .text_sm()
                         .child(notes.clone()),
-                )
+                ))
                 .footer(
                     h_flex()
                         .w_full()
