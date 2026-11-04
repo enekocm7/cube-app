@@ -218,6 +218,15 @@ pub struct Strings {
     pub export_button: &'static str,
     /// The label of the import file picker's confirm button.
     pub import_prompt: &'static str,
+    pub setting_backup_folder: &'static str,
+    /// Shown in place of the folder's path when none is chosen.
+    pub backup_folder_none: &'static str,
+    pub backup_folder_button: &'static str,
+    pub backup_folder_clear: &'static str,
+    /// The label of the backup folder picker's confirm button.
+    pub backup_folder_prompt: &'static str,
+    pub setting_backup_now: &'static str,
+    pub backup_now_button: &'static str,
     pub theme_system: &'static str,
     pub theme_light: &'static str,
     pub theme_dark: &'static str,
@@ -260,6 +269,7 @@ pub struct Strings {
     pub action_open_average: &'static str,
     pub action_open_best_average: &'static str,
     pub action_copy_average: &'static str,
+    pub action_open_bluetooth: &'static str,
     pub action_show_help: &'static str,
     pub unassigned: &'static str,
     pub search_placeholder: &'static str,
@@ -373,10 +383,47 @@ pub struct Strings {
     /// `{error}`: why the cue could not be played.
     pub toast_audio_failed: &'static str,
     pub toast_cancelled: &'static str,
+    pub bluetooth_title: &'static str,
+    pub bluetooth_scanning: &'static str,
+    pub bluetooth_pick: &'static str,
+    pub bluetooth_connect: &'static str,
+    pub bluetooth_disconnect: &'static str,
+    /// `{name}`: the timer's name.
+    pub bluetooth_connecting: &'static str,
+    /// `{name}`: the timer's name.
+    pub bluetooth_connected: &'static str,
+    pub bluetooth_disconnected: &'static str,
+    pub bluetooth_lost: &'static str,
+    pub bluetooth_no_adapter: &'static str,
+    /// `{error}`: the cause.
+    pub bluetooth_scan_failed: &'static str,
+    pub bluetooth_not_found: &'static str,
+    pub bluetooth_timed_out: &'static str,
+    /// `{error}`: the cause.
+    pub bluetooth_connect_failed: &'static str,
+    /// `{error}`: the cause.
+    pub bluetooth_disconnect_failed: &'static str,
+    pub bluetooth_incomplete_update: &'static str,
+    /// `{state}`: the number the timer sent.
+    pub bluetooth_unsupported_state: &'static str,
+    pub bluetooth_incomplete_time: &'static str,
+    /// `{error}`: the cause.
+    pub bluetooth_time_unreadable: &'static str,
     /// `{error}`: the cause.
     pub toast_save_failed: &'static str,
     /// `{error}`: the cause.
     pub toast_load_failed: &'static str,
+    /// `{path}`: the newest backup of the solves.
+    pub toast_backup_available: &'static str,
+    /// `{path}`: the backup that was written.
+    pub toast_backup_done: &'static str,
+    /// `{error}`: the cause.
+    pub toast_backup_failed: &'static str,
+    /// `{added}`: solves taken from the file; `{updated}`: solves replaced by
+    /// newer edits; `{kept}`: solves the file lost that were kept.
+    pub toast_history_merged: &'static str,
+    /// `{path}`: where the unreadable settings file is now.
+    pub toast_settings_reset: &'static str,
     /// `{imported}`: how many solves were added; `{skipped}`: how many were not.
     pub toast_import_done: &'static str,
     /// `{path}`: the file that was written.
@@ -433,6 +480,13 @@ mod tests {
             assert!(strings.history_revision.contains("{date}"));
             assert!(strings.toast_save_failed.contains("{error}"));
             assert!(strings.toast_load_failed.contains("{error}"));
+            assert!(strings.toast_backup_available.contains("{path}"));
+            assert!(strings.toast_backup_done.contains("{path}"));
+            assert!(strings.toast_backup_failed.contains("{error}"));
+            assert!(strings.toast_history_merged.contains("{added}"));
+            assert!(strings.toast_history_merged.contains("{updated}"));
+            assert!(strings.toast_history_merged.contains("{kept}"));
+            assert!(strings.toast_settings_reset.contains("{path}"));
             assert!(strings.theme_save_failed.contains("{error}"));
             assert!(strings.theme_delete_failed.contains("{error}"));
             assert!(strings.theme_load_failed.contains("{error}"));
@@ -445,6 +499,13 @@ mod tests {
             assert!(strings.toast_import_failed.contains("{error}"));
             assert!(strings.toast_export_failed.contains("{error}"));
             assert!(strings.toast_audio_failed.contains("{error}"));
+            assert!(strings.bluetooth_connecting.contains("{name}"));
+            assert!(strings.bluetooth_connected.contains("{name}"));
+            assert!(strings.bluetooth_scan_failed.contains("{error}"));
+            assert!(strings.bluetooth_connect_failed.contains("{error}"));
+            assert!(strings.bluetooth_disconnect_failed.contains("{error}"));
+            assert!(strings.bluetooth_unsupported_state.contains("{state}"));
+            assert!(strings.bluetooth_time_unreadable.contains("{error}"));
             assert!(strings.hint_start.contains("{key}"));
             assert!(strings.hint_inspecting.contains("{key}"));
             assert!(strings.hint_stop.contains("{key}"));

@@ -44,11 +44,12 @@ nothing is selected.
 | Copy the selected average as text | `C` | Copies the result and every attempt with its scramble. The average's dialog has the same action on a button |
 | Show stats or the timer | `A` | Toggles the table of every solve's averages |
 | Show charts or the timer | `G` | |
+| Connect a Bluetooth timer | `B` | Also the Bluetooth icon in the title bar. See [Bluetooth timers](#bluetooth-timers) |
 | Show the next charts view | `V` | Cycles Trends, Calendar, Compare and All-time bests |
 | Filter charts by the next event | `F` | Cycles all events and every event with solves |
 | Filter charts by the next range | `R` | Cycles all solves, the last 50, 100 or 500 solves and the last 7, 30, 90 or 365 days |
 | Filter charts by custom dates | `Shift + R` | Asks for a first and last day as `YYYY-MM-DD` |
-| Chart one session or all of them | `B` | With all of them, solves merge by date and averages stay inside each session. `[` and `]` go back to one session |
+| Chart one session or all of them | `W` | With all of them, solves merge by date and averages stay inside each session. `[` and `]` go back to one session |
 | Zoom in on the times chart | `Z` | Hold to keep zooming. See [Charts](#charts) |
 | Zoom out of the times chart | `Shift + Z` | Hold to keep zooming |
 | Reset the times chart zoom | `X` | |
@@ -66,7 +67,7 @@ press `Enter` or `Space` to open that solve.
 
 ## Charts
 
-`V`, `F`, `R`, `Shift + R`, `B`, `Z`, `Shift + Z` and `X` work on the charts screen
+`V`, `F`, `R`, `Shift + R`, `W`, `Z`, `Shift + Z` and `X` work on the charts screen
 and do nothing elsewhere.
 The arrow keys depend on the view:
 
@@ -95,6 +96,22 @@ cube-tui. The timer key is disabled and the digits show what you type:
   solve, then `Shift + D` for DNF or the details dialog for `+2` (the digit
   shortcut `2` types a digit while manual mode is on).
 - Press `M` again to return to the timer.
+
+## Bluetooth timers
+
+Press `B` to look for GAN timers. Turn yours on and it appears in the list:
+
+- `Up` and `Down` select a timer and `Enter` connects to it. Each timer is also
+  a button, reachable with `Tab` and pressed with `Enter` or `Space`.
+- The dialog closes once the timer is connected. Closing it while connecting
+  leaves the connection going, and the title bar icon shows how it went.
+- `B` again shows the connected timer, and `Enter` disconnects it. While
+  connecting, `Enter` cancels.
+
+While a timer is connected or connecting, the timer key and the digits do
+nothing: the solve starts and stops on the timer, and the digits follow it.
+`Esc` still cancels an attempt, so it is not recorded when the timer finishes.
+Inspection is not used. Every other shortcut works as usual.
 
 ## Keys inside dialogs
 

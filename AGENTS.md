@@ -18,9 +18,11 @@ same solve history, so a save from one must keep working in the other. See
 | `crates/cube-core` | Solves, statistics, the timer state machine, scrambles and persistence, with no GUI dependency |
 | `crates/cube-locale` | Translated strings (`en.rs`, `es.rs`) |
 | `crates/cube-updater` | GitHub release check, verified download and self-update |
+| `crates/cube-bluetooth` | GAN Bluetooth timers: protocol, scanning and connections on a background runtime |
 | `crates/cube-ui` | The GPUI interface |
 
-Dependency direction: `ui -> core`, `ui -> locale`, `ui -> updater`. **Only
+Dependency direction: `ui -> core`, `ui -> locale`, `ui -> updater`,
+`ui -> bluetooth -> core`. **Only
 `cube-ui` may depend on GPUI / `gpui-kit`**; keep everything else GUI-free so
 it builds and tests quickly. Put reusable logic in `cube-core`, not in the UI.
 
@@ -30,8 +32,8 @@ Run commands from the repo root. This repo uses plain `cargo` (there are no
 cargo aliases). CI builds on stable, so do not use nightly-only features.
 
 ```sh
-# Fast GUI-free tests (core logic, locales, updater)
-cargo test -p cube-core -p cube-locale -p cube-updater
+# Fast GUI-free tests (core logic, locales, updater, Bluetooth)
+cargo test -p cube-core -p cube-locale -p cube-updater -p cube-bluetooth
 
 # Full test suite
 cargo test --workspace
@@ -117,6 +119,13 @@ settings, import/export dialogs and help.
   is an error, never an empty history (treating it as empty would let the
   next save overwrite it). The app turns saving off in that case; preserve
   that behavior. Writes go through the atomic sibling-temp-file helper.
+- **Saving the history** goes through `history_writer::HistoryWriter`, never
+  a bare write. Its thread owns the `persistence::HistoryStore`, which merges
+  what cube-tui wrote (`cube-core::merge`), keeps backups, and refuses to
+  overwrite a file it can't read. cube-tui rewrites the whole file, so a
+  solve missing from it proves nothing: a merge must never let the file
+  remove a solve or a session. A merge reaches the UI as a `Merge` it adopts
+  only once no attempt or dialog is relying on solve positions.
 - **User-facing strings** go in `cube-locale` as fields on `Strings`, never
   hard-coded in the UI. A missing translation is a compile error by design:
   add the field, fill it in `en.rs` **and** `es.rs`, and keep `{placeholder}`
@@ -154,11 +163,13 @@ settings, import/export dialogs and help.
     view.
 - Timer/WCA behavior (inspection, hold-to-start, `+2`/DNF) lives in
   `cube-core::timer`; the UI only renders phases. Don't duplicate the rules
-  in `cube-ui`.
+  in `cube-ui`. That includes following a hardware timer: `cube-bluetooth`
+  turns its bytes into `HardwareState`, and `Timer::apply_hardware` decides
+  what they mean.
 - Lints are enforced at the workspace level: `unsafe_code = "forbid"` and
   pedantic clippy as warnings. No `unsafe`, and no new clippy warnings.
 - Add tests for new logic in the GUI-free crates (`cube-core`,
-  `cube-locale`); `cube-ui` has no test harness, so keep logic out of it.
+  `cube-locale`, `cube-bluetooth`); `cube-ui` has no test harness, so keep logic out of it.
 - Update `README.md` when you add or change a user-visible feature, a
   setting, or a key binding. When a key binding changes, update
   `docs/keybinds.md` as well: it is the complete keyboard reference.

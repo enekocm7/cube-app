@@ -11,6 +11,7 @@ use cube_core::theme;
 use cube_core::theme::{ThemeColor, ThemeFile};
 use cube_locale::{Language, Strings};
 use gpui_kit::assets::IconName;
+use gpui_kit::base::Disableable as _;
 use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::input::{Input, InputEvent, InputState};
@@ -100,6 +101,98 @@ impl SettingsView {
         .detach();
     }
 
+    /// Opens a picker for the folder of the user's own backups.
+    fn choose_backup_folder(&self, window: &mut Window, cx: &mut Context<Self>) {
+        let prompt = self.app.read(cx).strings().backup_folder_prompt;
+        let receiver = cx.prompt_for_paths(PathPromptOptions {
+            files: false,
+            directories: true,
+            multiple: false,
+            prompt: Some(prompt.into()),
+        });
+        let app = self.app.clone();
+        cx.spawn_in(window, async move |view, cx| match receiver.await {
+            Ok(Ok(Some(paths))) => {
+                if let Some(path) = paths.first() {
+                    let folder = path.to_string_lossy().into_owned();
+                    let _ = app.update_in(cx, |app, window, cx| {
+                        app.update_settings(window, cx, |settings| {
+                            settings.user_backup_dir = folder;
+                        });
+                    });
+                    let _ = view.update(cx, |_, cx| cx.notify());
+                }
+            }
+            Ok(Err(error)) => {
+                let _ = app.update_in(cx, |app, window, cx| {
+                    app.report_backup_error(&error, window, cx);
+                });
+            }
+            // Cancelled, or the window closed while the picker was open.
+            Ok(Ok(None)) | Err(_) => {}
+        })
+        .detach();
+    }
+
+    /// The folder of the user's own backups and the controls that change it.
+    fn backup_folder_row(&self, strings: &'static Strings, cx: &mut Context<Self>) -> AnyElement {
+        let folder = self.app.read(cx).settings.user_backup_dir.clone();
+        let chosen = !folder.is_empty();
+        let shown = if chosen {
+            folder
+        } else {
+            strings.backup_folder_none.to_owned()
+        };
+        h_flex()
+            .min_h(ROW_MIN_HEIGHT)
+            .px_3()
+            .py_2()
+            .gap_4()
+            .justify_between()
+            .text_sm()
+            .child(
+                v_flex()
+                    .flex_1()
+                    .min_w_0()
+                    .child(strings.setting_backup_folder)
+                    .child(
+                        div()
+                            .text_xs()
+                            .text_color(cx.theme().muted_foreground)
+                            .child(shown),
+                    ),
+            )
+            .child(
+                h_flex()
+                    .flex_none()
+                    .gap_2()
+                    .when(chosen, |this| {
+                        this.child(
+                            Button::new("backup-folder-clear")
+                                .small()
+                                .outline()
+                                .label(strings.backup_folder_clear)
+                                .on_click(cx.listener(|view, _, window, cx| {
+                                    view.change(window, cx, |settings| {
+                                        settings.user_backup_dir.clear();
+                                    });
+                                    cx.notify();
+                                })),
+                        )
+                    })
+                    .child(
+                        Button::new("backup-folder-choose")
+                            .small()
+                            .outline()
+                            .label(strings.backup_folder_button)
+                            .on_click(cx.listener(|view, _, window, cx| {
+                                view.choose_backup_folder(window, cx);
+                            })),
+                    ),
+            )
+            .into_any_element()
+    }
+
     fn change(
         &self,
         window: &mut Window,
@@ -111,8 +204,9 @@ impl SettingsView {
         });
     }
 
-    /// The csTimer import and export actions.
-    fn data_rows(&self, strings: &'static Strings, cx: &mut Context<Self>) -> [AnyElement; 2] {
+    /// The csTimer import and export actions and the user's backups.
+    fn data_rows(&self, strings: &'static Strings, cx: &mut Context<Self>) -> [AnyElement; 4] {
+        let no_folder = self.app.read(cx).settings.user_backup_dir.is_empty();
         [
             row(
                 strings.setting_import,
@@ -129,6 +223,18 @@ impl SettingsView {
                     .outline()
                     .label(strings.export_button)
                     .on_click(cx.listener(|view, _, window, cx| view.export(window, cx))),
+            ),
+            self.backup_folder_row(strings, cx),
+            row(
+                strings.setting_backup_now,
+                Button::new("backup-now")
+                    .small()
+                    .outline()
+                    .label(strings.backup_now_button)
+                    .disabled(no_folder)
+                    .on_click(cx.listener(|view, _, window, cx| {
+                        view.app.update(cx, |app, cx| app.back_up_now(window, cx));
+                    })),
             ),
         ]
     }
@@ -841,6 +947,14 @@ impl Render for SettingsView {
             [
                 format!("{} {}", strings.setting_import, strings.import_button),
                 format!("{} {}", strings.setting_export, strings.export_button),
+                format!(
+                    "{} {}",
+                    strings.setting_backup_folder, strings.backup_folder_button
+                ),
+                format!(
+                    "{} {}",
+                    strings.setting_backup_now, strings.backup_now_button
+                ),
             ],
             self.data_rows(strings, cx),
         );

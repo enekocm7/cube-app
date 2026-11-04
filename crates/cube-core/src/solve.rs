@@ -151,6 +151,28 @@ impl Solve {
         }
     }
 
+    /// Returns the event, scramble, date and time the solve was first recorded
+    /// with, which later edits do not change.
+    pub(crate) fn origin(&self) -> (WcaEvent, &str, u64, u64) {
+        match self.changes.first() {
+            Some(change) => {
+                let first = &change.before;
+                (
+                    first.event,
+                    &first.scramble,
+                    first.solved_at_unix_ms,
+                    first.time_ms,
+                )
+            }
+            None => (
+                self.event,
+                &self.scramble,
+                self.solved_at_unix_ms,
+                self.time_ms,
+            ),
+        }
+    }
+
     /// Applies an edit and records it in the audit trail.
     ///
     /// Returns `false`, recording nothing, when `after` changes nothing.

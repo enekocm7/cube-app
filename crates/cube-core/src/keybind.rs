@@ -35,6 +35,7 @@ pub enum Action {
     RedoDelete,
     OpenStats,
     OpenCharts,
+    OpenBluetooth,
     NextChartView,
     NextChartEvent,
     NextChartRange,
@@ -54,7 +55,7 @@ pub enum Action {
 
 impl Action {
     /// Every action, in the order the help dialog lists them.
-    pub const ALL: [Self; 38] = [
+    pub const ALL: [Self; 39] = [
         Self::Timer,
         Self::Cancel,
         Self::NextScramble,
@@ -78,6 +79,7 @@ impl Action {
         Self::RedoDelete,
         Self::OpenStats,
         Self::OpenCharts,
+        Self::OpenBluetooth,
         Self::NextChartView,
         Self::NextChartEvent,
         Self::NextChartRange,
@@ -121,6 +123,7 @@ impl Action {
             Self::RedoDelete => "redo_delete",
             Self::OpenStats => "open_stats",
             Self::OpenCharts => "open_charts",
+            Self::OpenBluetooth => "open_bluetooth",
             Self::NextChartView => "next_chart_view",
             Self::NextChartEvent => "next_chart_event",
             Self::NextChartRange => "next_chart_range",
@@ -327,11 +330,12 @@ impl Default for Keybinds {
             (Action::RedoDelete, "Ctrl+Y"),
             (Action::OpenStats, "a"),
             (Action::OpenCharts, "g"),
+            (Action::OpenBluetooth, "b"),
             (Action::NextChartView, "v"),
             (Action::NextChartEvent, "f"),
             (Action::NextChartRange, "r"),
             (Action::ChartDates, "Shift+R"),
-            (Action::ToggleChartSessions, "b"),
+            (Action::ToggleChartSessions, "w"),
             (Action::ChartZoomIn, "z"),
             (Action::ChartZoomOut, "Shift+Z"),
             (Action::ChartResetZoom, "x"),
@@ -796,6 +800,15 @@ mod tests {
     }
 
     #[test]
+    fn b_opens_the_bluetooth_dialog() {
+        let press = KeyPress::new("b", false, false, false).unwrap();
+        assert_eq!(
+            Keybinds::default().action_for(&press),
+            Some(Action::OpenBluetooth)
+        );
+    }
+
+    #[test]
     fn the_average_actions_have_their_default_keys() {
         let keybinds = Keybinds::default();
         let press = |key: &str, shift| KeyPress::new(key, false, false, shift).unwrap();
@@ -820,7 +833,7 @@ mod tests {
             ("f", false, Action::NextChartEvent),
             ("r", false, Action::NextChartRange),
             ("r", true, Action::ChartDates),
-            ("b", false, Action::ToggleChartSessions),
+            ("w", false, Action::ToggleChartSessions),
             ("z", false, Action::ChartZoomIn),
             ("z", true, Action::ChartZoomOut),
             ("x", false, Action::ChartResetZoom),

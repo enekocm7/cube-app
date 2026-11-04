@@ -66,10 +66,11 @@ for valid bindings.
 | `C` | Copy the selected average as text |
 | `A` | Show stats, or return to the timer |
 | `G` | Show charts, or return to the timer |
+| `B` | Connect or disconnect a Bluetooth timer |
 | `V` | Show the next charts view |
 | `F` | Filter charts by the next event |
 | `R` / `Shift + R` | Filter charts by the next range, or by custom dates |
-| `B` | Chart one session or all of them |
+| `W` | Chart one session or all of them |
 | `Z` / `Shift + Z` | Zoom the times chart in or out |
 | `X` | Reset the times chart zoom |
 | `Ctrl + ,` | Open settings |
@@ -98,6 +99,7 @@ Around the shortcuts:
 - Optional audio cues at 8 s and 12 s of inspection.
 - Hold colors that work like a stackmat's.
 - Start and stop with the keyboard, the mouse or touch.
+- GAN Bluetooth timers: connect one and its solves are recorded on their own.
 
 **Scrambles**
 
@@ -154,7 +156,7 @@ Open settings with `Ctrl + ,`. They are saved to `cube-gui.toml` (see [Your data
 | **Appearance** | Font, scramble size, scramble preview, ao5 in the solve list, an always-visible solve list scrollbar, notifications, and confirmation before deleting |
 | **Updates** | Automatic checks, release channel and check frequency. See [Updates](#updates) |
 | **Language** | English or Spanish |
-| **Data** | Import and export csTimer sessions. See [Import and export](#import-and-export) |
+| **Data** | Import and export csTimer sessions, and choose your own backup folder. See [Your data](#your-data) |
 
 Shortcuts are rebound from the `F1` panel instead. See [Keyboard shortcuts](#keyboard-shortcuts).
 
@@ -204,8 +206,9 @@ accent = "#FFD700"
 | Solves and sessions | `times.json` | Yes |
 | This app's settings | `cube-gui.toml` | No (cube-tui uses `config.toml`) |
 | Themes | `themes/` | Yes |
+| Backups of your solves | `backups/` | No |
 
-All three are in the same folder, cube-tui's data folder:
+They are all in the same folder, cube-tui's data folder:
 
 | System | Data folder |
 |---|---|
@@ -215,8 +218,13 @@ All three are in the same folder, cube-tui's data folder:
 
 Debug builds use a `debug` subfolder. The `CUBE_DATA_DIR` environment variable replaces the location entirely.
 
-> **Don't keep cube and cube-tui open at the same time.** Each one overwrites `times.json` with what it has in
-> memory, so the one that saves last wins and solves from the other can be lost. Close one before you open the other.
+cube and cube-tui can run at the same time: cube merges what cube-tui saved and tells you when it does. A solve only
+leaves your history when you delete it in cube, so close cube before deleting one in cube-tui.
+
+You can also choose a backup folder of your own in **Settings → Data**, such as a synced or external drive. It gets
+the same automatic backups, plus a **Back up** button for copies that are never removed.
+
+To restore a backup, close both apps and copy it over `times.json`.
 
 If `times.json` exists but can't be read, cube says so and turns saving off, so the file is never overwritten.
 

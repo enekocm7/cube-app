@@ -89,8 +89,23 @@ impl History {
         self.remark_single_records();
     }
 
+    pub(crate) fn solves_mut(&mut self) -> &mut [Solve] {
+        &mut self.times
+    }
+
+    /// Adds a solve after everything recorded no later than it, leaving the
+    /// order of the existing solves alone.
+    pub(crate) fn insert_chronologically(&mut self, solve: Solve) {
+        let index = self
+            .times
+            .iter()
+            .rposition(|other| other.solved_at_unix_ms() <= solve.solved_at_unix_ms())
+            .map_or(0, |index| index + 1);
+        self.times.insert(index, solve);
+    }
+
     /// Recomputes every record marker after a change that can reorder results.
-    fn remark_single_records(&mut self) {
+    pub(crate) fn remark_single_records(&mut self) {
         let mut best = None;
         for solve in &mut self.times {
             let ms = solve.effective_ms();
