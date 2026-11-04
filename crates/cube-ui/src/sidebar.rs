@@ -16,8 +16,6 @@ use gpui_kit::*;
 use crate::app::{CubeApp, average_label, format_average_at};
 use crate::palette::Palette;
 
-const SIDEBAR_WIDTH: Pixels = px(300.);
-
 /// The widest the session picker gets, however long the session's name is.
 const SESSION_MAX_WIDTH: Pixels = px(120.);
 
@@ -29,7 +27,11 @@ const AVERAGE_WIDTH: Pixels = px(64.);
 const LIST_AVERAGE_SIZE: usize = 5;
 
 impl CubeApp {
-    pub(crate) fn render_sidebar(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
+    pub(crate) fn render_sidebar(
+        &self,
+        width: Pixels,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement + use<> {
         let strings = self.strings();
         let count = self.session().len();
         let theme = cx.theme();
@@ -37,7 +39,7 @@ impl CubeApp {
         let show_average = self.settings.solve_list_ao5 && count > 0;
 
         v_flex()
-            .w(SIDEBAR_WIDTH)
+            .w(width)
             .flex_shrink_0()
             .h_full()
             .border_r_1()
