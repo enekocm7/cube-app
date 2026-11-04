@@ -3,6 +3,7 @@
 use cube_core::{Action, BindingError, KeyBinding, Keybinds};
 use cube_locale::Strings;
 use gpui_kit::assets::IconName;
+use gpui_kit::component::Size as ComponentSize;
 use gpui_kit::component::StyledExt as _;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::notification::Notification;
@@ -409,12 +410,12 @@ impl CubeApp {
                 .w_full()
                 .items_center()
                 .justify_between()
-                .pb_3()
+                .pb_2()
                 .child(strings.help_title)
                 .child(
                     Button::new("help-close-icon")
                         .ghost()
-                        .large()
+                        .with_size(ComponentSize::Size(px(36.)))
                         .icon(IconName::Close)
                         .tooltip(strings.close)
                         .accessibility_label(strings.close)
