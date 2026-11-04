@@ -18,7 +18,7 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::CubeApp;
-use crate::dialog_size::{DialogSize, dialog_body_height, dialog_title, dialog_width};
+use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_title, dialog_width};
 use crate::scroll_fade::FadeScroll;
 
 const ROW_MIN_HEIGHT: Pixels = px(44.);
@@ -423,27 +423,29 @@ impl Render for ThemeEditor {
             .collect();
         let max_height = dialog_body_height(DialogSize::WIDE, window);
 
-        FadeScroll::new("theme-editor", cx.theme().background)
-            .max_h(max_height)
-            .p_4()
-            .gap_5()
-            .child(row(
-                strings.theme_name,
-                div()
-                    .w(px(330.))
-                    .child(Input::new(&self.name).small().w_full()),
-            ))
-            .when_some(self.error.clone(), |body, error| {
-                body.child(div().text_sm().text_color(danger).child(error))
-            })
-            .child(section(strings.theme_colors, rows, cx))
-            .child(
-                div()
-                    .text_xs()
-                    .text_color(muted)
-                    .child(strings.theme_alpha_hint),
-            )
-            .child(self.render_preview(&colors, strings, cx))
+        dialog_body(
+            FadeScroll::new("theme-editor", cx.theme().background)
+                .max_h(max_height)
+                .p_4()
+                .gap_5()
+                .child(row(
+                    strings.theme_name,
+                    div()
+                        .w(px(330.))
+                        .child(Input::new(&self.name).small().w_full()),
+                ))
+                .when_some(self.error.clone(), |body, error| {
+                    body.child(div().text_sm().text_color(danger).child(error))
+                })
+                .child(section(strings.theme_colors, rows, cx))
+                .child(
+                    div()
+                        .text_xs()
+                        .text_color(muted)
+                        .child(strings.theme_alpha_hint),
+                )
+                .child(self.render_preview(&colors, strings, cx)),
+        )
     }
 }
 

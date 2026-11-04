@@ -15,7 +15,7 @@ use gpui_kit::component::{ActiveTheme as _, Sizable as _, WindowExt as _, h_flex
 use gpui_kit::*;
 
 use crate::app::CubeApp;
-use crate::dialog_size::{DialogSize, dialog_body_height, dialog_title, dialog_width};
+use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_title, dialog_width};
 use crate::scroll_fade::FadeScroll;
 
 /// Current time as a Unix timestamp, for update pacing.
@@ -286,12 +286,12 @@ impl CubeApp {
                 .title(dialog_title(title.clone(), close_label))
                 .close_button(false)
                 .w(dialog_width(DialogSize::STANDARD, window))
-                .child(
+                .child(dialog_body(
                     FadeScroll::new("release-notes", fade)
                         .max_h(dialog_body_height(DialogSize::STANDARD, window))
                         .text_sm()
                         .child(notes.clone()),
-                )
+                ))
                 .footer(
                     h_flex()
                         .w_full()
