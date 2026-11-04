@@ -35,6 +35,14 @@ pub enum Action {
     RedoDelete,
     OpenStats,
     OpenCharts,
+    NextChartView,
+    NextChartEvent,
+    NextChartRange,
+    ChartDates,
+    ToggleChartSessions,
+    ChartZoomIn,
+    ChartZoomOut,
+    ChartResetZoom,
     PreviousAverage,
     NextAverage,
     OpenAverage,
@@ -46,7 +54,7 @@ pub enum Action {
 
 impl Action {
     /// Every action, in the order the help dialog lists them.
-    pub const ALL: [Self; 30] = [
+    pub const ALL: [Self; 38] = [
         Self::Timer,
         Self::Cancel,
         Self::NextScramble,
@@ -70,6 +78,14 @@ impl Action {
         Self::RedoDelete,
         Self::OpenStats,
         Self::OpenCharts,
+        Self::NextChartView,
+        Self::NextChartEvent,
+        Self::NextChartRange,
+        Self::ChartDates,
+        Self::ToggleChartSessions,
+        Self::ChartZoomIn,
+        Self::ChartZoomOut,
+        Self::ChartResetZoom,
         Self::PreviousAverage,
         Self::NextAverage,
         Self::OpenAverage,
@@ -105,6 +121,14 @@ impl Action {
             Self::RedoDelete => "redo_delete",
             Self::OpenStats => "open_stats",
             Self::OpenCharts => "open_charts",
+            Self::NextChartView => "next_chart_view",
+            Self::NextChartEvent => "next_chart_event",
+            Self::NextChartRange => "next_chart_range",
+            Self::ChartDates => "chart_dates",
+            Self::ToggleChartSessions => "toggle_chart_sessions",
+            Self::ChartZoomIn => "chart_zoom_in",
+            Self::ChartZoomOut => "chart_zoom_out",
+            Self::ChartResetZoom => "chart_reset_zoom",
             Self::PreviousAverage => "previous_average",
             Self::NextAverage => "next_average",
             Self::OpenAverage => "open_average",
@@ -130,7 +154,11 @@ impl Action {
     pub const fn repeats(self) -> bool {
         matches!(
             self,
-            Self::NextScramble | Self::PreviousSolve | Self::NextSolve
+            Self::NextScramble
+                | Self::PreviousSolve
+                | Self::NextSolve
+                | Self::ChartZoomIn
+                | Self::ChartZoomOut
         )
     }
 }
@@ -299,6 +327,14 @@ impl Default for Keybinds {
             (Action::RedoDelete, "Ctrl+Y"),
             (Action::OpenStats, "a"),
             (Action::OpenCharts, "g"),
+            (Action::NextChartView, "v"),
+            (Action::NextChartEvent, "f"),
+            (Action::NextChartRange, "r"),
+            (Action::ChartDates, "Shift+R"),
+            (Action::ToggleChartSessions, "b"),
+            (Action::ChartZoomIn, "z"),
+            (Action::ChartZoomOut, "Shift+Z"),
+            (Action::ChartResetZoom, "x"),
             (Action::PreviousAverage, "Left"),
             (Action::NextAverage, "Right"),
             (Action::OpenAverage, "o"),
@@ -770,6 +806,24 @@ mod tests {
             ("o", false, Action::OpenAverage),
             ("o", true, Action::OpenBestAverage),
             ("c", false, Action::CopyAverage),
+        ] {
+            assert_eq!(keybinds.action_for(&press(key, shift)), Some(action));
+        }
+    }
+
+    #[test]
+    fn the_chart_actions_have_their_default_keys() {
+        let keybinds = Keybinds::default();
+        let press = |key: &str, shift| KeyPress::new(key, false, false, shift).unwrap();
+        for (key, shift, action) in [
+            ("v", false, Action::NextChartView),
+            ("f", false, Action::NextChartEvent),
+            ("r", false, Action::NextChartRange),
+            ("r", true, Action::ChartDates),
+            ("b", false, Action::ToggleChartSessions),
+            ("z", false, Action::ChartZoomIn),
+            ("z", true, Action::ChartZoomOut),
+            ("x", false, Action::ChartResetZoom),
         ] {
             assert_eq!(keybinds.action_for(&press(key, shift)), Some(action));
         }

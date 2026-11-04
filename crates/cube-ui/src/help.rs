@@ -62,6 +62,16 @@ const SCREEN_ACTIONS: [Action; 4] = [
     Action::OpenSettings,
     Action::ShowHelp,
 ];
+const CHART_ACTIONS: [Action; 8] = [
+    Action::NextChartView,
+    Action::NextChartEvent,
+    Action::NextChartRange,
+    Action::ChartDates,
+    Action::ToggleChartSessions,
+    Action::ChartZoomIn,
+    Action::ChartZoomOut,
+    Action::ChartResetZoom,
+];
 
 /// The shortcut reference, with an edit mode for rebinding.
 struct KeybindsView {
@@ -319,6 +329,7 @@ impl Render for KeybindsView {
             (strings.help_section_events_sessions, &SESSION_ACTIONS[..]),
             (strings.help_section_averages, &AVERAGE_ACTIONS[..]),
             (strings.help_section_screens, &SCREEN_ACTIONS[..]),
+            (strings.help_section_charts, &CHART_ACTIONS[..]),
         ];
         let capture_hint = self.capturing.map(|action| {
             strings
@@ -438,6 +449,14 @@ fn action_label(strings: &'static Strings, action: Action) -> &'static str {
         Action::RedoDelete => strings.action_redo_delete,
         Action::OpenStats => strings.action_open_stats,
         Action::OpenCharts => strings.action_open_charts,
+        Action::NextChartView => strings.action_next_chart_view,
+        Action::NextChartEvent => strings.action_next_chart_event,
+        Action::NextChartRange => strings.action_next_chart_range,
+        Action::ChartDates => strings.action_chart_dates,
+        Action::ToggleChartSessions => strings.action_toggle_chart_sessions,
+        Action::ChartZoomIn => strings.action_chart_zoom_in,
+        Action::ChartZoomOut => strings.action_chart_zoom_out,
+        Action::ChartResetZoom => strings.action_chart_reset_zoom,
         Action::PreviousAverage => strings.action_previous_average,
         Action::NextAverage => strings.action_next_average,
         Action::OpenAverage => strings.action_open_average,

@@ -4,6 +4,7 @@
 //! The on-disk formats are shared with [cube-tui](https://github.com/enekocm7/cube-tui),
 //! so both applications read and write the same solve history.
 
+pub mod charts;
 pub mod cstimer;
 pub mod dialog_keys;
 pub mod dialogs;

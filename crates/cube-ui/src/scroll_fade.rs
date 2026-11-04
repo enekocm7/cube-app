@@ -38,6 +38,7 @@ pub(crate) struct FadeScroll {
     content: Div,
     color: Hsla,
     nested: bool,
+    handle: Option<ScrollHandle>,
 }
 
 impl FadeScroll {
@@ -48,6 +49,7 @@ impl FadeScroll {
             content: v_flex(),
             color: color.into(),
             nested: false,
+            handle: None,
         }
     }
 
@@ -55,6 +57,13 @@ impl FadeScroll {
     /// scroller, handing the wheel over only once this one reaches an edge.
     pub(crate) fn nested(mut self) -> Self {
         self.nested = true;
+        self
+    }
+
+    /// Scroll with `handle` instead of one of its own, so the owner can move
+    /// the region from the keyboard.
+    pub(crate) fn track(mut self, handle: &ScrollHandle) -> Self {
+        self.handle = Some(handle.clone());
         self
     }
 }
@@ -83,12 +92,14 @@ impl RenderOnce for FadeScroll {
     fn render(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         // The scroll position outlives a frame, so the handle lives in the
         // window's keyed state under this component's position and id.
-        let handle = window
-            .use_keyed_state((self.id.clone(), "scroll"), cx, |_, _| {
-                ScrollHandle::default()
-            })
-            .read(cx)
-            .clone();
+        let handle = self.handle.take().unwrap_or_else(|| {
+            window
+                .use_keyed_state((self.id.clone(), "scroll"), cx, |_, _| {
+                    ScrollHandle::default()
+                })
+                .read(cx)
+                .clone()
+        });
 
         // The region owns the size; the content is free to grow past it so it
         // can scroll. This mirrors what `overflow_y_scrollbar` does.
