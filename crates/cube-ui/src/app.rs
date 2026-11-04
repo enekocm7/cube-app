@@ -15,8 +15,12 @@ use cube_core::{
 use cube_locale::{Language, Strings};
 use cube_updater::Release;
 use gpui_kit::assets::IconName;
+use gpui_kit::component::Selectable as _;
+use gpui_kit::component::Sizable as _;
+use gpui_kit::component::button::{Button, ButtonVariants as _};
+use gpui_kit::component::menu::{DropdownMenu as _, PopupMenuItem};
 use gpui_kit::component::notification::Notification;
-use gpui_kit::component::{ActiveTheme as _, TitleBar, WindowExt as _, h_flex, v_flex};
+use gpui_kit::component::{ActiveTheme as _, Icon, TitleBar, WindowExt as _, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
@@ -137,6 +141,12 @@ pub struct CubeApp {
     /// new widths are saved once the mouse goes up.
     pub(crate) panel_resizing: bool,
 }
+
+/// The padding `TitleBar` leaves before its content (`gpui-kit` keeps it private).
+#[cfg(target_os = "macos")]
+const TITLE_BAR_LEFT_PADDING: Pixels = px(80.);
+#[cfg(not(target_os = "macos"))]
+const TITLE_BAR_LEFT_PADDING: Pixels = px(12.);
 
 /// How many deletions Undo remembers.
 const UNDO_LIMIT: usize = 100;
@@ -1133,11 +1143,84 @@ impl CubeApp {
         window.push_notification(Notification::error(message), cx);
     }
 
-    fn render_title_bar(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
-        use gpui_kit::component::Selectable as _;
-        use gpui_kit::component::Sizable as _;
-        use gpui_kit::component::button::{Button, ButtonVariants as _};
+    /// The current event and the control to skip its scramble.
+    pub(crate) fn render_event_picker(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
+        let strings = self.strings();
+        let entity = cx.entity().downgrade();
+        let event = self.event;
 
+        // The picker alone is centered; the scramble button hangs off its right edge
+        // so it does not pull the picker off the middle.
+        // Full bar height, so the scramble button centers on the bar and not on the
+        // picker's own box.
+        h_flex()
+            .relative()
+            .flex_none()
+            .h_full()
+            .items_center()
+            .child(
+                div().occlude().flex_none().child(
+                    Button::new("event")
+                        .text()
+                        // An equal spacer balances the arrow, so the label itself is what
+                        // sits in the middle.
+                        .child(
+                            h_flex()
+                                .gap_1()
+                                .items_center()
+                                .text_base()
+                                .child(div().w(px(14.)))
+                                .child(event.name())
+                                .child(Icon::new(IconName::ChevronDown).size(px(14.))),
+                        )
+                        .tab_stop(false)
+                        .dropdown_menu(move |mut menu, _, _| {
+                            for item in WcaEvent::ALL {
+                                let entity = entity.clone();
+                                menu = menu.item(
+                                    PopupMenuItem::new(item.name())
+                                        .checked(item == event)
+                                        .on_click(move |_, _, cx| {
+                                            entity
+                                                .update(cx, |app, cx| app.set_event(item, cx))
+                                                .ok();
+                                        }),
+                                );
+                            }
+                            menu
+                        }),
+                ),
+            )
+            .child(
+                div()
+                    .absolute()
+                    .left_full()
+                    .top_0()
+                    .bottom_0()
+                    .ml_1()
+                    .child(
+                        h_flex().occlude().h_full().items_center().child(
+                            Button::new("next-scramble")
+                                .ghost()
+                                .small()
+                                .flex_none()
+                                .icon(IconName::Redo)
+                                .tooltip(strings.new_scramble)
+                                .tab_stop(false)
+                                .on_click(cx.listener(|app, _, window, cx| {
+                                    app.skip_scramble(cx);
+                                    app.focus.focus(window, cx);
+                                })),
+                        ),
+                    ),
+            )
+    }
+
+    fn render_title_bar(
+        &self,
+        window: &Window,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement + use<> {
         let strings = self.strings();
         let tab =
             |id: &'static str, label: &'static str, screen: Screen, cx: &mut Context<Self>| {
@@ -1157,8 +1240,8 @@ impl CubeApp {
             };
         TitleBar::new().child(
             h_flex()
+                .relative()
                 .w_full()
-                .pr_2()
                 .justify_between()
                 .child(
                     h_flex()
@@ -1180,9 +1263,25 @@ impl CubeApp {
                                 .child(tab("nav-stats", strings.nav_stats, Screen::Stats, cx)),
                         ),
                 )
+                // Centered on the window, not on the space the tabs and the window
+                // controls leave: the overlay starts where the title bar's own left
+                // padding ends and is as wide as the window. It lets clicks through;
+                // only the group is occluded.
+                .child(
+                    h_flex()
+                        .absolute()
+                        .top_0()
+                        .bottom_0()
+                        .left(-TITLE_BAR_LEFT_PADDING)
+                        .w(window.viewport_size().width)
+                        .justify_center()
+                        .items_center()
+                        .child(self.render_event_picker(cx)),
+                )
                 .child(
                     h_flex()
                         .occlude()
+                        .mr_2()
                         .gap_1()
                         .child(
                             Button::new("open-help")
@@ -1259,7 +1358,7 @@ impl Render for CubeApp {
             .text_color(theme.foreground)
             .on_key_down(cx.listener(Self::on_key_down))
             .on_key_up(cx.listener(Self::on_key_up))
-            .child(self.render_title_bar(cx))
+            .child(self.render_title_bar(window, cx))
             .child(body)
     }
 }

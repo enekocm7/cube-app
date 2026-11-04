@@ -1,9 +1,9 @@
-//! The left panel: the session and event pickers and the session's solves,
+//! The left panel: the session picker and the session's solves,
 //! newest first.
 
 use std::ops::Range;
 
-use cube_core::{Modifier, WcaEvent};
+use cube_core::Modifier;
 use gpui_kit::assets::IconName;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::input::{Input, InputState};
@@ -160,63 +160,10 @@ impl CubeApp {
                         }),
                 ),
             )
+            .child(div().flex_1())
             .child(self.render_session_actions(cx));
 
-        h_flex()
-            .p_2()
-            .gap_2()
-            .justify_between()
-            .child(session)
-            .child(self.render_event_picker(cx))
-    }
-
-    /// The current event and the control to skip its scramble.
-    fn render_event_picker(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
-        let strings = self.strings();
-        let entity = cx.entity().downgrade();
-        let event = self.event;
-
-        h_flex()
-            .flex_none()
-            .gap_1()
-            .child(
-                div().flex_none().child(
-                    Button::new("event")
-                        .text()
-                        .small()
-                        .label(event.name())
-                        .dropdown_caret(true)
-                        .tab_stop(false)
-                        .dropdown_menu(move |mut menu, _, _| {
-                            for item in WcaEvent::ALL {
-                                let entity = entity.clone();
-                                menu = menu.item(
-                                    PopupMenuItem::new(item.name())
-                                        .checked(item == event)
-                                        .on_click(move |_, _, cx| {
-                                            entity
-                                                .update(cx, |app, cx| app.set_event(item, cx))
-                                                .ok();
-                                        }),
-                                );
-                            }
-                            menu
-                        }),
-                ),
-            )
-            .child(
-                Button::new("next-scramble")
-                    .ghost()
-                    .small()
-                    .flex_none()
-                    .icon(IconName::Redo)
-                    .tooltip(strings.new_scramble)
-                    .tab_stop(false)
-                    .on_click(cx.listener(|app, _, window, cx| {
-                        app.skip_scramble(cx);
-                        app.focus.focus(window, cx);
-                    })),
-            )
+        h_flex().p_2().gap_2().justify_between().child(session)
     }
 
     fn render_session_actions(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
