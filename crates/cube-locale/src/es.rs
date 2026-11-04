@@ -131,6 +131,7 @@ pub const STRINGS: Strings = Strings {
     settings_data: "Datos",
     setting_inspection: "Inspección WCA",
     setting_inspection_audio: "Avisos de audio de inspección (8 s y 12 s)",
+    setting_touch_to_start: "Tocar los dígitos para iniciar o detener el cronómetro",
     setting_toasts: "Mostrar notificaciones",
     setting_accurate: "Mezclas de 3x3x3 más cortas (tardan más en generarse)",
     setting_solve_list_ao5: "Mostrar ao5 en la lista de solves",

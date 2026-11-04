@@ -16,7 +16,7 @@ nothing is selected.
 
 | Action | Default | Notes |
 |---|---|---|
-| Start or stop the timer | `Space` | Hold and release to start the solve. Pressing and releasing the digits with the left mouse button or a touch does the same |
+| Start or stop the timer | `Space` | Hold and release to start the solve. Pressing and releasing the digits with the left mouse button or a touch does the same while **Timer → Touch the digits to start or stop the timer** is on (off by default) |
 | Cancel the current attempt | `Esc` | Does not record the solve; on the stats or charts screen it returns to the timer |
 | New scramble | `N` | |
 | Turn inspection on or off | `I` | |
