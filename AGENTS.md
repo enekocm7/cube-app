@@ -72,6 +72,29 @@ Notes:
   commands you ran and their result).
 - Branch off `main`; never commit directly to `main`.
 
+## Keyboard support
+
+**cube must stay fully controllable from the keyboard.** The mouse is a
+convenience, never the only way to do something. That includes the timer,
+scrambles, solve navigation and editing, penalties, events, sessions, stats,
+settings, import/export dialogs and help.
+
+- Every primary action needs an `Action` in `cube-core::keybind`, a default in
+  `Keybinds::default`, a row in the `F1` keyboard shortcuts panel, and an entry
+  in `docs/keybinds.md`. That panel is also the editor: keep its pencil, trash
+  and capture controls reachable with `Tab` and activatable with `Enter` or
+  `Space`; do not make the mouse the only way to reach a control.
+- Bindings are validated before they are saved: the key must be understood, it
+  must not already belong to another action, the timer key must be unmodified,
+  and the timer key cannot be removed. Show the user a specific error rather
+  than silently ignoring an invalid change.
+- All actions except the timer can be unbound. Persist a removal explicitly
+  (`""` or `"none"` in `[keybindings]`) so a copied default does not return.
+- Keep `docs/keybinds.md` and the README shortcut table in sync with the
+  defaults whenever you add or change a binding.
+- Parsing, matching and validation belong in `cube-core::keybind` and need
+  tests there. `cube-ui` only captures a key and renders the result.
+
 ## Code conventions
 
 - **Shared save format.** `times.json` is cube-tui's file and this app reads
@@ -129,4 +152,5 @@ Notes:
 - Add tests for new logic in the GUI-free crates (`cube-core`,
   `cube-locale`); `cube-ui` has no test harness, so keep logic out of it.
 - Update `README.md` when you add or change a user-visible feature, a
-  setting, or a key binding.
+  setting, or a key binding. When a key binding changes, update
+  `docs/keybinds.md` as well: it is the complete keyboard reference.

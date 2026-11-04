@@ -9,6 +9,7 @@ pub mod dialogs;
 pub mod event;
 pub mod format;
 pub mod history;
+pub mod keybind;
 pub mod panels;
 pub mod persistence;
 pub mod scramble;
@@ -21,6 +22,7 @@ pub mod validation;
 
 pub use event::WcaEvent;
 pub use history::History;
+pub use keybind::{Action, BindingError, KeyBinding, KeyPress, Keybinds};
 pub use settings::{Settings, UpdateChannel, UpdateFrequency, UpdateSettings};
 pub use solve::{Modifier, Solve, SolveChange, SolveSnapshot};
 pub use timer::{InspectionCue, Readiness, Timer, TimerOutcome, TimerPhase};

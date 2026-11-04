@@ -3,7 +3,7 @@
 use std::time::Instant;
 
 use cube_core::format::format_ms;
-use cube_core::{Modifier, Readiness, TimerPhase};
+use cube_core::{Action, Modifier, Readiness, TimerPhase};
 use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::tooltip::Tooltip;
 use gpui_kit::component::{ActiveTheme as _, Selectable as _, Sizable as _, h_flex, v_flex};
@@ -33,7 +33,7 @@ const SCRAMBLE_MAX_LINES: f32 = 8.;
 struct Display {
     text: String,
     color: Hsla,
-    hint: Option<&'static str>,
+    hint: Option<String>,
 }
 
 impl CubeApp {
@@ -79,6 +79,10 @@ impl CubeApp {
     fn display(&self, cx: &App) -> Display {
         let now = Instant::now();
         let strings = self.strings();
+        let timer_key = self
+            .keybinds()
+            .label(Action::Timer)
+            .unwrap_or_else(|| strings.unassigned.to_owned());
         let colors = Palette::of(cx);
         let foreground = cx.theme().foreground;
         let held = match self.timer.readiness(now) {
@@ -101,13 +105,13 @@ impl CubeApp {
                     hint: self
                         .settings
                         .shows_start_hint()
-                        .then_some(strings.hint_start),
+                        .then(|| strings.hint_start.replace("{key}", &timer_key)),
                 }
             }
             TimerPhase::Holding { .. } => Display {
                 text: format_ms(0),
                 color: held.map_or(foreground, |(color, _)| color),
-                hint: held.map(|(_, hint)| hint),
+                hint: held.map(|(_, hint)| hint.replace("{key}", &timer_key)),
             },
             TimerPhase::Inspecting { .. } => {
                 let elapsed = self.timer.elapsed(now);
@@ -125,13 +129,13 @@ impl CubeApp {
                 Display {
                     text,
                     color,
-                    hint: Some(hint),
+                    hint: Some(hint.replace("{key}", &timer_key)),
                 }
             }
             TimerPhase::Running { .. } => Display {
                 text: format_ms(self.timer.elapsed(now).as_millis() as u64),
                 color: foreground,
-                hint: Some(strings.hint_stop),
+                hint: Some(strings.hint_stop.replace("{key}", &timer_key)),
             },
         }
     }

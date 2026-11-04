@@ -12,6 +12,7 @@ mod audio;
 mod details;
 mod dialog_size;
 mod fonts;
+mod help;
 mod palette;
 mod panel_resize;
 mod scroll_fade;

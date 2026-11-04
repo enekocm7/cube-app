@@ -19,6 +19,8 @@ solve history, so you can move between the terminal and the desktop without impo
 - Current and best single, mo3, ao5, ao12, ao50 and ao100, plus mean, deviation and DNF count
 - Stats screen with charts of your times, your ao5 and their distribution
 - Light and dark themes, plus cube-tui TOML themes with a color-picker editor
+- Fully keyboard-controllable: every timer, solve, event, session and screen action has a rebindable shortcut, any
+  key stops the timer, and `F1` lists the bindings
 - Optional bundled JetBrains Mono for the timer digits, all times, or the whole interface
 - Import and export csTimer sessions, with file pickers, from Settings → Data
 - Checks GitHub for new releases and updates itself, verifying the download against the release's SHA-256
@@ -42,21 +44,51 @@ cargo run --release
 
 ## How to use it
 
+cube is designed to be fully usable from the keyboard: every action below has a shortcut, dialogs stay reachable
+with `Tab`, `Enter` and `Space`, and the **Edit** button on the `F1` shortcuts panel rebinds or removes them. See
+[docs/keybinds.md](docs/keybinds.md) for the full reference, the key name syntax, and how to change bindings from
+`cube-gui.toml`.
+
 | Key | Action |
 |---|---|
 | `Space` | Start inspection, or hold and release to start the solve, and press to stop |
-| `Esc` | Cancel the current attempt without recording it |
+| Any other key | Stop a running solve |
+| `Esc` | Cancel the current attempt without recording it, or leave the stats screen |
+| `N` | New scramble |
+| `I` | Turn WCA inspection on or off |
+| `Up` / `Down` | Select a newer or older solve |
+| `Enter` | Open the selected solve's details |
+| `D` | Delete the selected solve |
+| `2` | Toggle `+2` on the selected solve |
+| `Shift + D` | Toggle DNF on the selected solve |
+| `E` / `Shift + E` | Next / previous event |
+| `]` / `[` | Next / previous session |
+| `S` | New session |
+| `F2` | Rename session |
+| `Shift + S` | Delete session |
+| `A` | Show stats, or return to the timer |
+| `Ctrl + ,` | Open settings |
+| `F1` | Open the keyboard shortcuts |
 
-Click a solve in the list to see its details or edit it.
+Actions that need a solve use the keyboard selection, or the latest solve when nothing is
+selected. Click a solve in the list to see its details or edit it.
+
+Hold `N`, `Up` or `Down` to repeat: scrambles keep coming and navigation keeps moving until you release the key.
 
 Dialogs size themselves to the window: settings, solve details and the theme editor get wider and taller on a large
 screen, and scroll their bodies when the window is too small to show everything.
 
-Drag the inner edge of the solve list or the statistics panel to resize it. Neither panel gets narrower than
-180 px, and double-click an edge to restore its default width. The widths are remembered between launches.
+`F1` opens the shortcuts panel. Its **Edit** button (opposite **Close**) shows a pencil to rebind an action and a
+danger-coloured trash can to remove its shortcut. Bindings can also be edited by hand in the `[keybindings]` table
+in `cube-gui.toml`; [docs/keybinds.md](docs/keybinds.md) documents every action, the key syntax and the validation
+rules.
 
-The "Press space to start" hint is only shown until you start your first solve, so the timer stays clean once you
-know the controls.
+Drag the inner edge of the solve list or the statistics panel to resize it. Neither panel gets
+narrower than 180 px, and double-click an edge to restore its default width. The widths are
+remembered between launches.
+
+The start hint is only shown until you start your first solve, so the timer stays clean once you
+know the controls. It names whichever key the timer is bound to.
 
 Times use the system's monospace font. **Settings → Appearance → Font** can switch to
 [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) for the timer only, for every time, or for the whole
