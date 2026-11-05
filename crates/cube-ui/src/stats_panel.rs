@@ -119,37 +119,6 @@ impl CubeApp {
                 ),
             ))
             .children(windows)
-            .child(div().my_2().mx_3().h(px(1.)).bg(border))
-            .children(self.render_summary(cx))
-    }
-
-    /// The whole-session figures under the averages.
-    fn render_summary(&self, cx: &App) -> [impl IntoElement + use<>; 5] {
-        let strings = self.strings();
-        let stats = &self.stats;
-        let theme = cx.theme();
-        let muted = theme.muted_foreground;
-        let mono = theme.mono_font_family.clone();
-        let optional_ms = |ms: Option<u64>| ms.map_or_else(|| "–".to_owned(), format_ms);
-        let summary = |label: &'static str, value: String| {
-            h_flex()
-                .h(px(26.))
-                .px_3()
-                .justify_between()
-                .text_sm()
-                .child(div().text_color(muted).child(label))
-                .child(div().font_family(mono.clone()).child(value))
-        };
-        [
-            summary(strings.stat_mean, optional_ms(stats.mean)),
-            summary(strings.stat_std_dev, optional_ms(stats.std_dev)),
-            summary(
-                strings.stat_worst,
-                optional_ms(stats.worst.map(|(ms, _)| ms)),
-            ),
-            summary(strings.stat_solves, stats.count.to_string()),
-            summary(strings.stat_dnfs, stats.dnf_count.to_string()),
-        ]
     }
 }
 

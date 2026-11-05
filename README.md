@@ -43,7 +43,7 @@ for valid bindings.
 |---|---|
 | `Space` | Start inspection, hold and release to start the solve, press to stop |
 | Any other key | Stop a running solve |
-| Left mouse button or touch on the digits | Same as the timer key: hold and release to start, click to stop |
+| Left mouse button or touch on the digits | Same as the timer key when **Timer → Touch the digits** is on (off by default) |
 | `Esc` | Cancel the current attempt without recording it, or leave the stats or charts screen |
 | `N` | New scramble (hold to keep generating) |
 | `I` | Turn WCA inspection on or off |
@@ -67,6 +67,12 @@ for valid bindings.
 | `A` | Show stats, or return to the timer |
 | `G` | Show charts, or return to the timer |
 | `B` | Connect or disconnect a Bluetooth timer |
+| `V` | Show the next charts view |
+| `F` | Filter charts by the next event |
+| `R` / `Shift + R` | Filter charts by the next range, or by custom dates |
+| `W` | Chart one session or all of them |
+| `Z` / `Shift + Z` | Zoom the times chart in or out |
+| `X` | Reset the times chart zoom |
 | `Ctrl + ,` | Open settings |
 | `F1` | Open the keyboard shortcuts |
 
@@ -92,7 +98,7 @@ Around the shortcuts:
 - WCA inspection that counts up to 15 seconds. `+2` and DNF are applied automatically.
 - Optional audio cues at 8 s and 12 s of inspection.
 - Hold colors that work like a stackmat's.
-- Start and stop with the keyboard, the mouse or touch.
+- Start and stop with the keyboard, optionally with the mouse or touch.
 - GAN Bluetooth timers: connect one and its solves are recorded on their own.
 
 **Scrambles**
@@ -114,14 +120,18 @@ Around the shortcuts:
 - A stats screen with a heat-mapped table of every solve's rolling averages. Click a value, in the table or the stats
   panel, to see the solves behind it and how far each landed from the average, with the trimmed ones marked. Copy an
   average as text to share it.
-- A charts screen with your times, your ao5 and their distribution.
+- A charts screen with your times, ao5, ao12 and ao100, personal bests, DNFs and the distribution of your times.
+- Chart filters by session, event, last solves and dates.
+- Zoom on the times chart with the mouse wheel.
+- A calendar of solves per day, a comparison of sessions and your all-time bests per event.
 
 **Interface**
 
 - Light and dark themes, plus cube-tui TOML themes with a color-picker editor. See [Themes](#themes).
 - Optional bundled [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) for the timer digits, all times, or
   the whole interface.
-- English and Spanish.
+- Sixteen languages, including English, Spanish, German, French, Japanese and Chinese. Dates and counts follow the
+  chosen language.
 - Resizable solve list and statistics panels. Drag the inner edge of a panel to resize it (180 to 350 px) and
   double-click the edge to restore its default width.
 - Dialogs size themselves to the window. Settings, solve details and the theme editor grow on a large screen and
@@ -142,12 +152,12 @@ Open settings with `Ctrl + ,`. They are saved to `cube-gui.toml` (see [Your data
 
 | Section | What you can change |
 |---|---|
-| **Timer** | WCA inspection, its 8 s and 12 s audio cues, and shorter 3x3x3 scrambles (slower to generate) |
+| **Timer** | WCA inspection, its 8 s and 12 s audio cues, touching the digits to start or stop, and shorter 3x3x3 scrambles (slower to generate) |
 | **Font size** | Font, interface text size, timer size and scramble size, each with presets and a custom point size |
 | **Theme** | Light, dark or system, and your theme files. See [Themes](#themes) |
 | **Appearance** | Scramble preview, ao5 in the solve list, an always-visible solve list scrollbar, notifications, and confirmation before deleting |
 | **Updates** | Automatic checks, release channel and check frequency. See [Updates](#updates) |
-| **Language** | English or Spanish |
+| **Language** | Sixteen languages, including English and Spanish |
 | **Data** | Import and export csTimer sessions, and choose your own backup folder. See [Your data](#your-data) |
 
 Shortcuts are rebound from the `F1` panel instead. See [Keyboard shortcuts](#keyboard-shortcuts).

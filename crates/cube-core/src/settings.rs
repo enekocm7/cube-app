@@ -283,6 +283,8 @@ pub struct Settings {
     pub inspection: bool,
     /// Plays the 8-second and 12-second inspection warnings.
     pub inspection_audio: bool,
+    /// Touching the digits starts and stops the timer like the timer key.
+    pub touch_to_start: bool,
     /// Inspection length in milliseconds.
     pub inspection_limit_ms: u64,
     /// How long the timer key must be held, in milliseconds.
@@ -353,6 +355,7 @@ impl Default for Settings {
         Self {
             inspection: true,
             inspection_audio: false,
+            touch_to_start: false,
             inspection_limit_ms: 15_000,
             hold_ms: DEFAULT_HOLD.as_millis() as u64,
             theme: ThemePreference::default(),
@@ -500,6 +503,19 @@ mod tests {
         assert!(!Settings::default().inspection_audio);
         let settings: Settings = toml::from_str("inspection_audio = true").unwrap();
         assert!(settings.inspection_audio);
+    }
+
+    #[test]
+    fn touch_to_start_is_off_by_default_and_round_trips() {
+        assert!(!Settings::default().touch_to_start);
+        let settings: Settings = toml::from_str("inspection = false").unwrap();
+        assert!(!settings.touch_to_start);
+        let on = Settings {
+            touch_to_start: true,
+            ..Settings::default()
+        };
+        let text = toml::to_string(&on).unwrap();
+        assert!(toml::from_str::<Settings>(&text).unwrap().touch_to_start);
     }
 
     #[test]

@@ -267,20 +267,28 @@ impl SettingsView {
         )
     }
 
-    fn languages(&self, current: &str, cx: &mut Context<Self>) -> Vec<Button> {
+    /// The language choices, wrapped into short rows so sixteen languages fit.
+    fn languages(&self, current: &str, cx: &mut Context<Self>) -> Vec<AnyElement> {
         Language::ALL
-            .into_iter()
-            .map(|language| {
-                choice(
-                    language.code(),
-                    language.native_name(),
-                    Language::from_code(current) == Some(language),
-                )
-                .on_click(cx.listener(move |view, _, window, cx| {
-                    view.change(window, cx, move |settings| {
-                        language.code().clone_into(&mut settings.language);
-                    });
-                }))
+            .chunks(4)
+            .map(|row| {
+                h_flex()
+                    .gap_2()
+                    .children(row.iter().copied().map(|language| {
+                        choice(
+                            language.code(),
+                            language.native_name(),
+                            Language::from_code(current) == Some(language),
+                        )
+                        .on_click(cx.listener(
+                            move |view, _, window, cx| {
+                                view.change(window, cx, move |settings| {
+                                    language.code().clone_into(&mut settings.language);
+                                });
+                            },
+                        ))
+                    }))
+                    .into_any_element()
             })
             .collect()
     }
@@ -927,6 +935,7 @@ impl Render for SettingsView {
             [
                 state(strings.setting_inspection, settings.inspection),
                 state(strings.setting_inspection_audio, settings.inspection_audio),
+                state(strings.setting_touch_to_start, settings.touch_to_start),
                 state(strings.setting_accurate, settings.accurate_3x3),
             ],
             [
@@ -942,6 +951,13 @@ impl Render for SettingsView {
                     strings.setting_inspection_audio,
                     settings.inspection_audio,
                     |settings, value| settings.inspection_audio = value,
+                    cx,
+                ),
+                self.switch(
+                    "touch-to-start",
+                    strings.setting_touch_to_start,
+                    settings.touch_to_start,
+                    |settings, value| settings.touch_to_start = value,
                     cx,
                 ),
                 self.switch(
@@ -1139,9 +1155,10 @@ impl Render for SettingsView {
             });
         let language = tagged(
             [language_text],
-            [h_flex()
+            [v_flex()
                 .min_h(ROW_MIN_HEIGHT)
                 .px_3()
+                .py_2()
                 .gap_2()
                 .children(languages)
                 .into_any_element()],

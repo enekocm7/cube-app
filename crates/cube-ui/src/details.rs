@@ -1,6 +1,5 @@
 //! The solve details dialog, which is also where a solve is edited.
 
-use chrono::{DateTime, Local};
 use cube_core::format::{format_ms, parse_time};
 use cube_core::validation::{
     format_date_input, parse_date, parse_date_input, validate_comment, validate_duration,
@@ -65,6 +64,7 @@ struct SolveForm {
     date_error: Option<String>,
     comment_error: Option<String>,
     strings: &'static cube_locale::Strings,
+    language: cube_locale::Language,
 }
 
 impl SolveForm {
@@ -145,8 +145,11 @@ impl SolveForm {
             .map(|(index, change)| {
                 let header = strings
                     .history_revision
-                    .replace("{number}", &(index + 1).to_string())
-                    .replace("{date}", &format_date(change.changed_at_unix_ms, strings));
+                    .replace("{number}", &self.language.format_count((index + 1) as u64))
+                    .replace(
+                        "{date}",
+                        &format_date(change.changed_at_unix_ms, self.language, strings),
+                    );
                 let before = &change.before;
                 let after = &change.after;
                 let fields: [(&'static str, String, String, bool); 6] = [
@@ -176,8 +179,8 @@ impl SolveForm {
                     ),
                     (
                         strings.field_date,
-                        format_date(before.solved_at_unix_ms, strings),
-                        format_date(after.solved_at_unix_ms, strings),
+                        format_date(before.solved_at_unix_ms, self.language, strings),
+                        format_date(after.solved_at_unix_ms, self.language, strings),
                         false,
                     ),
                     (
@@ -387,7 +390,9 @@ impl SolveForm {
         let toggle_label = if self.history_expanded {
             strings.history_hide.to_owned()
         } else {
-            strings.history_show.replace("{count}", &count.to_string())
+            strings
+                .history_show
+                .replace("{count}", &self.language.format_count(count as u64))
         };
         Collapsible::new()
             .open(self.history_expanded)
@@ -495,20 +500,19 @@ fn penalty_label(modifier: Modifier, strings: &'static cube_locale::Strings) -> 
     }
 }
 
-/// Formats a solve's date in local time; solves from old saves may have none.
-fn format_date(unix_ms: u64, strings: &cube_locale::Strings) -> String {
-    i64::try_from(unix_ms)
-        .ok()
-        .filter(|&ms| ms != 0)
-        .and_then(DateTime::from_timestamp_millis)
-        .map_or_else(
-            || strings.date_unknown.to_owned(),
-            |date| {
-                date.with_timezone(&Local)
-                    .format("%Y-%m-%d %H:%M")
-                    .to_string()
-            },
-        )
+/// Formats a solve's date in local time and the interface's date order; solves
+/// from old saves may have none.
+fn format_date(
+    unix_ms: u64,
+    language: cube_locale::Language,
+    strings: &cube_locale::Strings,
+) -> String {
+    let formatted = language.format_date(unix_ms);
+    if formatted.is_empty() {
+        strings.date_unknown.to_owned()
+    } else {
+        formatted
+    }
 }
 
 impl CubeApp {
@@ -522,9 +526,14 @@ impl CubeApp {
             return;
         };
         let strings = self.strings();
+        let language = self.language();
         let app = cx.entity().downgrade();
-        let form = new_form(app.clone(), index, solve, strings, window, cx);
-        let title = format!("{} · #{}", strings.solve_details, index + 1);
+        let form = new_form(app.clone(), index, solve, strings, language, window, cx);
+        let title = format!(
+            "{} · #{}",
+            strings.solve_details,
+            language.format_count((index + 1) as u64)
+        );
 
         window.open_dialog(cx, move |dialog, window, _| {
             let (form_for_save, app_for_delete) = (form.clone(), app.clone());
@@ -608,6 +617,7 @@ fn new_form(
     index: usize,
     solve: &Solve,
     strings: &'static cube_locale::Strings,
+    language: cube_locale::Language,
     window: &mut Window,
     cx: &mut Context<CubeApp>,
 ) -> Entity<SolveForm> {
@@ -654,6 +664,7 @@ fn new_form(
             date_error: None,
             comment_error: None,
             strings,
+            language,
         }
     })
 }
