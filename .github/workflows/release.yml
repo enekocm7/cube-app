@@ -146,7 +146,7 @@ jobs:
           mkdir -p staging dist
           cp target/release/cube README.md LICENSE staging/
           tar -czf "dist/cube-$v-$t.tar.gz" -C staging .
-          (cd dist && shasum -a 256 ./* > "SHA256SUMS-$t.txt")
+          (cd dist && shasum -a 256 -- * > "SHA256SUMS-$t.txt")
           cat "dist/SHA256SUMS-$t.txt"
 
       - name: Upload artifacts
