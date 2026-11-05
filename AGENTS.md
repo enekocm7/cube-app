@@ -174,6 +174,11 @@ settings, import/export dialogs and help.
     `clamp_panel_width`, the `DEFAULT_*`/`MIN_*` values) and
     `cube_ui::panel_resize`; don't measure or hard-code panel widths in a
     view.
+- **Anything sized around text uses rems**, not pixels: `Rems(...)` for row
+  heights and text columns, so they follow the text size. 1rem is 16px at the
+  normal size. Text in a fixed column must not fold: use `truncate` or
+  `whitespace_nowrap`. Panel and dialog limits take the text scale, and the
+  title bar caps its own rem with `ScopedRem` so it fits the smallest window.
 - Timer/WCA behavior (inspection, hold-to-start, `+2`/DNF) lives in
   `cube-core::timer`; the UI only renders phases. Don't duplicate the rules
   in `cube-ui`. That includes following a hardware timer: `cube-bluetooth`

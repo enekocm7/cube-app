@@ -14,10 +14,10 @@ use crate::scroll_fade::fading_scroll;
 use crate::sidebar::solve_time_color;
 
 /// Height of a table row, and of the tile inside it.
-const ROW_HEIGHT: Pixels = px(36.);
-const TILE_HEIGHT: Pixels = px(32.);
+const ROW_HEIGHT: Rems = Rems(2.25);
+const TILE_HEIGHT: Rems = Rems(2.);
 /// Width of the table's solve number column.
-const NUMBER_WIDTH: Pixels = px(44.);
+const NUMBER_WIDTH: Rems = Rems(2.75);
 /// Room kept on a table row's right for the overlay scrollbar.
 const SCROLLBAR_GUTTER: Pixels = px(16.);
 /// How strongly the fastest and slowest tiles of a column are tinted.
@@ -110,7 +110,7 @@ impl CubeApp {
         table_row()
             .h_auto()
             .flex_none()
-            .child(div().w(NUMBER_WIDTH))
+            .child(div().w(NUMBER_WIDTH).flex_none())
             .child(single_label)
             .children(averages)
     }
@@ -185,6 +185,8 @@ impl CubeApp {
                         .child(
                             div()
                                 .w(NUMBER_WIDTH)
+                                .flex_none()
+                                .truncate()
                                 .text_xs()
                                 .text_color(muted)
                                 .text_right()

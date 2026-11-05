@@ -25,10 +25,10 @@ use crate::palette::Palette;
 use crate::scroll_fade::FadeScroll;
 
 const DIALOG_SIZE: DialogSize = DialogSize::COMPACT;
-const ROW_HEIGHT: Pixels = px(36.);
+const ROW_HEIGHT: Rems = Rems(2.25);
 const ICON_SIZE: Pixels = px(16.);
 /// Room for the status line above the device list.
-const STATUS_HEIGHT: Pixels = px(32.);
+const STATUS_HEIGHT: Rems = Rems(2.);
 
 /// How far along the connection to a timer is.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -485,7 +485,8 @@ impl Render for BluetoothView {
         } else {
             Vec::new()
         };
-        let max_height = dialog_body_height(DIALOG_SIZE, window) - STATUS_HEIGHT;
+        let max_height =
+            dialog_body_height(DIALOG_SIZE, window) - STATUS_HEIGHT.to_pixels(window.rem_size());
 
         dialog_body(
             v_flex()

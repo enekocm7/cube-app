@@ -236,7 +236,7 @@ impl KeybindsView {
                             muted
                         };
                         h_flex()
-                            .min_h(px(36.))
+                            .min_h(Rems(2.25))
                             .when(index > 0, |row| row.border_t_1().border_color(border))
                             .px_3()
                             .py_2()
@@ -256,7 +256,7 @@ impl KeybindsView {
                                     .gap_2()
                                     .child(
                                         div()
-                                            .min_w(px(140.))
+                                            .min_w(Rems(8.75))
                                             .text_center()
                                             .font_family(mono.clone())
                                             .text_base()
@@ -379,7 +379,7 @@ impl Render for KeybindsView {
                     FadeScroll::new("keybind-panel", cx.theme().background)
                         .track_focus(&self.focus)
                         .on_key_down(cx.listener(Self::on_key_down))
-                        .max_h(max_height - BAR_HEIGHT)
+                        .max_h(max_height - BAR_HEIGHT.to_pixels(window.rem_size()))
                         .p_4()
                         .gap_5()
                         .child(

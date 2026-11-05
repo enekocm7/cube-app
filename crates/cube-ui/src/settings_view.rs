@@ -31,14 +31,14 @@ use gpui_kit::*;
 
 use crate::app::CubeApp;
 use crate::dialog_size::{
-    DialogSize, dialog_body_height, dialog_close_button, dialog_title, dialog_width,
+    DialogSize, dialog_body_height, dialog_close_button, dialog_title, dialog_width, text_scale,
 };
 use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
 use crate::scroll_fade::FadeScroll;
 use crate::search_bar::{focus_on_slash, new_search, query, search_bar};
 
-const ROW_MIN_HEIGHT: Pixels = px(56.);
-const HEADER_HEIGHT: Pixels = px(52.);
+const ROW_MIN_HEIGHT: Rems = Rems(3.5);
+const HEADER_HEIGHT: Rems = Rems(3.25);
 /// The tallest the language menu gets before it scrolls.
 const LANGUAGE_MENU_HEIGHT: Pixels = px(320.);
 /// Room kept between a row reached with the keyboard and the pane's edges, so
@@ -177,7 +177,7 @@ impl SettingsView {
                 let selected = !searching && category == self.category;
                 h_flex()
                     .id(("settings-category", index))
-                    .h(px(36.))
+                    .h(Rems(2.25))
                     .flex_none()
                     .px_2()
                     .gap_2()
@@ -738,7 +738,7 @@ impl SettingsView {
         let mut rows = vec![row(
             label,
             range,
-            div().w(px(96.)).child(Input::new(input).small().w_full()),
+            div().w(Rems(6.)).child(Input::new(input).small().w_full()),
             cx,
         )];
         if invalid {
@@ -909,7 +909,7 @@ impl SettingsView {
                 let delete_file = file.clone();
                 let delete_display = display.clone();
                 h_flex()
-                    .min_h(px(44.))
+                    .min_h(Rems(2.75))
                     .px_4()
                     .py_2()
                     .gap_2()
@@ -1590,7 +1590,7 @@ impl Render for SettingsView {
         }
 
         let width = dialog_width(DialogSize::SETTINGS, window);
-        let nav_width = px(settings_nav_width(f32::from(width)));
+        let nav_width = px(settings_nav_width(f32::from(width), text_scale(window)));
         let theme = cx.theme();
         let (background, border, muted) = (theme.background, theme.border, theme.muted_foreground);
         let (sidebar, radius) = (theme.sidebar, theme.radius_lg);

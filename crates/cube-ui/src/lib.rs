@@ -21,6 +21,7 @@ mod help;
 mod palette;
 mod panel_resize;
 mod preview;
+mod scoped_rem;
 mod scroll_fade;
 mod search_bar;
 mod settings_view;

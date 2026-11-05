@@ -9,7 +9,7 @@ use gpui_kit::*;
 
 /// Vertical space the bar takes above a dialog's scrolling body, which the body
 /// gives up so the whole dialog keeps its height.
-pub(crate) const BAR_HEIGHT: Pixels = px(68.);
+pub(crate) const BAR_HEIGHT: Rems = Rems(4.25);
 
 /// Creates the field and re-renders `V` whenever its text changes.
 pub(crate) fn new_search<V: 'static>(

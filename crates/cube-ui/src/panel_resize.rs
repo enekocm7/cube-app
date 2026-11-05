@@ -87,6 +87,7 @@ impl CubeApp {
             window_width(window),
             self.settings.sidebar_width,
             self.settings.stats_panel_width,
+            self.settings.text_scale(),
         );
         (px(sidebar as f32), px(stats as f32))
     }
@@ -113,17 +114,20 @@ impl CubeApp {
         // The other panel keeps the width it is drawn at, not the one stored
         // for a window that may be wider than the current one.
         let available = window_width(window);
+        let scale = self.settings.text_scale();
         let (sidebar, stats) = fit_panels(
             available,
             self.settings.sidebar_width,
             self.settings.stats_panel_width,
+            scale,
         );
         match side {
             PanelSide::Sidebar => {
-                self.settings.sidebar_width = clamp_panel_width(requested, available, stats);
+                self.settings.sidebar_width = clamp_panel_width(requested, available, stats, scale);
             }
             PanelSide::Stats => {
-                self.settings.stats_panel_width = clamp_panel_width(requested, available, sidebar);
+                self.settings.stats_panel_width =
+                    clamp_panel_width(requested, available, sidebar, scale);
             }
         }
         self.panel_resizing = true;

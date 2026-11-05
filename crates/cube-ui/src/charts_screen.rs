@@ -43,7 +43,7 @@ const MIN_SOLVES: usize = 2;
 /// How far one press of `Up` or `Down` scrolls.
 const SCROLL_STEP: Pixels = px(80.);
 /// Widest the session filter gets, so a long name leaves room for the others.
-const SESSION_FILTER_MAX_WIDTH: Pixels = px(220.);
+const SESSION_FILTER_MAX_WIDTH: Rems = Rems(13.75);
 /// How much of the window's height the session menu may take before it scrolls.
 const SESSION_MENU_SHARE: f32 = 0.7;
 /// How much one press of the zoom keys narrows the times chart.
@@ -162,10 +162,14 @@ impl CubeApp {
             .pt_4()
             .gap_1()
             .justify_between()
+            // Larger text moves the filters under the tabs instead of past the
+            // window's edge.
+            .flex_wrap()
             .child(h_flex().gap_1().children(tabs))
             .child(
                 h_flex()
                     .gap_2()
+                    .flex_wrap()
                     // The comparison lists every session whatever the scope,
                     // and the bests ignore every filter, so only the filters
                     // that change the view show.
@@ -195,7 +199,7 @@ impl CubeApp {
         } else {
             labels[current].clone()
         };
-        let button = filter_button("chart-session", label);
+        let button = filter_button("chart-session", label).w_full();
         div()
             .max_w(SESSION_FILTER_MAX_WIDTH)
             .child(button.dropdown_menu(move |menu, window, cx| {
@@ -959,10 +963,11 @@ fn filter_button(id: &'static str, label: impl Into<SharedString>) -> Button {
     let label = label.into();
     Button::new(id).outline().small().tab_stop(false).child(
         h_flex()
+            .min_w_0()
             .gap_1()
             .items_center()
-            .child(label)
-            .child(Icon::new(IconName::ChevronDown).size(px(14.))),
+            .child(div().min_w_0().truncate().child(label))
+            .child(Icon::new(IconName::ChevronDown).size(px(14.)).flex_none()),
     )
 }
 
@@ -1028,7 +1033,7 @@ fn legend_item(color: Hsla, label: String) -> impl IntoElement {
 
 /// The shared layout of a comparison or bests row.
 fn table_row() -> Div {
-    h_flex().w_full().h(px(32.)).gap_2().text_sm()
+    h_flex().w_full().h(Rems(2.)).gap_2().text_sm()
 }
 
 fn name_cell(name: String) -> Div {

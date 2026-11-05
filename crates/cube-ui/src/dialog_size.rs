@@ -9,12 +9,17 @@ use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::{Sizable as _, WindowExt as _, h_flex};
 use gpui_kit::*;
 
-use cube_core::dialogs::BODY_INSET;
 pub(crate) use cube_core::dialogs::DialogSize;
+use cube_core::dialogs::{BODY_INSET, NORMAL_REM_PX};
+
+/// How many times larger than normal the text of `window` is.
+pub(crate) fn text_scale(window: &Window) -> f32 {
+    f32::from(window.rem_size()) / NORMAL_REM_PX
+}
 
 /// The width `size` asks for in `window`.
 pub(crate) fn dialog_width(size: DialogSize, window: &Window) -> Pixels {
-    px(size.width(f32::from(window.viewport_size().width)))
+    px(size.width(f32::from(window.viewport_size().width), text_scale(window)))
 }
 
 /// The tallest the scrolling body of `size` may get in `window`.
