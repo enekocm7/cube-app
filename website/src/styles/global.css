@@ -336,10 +336,50 @@ kbd {
 .cap:hover { outline: 2px solid var(--muted); outline-offset: 1px; }
 .cap.down { background: var(--green); color: #000; transform: translateY(1px); }
 
-.key-list { display: none; margin: 0 0 1.5rem; }
-.key-list div { display: grid; grid-template-columns: 5.5rem 1fr; gap: 1rem; padding: 0.6rem 0; border-top: 1px solid var(--line); }
-.key-list dt { font-family: var(--mono); }
-.key-list dd { margin: 0; color: var(--muted); }
+/* Phones have no keys to press, so every shortcut is listed, drawn as the same
+   white caps as the keyboard. */
+
+.key-groups { display: none; margin-bottom: 1.5rem; border-bottom: 1px solid var(--line); }
+.key-groups details { border-top: 1px solid var(--line); }
+.key-groups summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 3.5rem;
+  font-weight: 800;
+  font-stretch: 75%;
+  font-size: 1.5rem;
+  line-height: 1.1;
+  list-style: none;
+  cursor: pointer;
+}
+.key-groups summary::-webkit-details-marker { display: none; }
+.key-groups summary small { color: var(--muted); font: 400 0.9rem/1 var(--mono); }
+.key-groups summary::after {
+  content: '+';
+  margin-left: auto;
+  color: var(--muted);
+  font: 400 1.5rem/1 var(--mono);
+}
+.key-groups details[open] summary::after { content: '\2212'; }
+.key-groups dl { margin: 0 0 1rem; }
+.key-groups dl div {
+  display: grid;
+  grid-template-columns: 6.25rem minmax(0, 1fr);
+  align-items: start;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+}
+.key-groups dt {
+  justify-self: start;
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+  background: var(--white);
+  color: #000;
+  font: 500 0.82rem/1.2 var(--mono);
+  white-space: nowrap;
+}
+.key-groups dd { margin: 0; padding-top: 0.1rem; line-height: 1.35; }
 
 /* Data */
 
@@ -415,14 +455,25 @@ kbd {
   padding: 2.5rem var(--pad) 5rem;
 }
 
+/* A popover on small screens and a plain sidebar otherwise, so the browser's
+   popover defaults are undone here. */
 .docs-side {
+  display: block;
   position: sticky;
-  top: 1.5rem;
+  inset: 1.5rem auto auto;
   align-self: start;
+  width: auto;
+  height: auto;
   max-height: calc(100svh - 3rem);
+  margin: 0;
   overflow-y: auto;
   padding: 3px;
+  border: 0;
+  background: none;
+  color: inherit;
 }
+
+.docs-bar, .docs-close { display: none; }
 
 .docs-filter {
   width: 100%;
@@ -482,36 +533,193 @@ kbd {
   .intro { grid-column: 1 / -1; max-width: 34rem; }
   .net { width: 100%; max-width: 15rem; }
   .data { grid-template-columns: minmax(0, 1fr); }
-  .docs-layout { grid-template-columns: minmax(0, 1fr); }
+
+  /* The article comes first. Its contents wait behind a bar that stays on screen. */
+  .docs-layout { grid-template-columns: minmax(0, 1fr); gap: 1.75rem; padding-top: 0; }
   .docs-side { position: static; max-height: none; }
+
+  @supports selector(:popover-open) {
+    .docs-bar {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      width: calc(100% + 2 * var(--pad));
+      min-height: 3.25rem;
+      margin-inline: calc(-1 * var(--pad));
+      padding: 0 var(--pad);
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      background: var(--plastic);
+      color: var(--text);
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+    .docs-bar .sticker { flex: none; }
+    .docs-bar-title { flex: 1; min-width: 0; overflow: hidden; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+    .docs-bar-action { flex: none; margin-left: 1rem; color: var(--muted); font-size: 0.95rem; }
+    .docs-bar-action::after { content: ''; display: inline-block; width: 0.45em; height: 0.45em; margin: 0 0.1em 0.2em 0.5em; border: solid currentcolor; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+
+    .docs-side:not(:popover-open) { display: none; }
+    .docs-side:popover-open {
+      position: fixed;
+      inset: 0 0 auto;
+      width: 100%;
+      max-height: 100dvh;
+      padding: 0.75rem var(--pad) 1rem;
+      overscroll-behavior: contain;
+      border-bottom: 1px solid #555;
+      border-radius: 0 0 14px 14px;
+      background: var(--plastic);
+    }
+    .docs-side::backdrop { background: rgb(0 0 0 / 70%); }
+
+    .docs-side-head {
+      position: sticky;
+      top: -0.75rem;
+      z-index: 1;
+      display: flex;
+      gap: 0.5rem;
+      margin: -0.75rem 0 0.5rem;
+      padding-block: 0.75rem;
+      background: var(--plastic);
+    }
+    .docs-close {
+      display: block;
+      flex: none;
+      min-height: 2.75rem;
+      padding: 0 0.9rem;
+      border: 1px solid #555;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  }
+
+  /* 16px, or iOS zooms the page when the field takes focus. */
+  .docs-filter { min-height: 2.75rem; margin-bottom: 0; font-size: 1rem; }
+  .docs-group { margin-bottom: 0.75rem; }
+  .docs-group-name { margin-bottom: 0; padding-block: 0.5rem; }
+  .docs-group a { display: flex; align-items: center; min-height: 2.75rem; padding-block: 0.25rem; font-size: 1.0625rem; }
+
+  .prose { max-width: none; overflow-wrap: break-word; }
+  .prose h2, .prose h3 { scroll-margin-top: 4.25rem; }
+
+  .docs-pager a { flex: 1 1 0; min-width: 0; padding: 0.7rem 0.9rem; border: 1px solid var(--line); border-radius: 8px; }
+  .docs-pager > span { flex: 1 1 0; }
 }
+
+/* Phones. Display type comes down, and the page is rearranged rather than cut:
+   whatever a desktop shows, a phone shows too. */
 
 @media (max-width: 760px) {
-  .face { grid-template-columns: minmax(0, 1fr); }
-  .tile { aspect-ratio: auto; min-height: 11rem; }
-  .tile h3 { font-size: 2.25rem; }
-  .shot-pair { grid-template-columns: minmax(0, 1fr); }
-  .keyboard, .readout { display: none; }
-  .key-list { display: block; }
-  .lead { margin-top: 0; }
-}
+  h2 { font-size: clamp(2.25rem, 10.5vw, 3.75rem); }
 
-@media (max-width: 520px) {
-  .stage-foot { grid-template-columns: minmax(0, 1fr); }
-  .session { justify-self: stretch; width: 100%; }
-  .net { max-width: 13rem; }
-  .digits { font-size: 21vw; }
-  .digits.long { font-size: 17vw; }
-}
+  .band { padding-top: 3.5rem; }
+  .band > h2 { margin-bottom: 1.25rem; }
+  .lead { margin-top: 0; margin-bottom: 1.25rem; font-size: 1.0625rem; }
 
-@media (max-width: 380px) {
-  .nav-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
+  /* Stickers and screenshots are swiped through, with the next one showing at
+     the edge, rather than stacked into a long page. */
+  .face, .shots {
+    display: flex;
+    margin-inline: calc(-1 * var(--pad));
+    padding: 4px var(--pad);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--pad);
+    scrollbar-width: none;
   }
+  .face::-webkit-scrollbar, .shots::-webkit-scrollbar { display: none; }
+
+  .face { gap: 6px; }
+  .tile { flex: 0 0 min(80vw, 21rem); padding: 1.1rem; scroll-snap-align: start; }
+  .tile h3 { font-size: 2.6rem; }
+  .tile p { font-size: 1rem; line-height: 1.35; }
+  .tile.center img { width: 3rem; }
+
+  .shots { gap: 0.75rem; }
+  .shot-pair { display: contents; }
+  .shot { flex: 0 0 86vw; scroll-snap-align: start; }
+  .shot figcaption { font-size: 0.95rem; line-height: 1.4; }
+
+  .keyboard, .readout, .for-keyboard { display: none; }
+  .key-groups { display: block; }
+
+  .data h2 { margin-bottom: 1rem; font-size: clamp(2.25rem, 10.5vw, 3.75rem); }
+  .json { padding: 1rem; font-size: 0.8rem; }
+
+  .download { margin-top: 3.5rem; padding-block: 2.5rem; }
+  .download h2 { font-size: 13.8vw; }
+  .download strong { font-size: 1.9rem; }
+  .download span { font-size: 0.95rem; }
+
+  .prose h1 { font-size: clamp(2.25rem, 10.5vw, 3.25rem); }
+  .prose .lede { font-size: 1.125rem; }
+}
+
+/* No timer on phones and tablets: there is no key to hold, and they can't run
+   the app. The first screen is the cube instead, with the scramble set in the
+   empty corner of the net. */
+
+@media (max-width: 760px), (hover: none), (pointer: coarse) {
+  .site-header nav .nav-download, .intro .button:not(.quiet), .clock, .session { display: none; }
+
+  .stage {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
+    gap: 1.75rem 0;
+    min-height: 0;
+    padding: 4.25rem var(--pad) 0;
+  }
+  .stage-foot { display: contents; }
+
+  .net { grid-area: 1 / 1 / 2 / -1; width: 100%; max-width: none; }
+  .scramble {
+    grid-area: 1 / 2;
+    align-self: end;
+    margin: 0;
+    padding-left: 0.4rem;
+    font-size: clamp(0.62rem, 3.1vw, 0.95rem);
+    line-height: 1.4;
+    text-align: left;
+    word-spacing: 0;
+  }
+
+  .intro { grid-area: 2 / 1 / 3 / -1; max-width: none; }
+  .intro h1 { font-size: clamp(2.6rem, 14.5vw, 6rem); line-height: 0.94; }
+  .intro p { margin-top: 1rem; font-size: 1.125rem; line-height: 1.4; }
+  .intro .button.quiet { flex: 1 1 auto; border-color: var(--white); background: var(--white); color: #000; }
+}
+
+/* With room to spare, tablets and phones on their side, the two sit side by side. */
+
+@media (min-width: 600px) and (max-width: 760px), (min-width: 600px) and (hover: none), (min-width: 600px) and (pointer: coarse) {
+  .stage { align-items: center; gap: 0.75rem 2.5rem; }
+  .intro { grid-area: 1 / 1 / 3 / 2; }
+  .intro h1 { font-size: clamp(3rem, 7.5vw, 5.5rem); }
+  .intro .button.quiet { flex: 0 1 auto; }
+  .net { grid-area: 1 / 2; }
+  .scramble { grid-area: 2 / 2; align-self: start; padding-left: 0; font-size: 0.95rem; }
+}
+
+/* Anything a finger has to hit is at least 44px tall, phone on its side included. */
+
+@media (max-width: 760px), (pointer: coarse) {
+  .site-header { padding-block: 0.3rem; }
+  .brand, .site-header nav a { min-height: 2.75rem; }
+  .site-header nav a { padding-inline: 0.15rem; }
+  .button { justify-content: center; min-height: 2.75rem; }
+  .text-link { display: inline-block; padding-block: 0.6rem; }
+  .download li a { min-height: 3.5rem; align-items: center; padding-block: 0.6rem; }
+  .site-footer nav { gap: 0.25rem 1.25rem; }
+  .site-footer nav a { display: inline-flex; align-items: center; min-height: 2.75rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

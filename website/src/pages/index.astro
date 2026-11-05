@@ -2,7 +2,7 @@
 import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
 import Net from '../components/Net.astro';
-import { BINDINGS, KEYBOARD } from '../lib/keys';
+import { BINDINGS, KEYBOARD, KEY_GROUPS } from '../lib/keys';
 import { RELEASES } from '../lib/site';
 
 const base = import.meta.env.BASE_URL;
@@ -20,8 +20,6 @@ const stickers = [
   { color: 'red', title: 'Edit any solve', text: 'Fix a time, event, penalty or date. Every change is kept, and deletions can be undone.', href: doc('sessions') },
   { color: 'blue', title: 'Themes and languages', text: 'Light, dark and your own themes, in sixteen languages.', href: doc('themes') },
 ];
-
-const mainKeys = ['Space', 'KeyN', 'KeyI', 'KeyA', 'KeyG', 'KeyE', 'Digit2', 'F1'];
 ---
 
 <Base
@@ -81,25 +79,27 @@ const mainKeys = ['Space', 'KeyN', 'KeyI', 'KeyA', 'KeyG', 'KeyE', 'Digit2', 'F1
 
   <section class="band screens">
     <h2>See what's actually improving.</h2>
-    <figure class="shot wide">
-      <img src={`${base}screenshots/charts.webp`} width="1462" height="940" decoding="async" alt="The charts screen: times over a few months with ao5, ao12 and ao100 lines" loading="lazy" />
-      <figcaption>Times and averages over any range, with personal bests and DNFs marked.</figcaption>
-    </figure>
-    <div class="shot-pair">
-      <figure class="shot">
-        <img src={`${base}screenshots/stats.webp`} width="1462" height="940" decoding="async" alt="The stats screen: a heat-mapped table of rolling averages for every solve" loading="lazy" />
-        <figcaption>Every solve's rolling averages, heat-mapped so good runs stand out.</figcaption>
+    <div class="shots">
+      <figure class="shot wide">
+        <img src={`${base}screenshots/charts.webp`} width="1462" height="940" decoding="async" alt="The charts screen: times over a few months with ao5, ao12 and ao100 lines" loading="lazy" />
+        <figcaption>Times and averages over any range, with personal bests and DNFs marked.</figcaption>
       </figure>
-      <figure class="shot">
-        <img src={`${base}screenshots/timer.webp`} width="1462" height="940" decoding="async" alt="The timer screen: the solve list, scramble, digits, scramble preview and session statistics" loading="lazy" />
-        <figcaption>The timer, with your solves on the left and your session on the right.</figcaption>
-      </figure>
+      <div class="shot-pair">
+        <figure class="shot">
+          <img src={`${base}screenshots/stats.webp`} width="1462" height="940" decoding="async" alt="The stats screen: a heat-mapped table of rolling averages for every solve" loading="lazy" />
+          <figcaption>Every solve's rolling averages, heat-mapped so good runs stand out.</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src={`${base}screenshots/timer.webp`} width="1462" height="940" decoding="async" alt="The timer screen: the solve list, scramble, digits, scramble preview and session statistics" loading="lazy" />
+          <figcaption>The timer, with your solves on the left and your session on the right.</figcaption>
+        </figure>
+      </div>
     </div>
   </section>
 
   <section class="band keys" id="keys">
     <h2>Every action has a key.</h2>
-    <p class="lead">The mouse is optional in cube. Press a key to see what it does. You can rebind any of them, or remove them.</p>
+    <p class="lead">The mouse is optional in cube. <span class="for-keyboard">Press a key to see what it does.</span> You can rebind any of them, or remove them.</p>
 
     <div class="readout" id="readout" aria-live="polite">
       <dl id="readout-list">
@@ -127,11 +127,18 @@ const mainKeys = ['Space', 'KeyN', 'KeyI', 'KeyA', 'KeyG', 'KeyE', 'Digit2', 'F1
       ))}
     </div>
 
-    <dl class="key-list">
-      {mainKeys.map((code) => (
-        <div><dt>{BINDINGS[code][0][0]}</dt><dd>{BINDINGS[code][0][1]}</dd></div>
+    <div class="key-groups">
+      {KEY_GROUPS.map((group, i) => (
+        <details open={i === 0}>
+          <summary>{group.name}<small>{group.keys.length}</small></summary>
+          <dl>
+            {group.keys.map(([, combo, action]) => (
+              <div><dt>{combo}</dt><dd>{action}</dd></div>
+            ))}
+          </dl>
+        </details>
       ))}
-    </dl>
+    </div>
 
     <p><a class="text-link" href={doc('keybinds')}>See all the shortcuts</a></p>
   </section>

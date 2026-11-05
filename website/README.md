@@ -6,15 +6,15 @@ The project homepage and docs. Built with [Astro](https://astro.build/) (static 
 
 | Path | What it is |
 |---|---|
-| `src/pages/index.astro` | Landing page: working timer, feature face, screenshots, interactive keyboard, data, download |
+| `src/pages/index.astro` | Landing page: working timer, feature face, screenshots, interactive keyboard, data, download. Phones and tablets get a static cube in place of the timer, swipe rails, and a grouped shortcut list |
 | `src/pages/docs/[...slug].astro` | Renders every `src/content/docs/*.md` file |
 | `src/content/docs/*.md` | **All documentation lives here as markdown** — install, timer, shortcuts, sessions, stats, settings, data, themes, bluetooth, updates, FAQ, scramble performance |
-| `src/layouts/Base.astro` | Head tags (canonical, Open Graph, Twitter), header/nav, footer, mobile menu |
-| `src/layouts/Docs.astro` | Docs sidebar with filter, prev/next pager |
+| `src/layouts/Base.astro` | Head tags (canonical, Open Graph, Twitter), header/nav, footer |
+| `src/layouts/Docs.astro` | Docs sidebar with filter, which is a popover behind a sticky bar on small screens, prev/next pager |
 | `src/scripts/` | Client code. Pages swap without a reload, so `page.ts` sets everything up on `astro:page-load` |
 | `../fonts/` | Cube Mono, shared with the app: JetBrains Mono with a plain zero, under the OFL |
 | `src/lib/cube.ts` | 3x3x3 simulator behind the timer's scramble net |
-| `src/lib/keys.ts` | Default shortcuts for the landing page keyboard. Keep in step with `src/content/docs/keybinds.md` |
+| `src/lib/keys.ts` | Default shortcuts, grouped, for the landing page keyboard and phone list. Keep in step with `src/content/docs/keybinds.md` |
 | `src/styles/global.css` | All styles. Colors come from a cube's stickers and a stackmat's lights |
 | `public/` | `logo.svg`, `screenshots/*.webp` (real app captures, 1462x940), `screenshots/timer.png` (social preview) |
 
