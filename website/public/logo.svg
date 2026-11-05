@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Three flat faces stepping light, mid, dark, so they separate even without
+       color. The dark rim is what keeps the white top visible on light
+       backgrounds. Coordinates sit on the 16 px grid, where the rim is 1 px. -->
+  <path d="M128 16 L224 72 V184 L128 240 L32 184 V72 Z" fill="#141a2e" stroke="#141a2e" stroke-width="32" stroke-linejoin="round"/>
+  <path d="M128 16 L224 72 L128 128 L32 72 Z" fill="#f4f6fb"/>
+  <path d="M32 72 L128 128 V240 L32 184 Z" fill="#ff5a5f"/>
+  <path d="M224 72 L128 128 V240 L224 184 Z" fill="#1d5fd1"/>
+</svg>

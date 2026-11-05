@@ -1,0 +1,57 @@
+---
+import Base from './Base.astro';
+import { getCollection } from 'astro:content';
+import { DOC_SECTIONS, docSlug } from '../lib/site';
+
+interface Props {
+  title: string;
+  description: string;
+  slug: string;
+}
+
+const { title, description, slug } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const all = await getCollection('docs');
+const sections = Object.keys(DOC_SECTIONS).map((name) => ({
+  name,
+  color: DOC_SECTIONS[name],
+  docs: all
+    .filter((doc) => doc.data.section === name)
+    .sort((a, b) => a.data.order - b.data.order),
+}));
+const flat = sections.flatMap((section) => section.docs);
+const index = flat.findIndex((doc) => docSlug(doc.id) === slug);
+const prev = flat[index - 1];
+const next = flat[index + 1];
+---
+
+<Base title={`${title} | cube docs`} description={description} current="docs">
+  <div class="docs-layout">
+    <aside class="docs-side" aria-label="Documentation">
+      <input class="docs-filter" id="docs-filter" type="search" placeholder="Filter" aria-label="Filter the docs" />
+      <div id="docs-nav">
+        {sections.map((section) => (
+          <div class="docs-group">
+            <p class="docs-group-name"><span class={`sticker bg-${section.color}`}></span>{section.name}</p>
+            {section.docs.map((doc) => (
+              <a
+                href={`${base}docs/${docSlug(doc.id)}/`}
+                aria-current={docSlug(doc.id) === slug ? 'page' : undefined}
+                data-title={doc.data.title.toLowerCase()}
+              >{doc.data.title}</a>
+            ))}
+          </div>
+        ))}
+      </div>
+    </aside>
+    <article class="prose">
+      <h1>{title}</h1>
+      <p class="lede">{description}</p>
+      <slot />
+      <nav class="docs-pager" aria-label="Previous and next page">
+        {prev ? <a href={`${base}docs/${docSlug(prev.id)}/`}><small>Previous</small>{prev.data.title}</a> : <span></span>}
+        {next && <a class="next" href={`${base}docs/${docSlug(next.id)}/`}><small>Next</small>{next.data.title}</a>}
+      </nav>
+    </article>
+  </div>
+</Base>

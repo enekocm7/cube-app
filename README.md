@@ -4,6 +4,8 @@
 
 <p align="center">A desktop timer and session manager for speedcubing, built with Rust and <a href="https://gpui-kit.com/docs/">GPUI Kit</a>.</p>
 
+<p align="center"><a href="https://enekocm7.github.io/cube-gui/">Website and docs</a> · <a href="https://github.com/enekocm7/cube-gui/releases">Releases</a></p>
+
 ![cube's timer screen](docs/screenshot.png)
 
 cube times your solves with WCA inspection, generates official scrambles, and keeps a history you can search, edit and
@@ -128,8 +130,8 @@ Around the shortcuts:
 **Interface**
 
 - Light and dark themes, plus cube-tui TOML themes with a color-picker editor. See [Themes](#themes).
-- Optional bundled [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) for the timer digits, all times, or
-  the whole interface.
+- Bundled Cube Mono, [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) with a plain zero, for all times.
+  You can use it for the timer digits only, for the whole interface, or use the system font instead.
 - Sixteen languages, including English, Spanish, German, French, Japanese and Chinese. Dates and counts follow the
   chosen language.
 - Resizable solve list and statistics panels. Drag the inner edge of a panel to resize it (180 to 350 px) and
@@ -163,8 +165,8 @@ Shortcuts are rebound from the `F1` panel instead. See [Keyboard shortcuts](#key
 
 Details worth knowing:
 
-- **Font.** Times use the system's monospace font by default. **Appearance → Font** can switch to JetBrains Mono for
-  the timer only, for every time, or for the whole interface. The font is bundled under the SIL Open Font License.
+- **Font.** Times use the bundled Cube Mono by default. **Appearance → Font** can limit it to the timer, extend it to
+  the whole interface, or switch to the system fonts. The font is bundled under the SIL Open Font License.
 - **Scramble size.** **Appearance → Scramble size** picks Small, Normal (default), Large, Largest or Custom, which takes
   an exact size in points (6 to 120). Long scrambles still scroll.
 - **Scramble preview.** The preview draws the puzzle as the scramble leaves it, under the timer and in the solve

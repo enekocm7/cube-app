@@ -49,20 +49,19 @@ pub enum UpdateFrequency {
     Weekly,
 }
 
-/// Which text uses the bundled `JetBrains Mono` instead of the system fonts.
+/// Which text uses the bundled `Cube Mono` instead of the system fonts.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum FontChoice {
     /// The system fonts: the theme's interface font and the system's monospace
     /// for times. The bundled font is not loaded.
-    #[default]
     System,
-    /// `JetBrains Mono` for the timer's digits only.
+    /// `Cube Mono` for the timer's digits only.
     Timer,
-    /// `JetBrains Mono` for every time, leaving the interface in the theme's
-    /// font.
+    /// `Cube Mono` for every time, leaving the interface in the theme's font.
+    #[default]
     Times,
-    /// `JetBrains Mono` for the whole interface.
+    /// `Cube Mono` for the whole interface.
     Whole,
 }
 
@@ -209,7 +208,7 @@ pub struct Settings {
     pub solve_list_ao5: bool,
     /// Keeps the solve list scrollbar visible instead of only while scrolling.
     pub always_show_scrollbar: bool,
-    /// Which text uses the bundled `JetBrains Mono`.
+    /// Which text uses the bundled `Cube Mono`.
     pub font: FontChoice,
     /// How large the scramble is drawn.
     pub scramble_size: ScrambleSize,
@@ -421,8 +420,10 @@ mod tests {
     }
 
     #[test]
-    fn font_choices_default_to_the_system_font() {
-        assert_eq!(Settings::default().font, FontChoice::System);
+    fn font_choices_default_to_every_time() {
+        assert_eq!(Settings::default().font, FontChoice::Times);
+        let settings: Settings = toml::from_str("font = 'system'").unwrap();
+        assert_eq!(settings.font, FontChoice::System);
         let settings: Settings = toml::from_str("font = 'timer'").unwrap();
         assert_eq!(settings.font, FontChoice::Timer);
         let settings: Settings = toml::from_str("font = 'whole'").unwrap();
