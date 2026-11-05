@@ -86,7 +86,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: cube ${{ steps.version.outputs.version }}
-          generate_release_notes: true
           files: dist/*
 
   unix:
@@ -160,5 +159,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: cube ${{ steps.version.outputs.version }}
-          generate_release_notes: true
+          # All jobs share one release and each generated copy is appended.
+          generate_release_notes: ${{ matrix.target == 'linux-x64' }}
           files: dist/*
