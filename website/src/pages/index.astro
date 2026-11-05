@@ -1,0 +1,170 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import Net from '../components/Net.astro';
+import { BINDINGS, KEYBOARD } from '../lib/keys';
+import { RELEASES } from '../lib/site';
+
+const base = import.meta.env.BASE_URL;
+const firstScramble = "U2 B' D2 R' F U B' R B R2 D2 L2 D F2 U B2 D2 B2";
+const doc = (slug: string) => `${base}docs/${slug}/`;
+
+const stickers = [
+  { color: 'green', title: 'Official scrambles', text: 'Random-state scrambles for all 12 WCA events, with a picture of the scrambled puzzle.', href: doc('usage-timer') },
+  { color: 'orange', title: 'WCA inspection', text: 'Counts up to 15 seconds and applies +2 and DNF for you. Optional cues at 8 and 12 seconds.', href: doc('usage-timer') },
+  { color: 'yellow', title: 'GAN timers', text: 'Connect a GAN Bluetooth timer and its solves are recorded on their own.', href: doc('bluetooth') },
+  { color: 'blue', title: 'Averages you can open', text: 'Open any average to see the solves behind it, with the trimmed ones marked.', href: doc('stats-charts') },
+  { color: 'white', title: 'Free and open source', text: 'No account and no ads. Your times stay on your computer.', href: 'https://github.com/enekocm7/cube-gui', center: true },
+  { color: 'red', title: 'Charts', text: 'Your times and averages, personal bests, solves per day and session comparisons.', href: doc('stats-charts') },
+  { color: 'yellow', title: 'csTimer import', text: 'Bring your sessions over with their penalties and comments, and export them back.', href: doc('data') },
+  { color: 'red', title: 'Edit any solve', text: 'Fix a time, event, penalty or date. Every change is kept, and deletions can be undone.', href: doc('sessions') },
+  { color: 'blue', title: 'Themes and languages', text: 'Light, dark and your own themes, in sixteen languages.', href: doc('themes') },
+];
+
+const mainKeys = ['Space', 'KeyN', 'KeyI', 'KeyA', 'KeyG', 'KeyE', 'Digit2', 'F1'];
+---
+
+<Base
+  title="cube: a speedcubing timer for your desktop"
+  description="Official WCA scrambles, inspection, averages and charts in a free desktop app for Windows, Linux and macOS. Your times stay on your computer."
+  current="home"
+>
+  <section class="stage" id="stage" aria-label="Timer">
+    <p class="scramble chrome" id="scramble">{firstScramble}</p>
+
+    <div class="clock">
+      <div class="digits" id="digits">0.000</div>
+      <p class="hint chrome" id="hint" hidden>Hold <kbd>Space</kbd> until the digits turn green, then let go to start. Press any key to stop.</p>
+      <p class="sr-only" id="status" role="status"></p>
+    </div>
+
+    <div class="stage-foot chrome">
+      <div class="intro">
+        <h1>A speedcubing timer for your desktop.</h1>
+        <p>Official scrambles, WCA inspection and every average you care about, in a free app that works offline.</p>
+        <div class="actions">
+          <a class="button" href={RELEASES}><Icon name="download" /><span id="download-primary">Download</span></a>
+          <a class="button quiet" href={doc('install')}>Read the docs</a>
+        </div>
+      </div>
+
+      <Net scramble={firstScramble} />
+
+      <div class="session">
+        <table>
+          <thead>
+            <tr><td></td><th scope="col">Current</th><th scope="col">Best</th></tr>
+          </thead>
+          <tbody id="session-rows">
+            {['Single', 'mo3', 'ao5', 'ao12'].map((name) => (
+              <tr><th scope="row">{name}</th><td>–</td><td>–</td></tr>
+            ))}
+          </tbody>
+        </table>
+        <p id="session-note" hidden>Times on this page aren't saved. In cube, every solve is.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <h2>Built for daily practice.</h2>
+    <div class="face">
+      {stickers.map((s) => (
+        <a class:list={['tile', `bg-${s.color}`, { center: s.center }]} href={s.href}>
+          {s.center && <img src={`${base}logo.svg`} alt="" width="72" height="72" />}
+          <h3>{s.title}</h3>
+          <p>{s.text}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="band screens">
+    <h2>See what's actually improving.</h2>
+    <figure class="shot wide">
+      <img src={`${base}screenshots/charts.webp`} width="1462" height="940" decoding="async" alt="The charts screen: times over a few months with ao5, ao12 and ao100 lines" loading="lazy" />
+      <figcaption>Times and averages over any range, with personal bests and DNFs marked.</figcaption>
+    </figure>
+    <div class="shot-pair">
+      <figure class="shot">
+        <img src={`${base}screenshots/stats.webp`} width="1462" height="940" decoding="async" alt="The stats screen: a heat-mapped table of rolling averages for every solve" loading="lazy" />
+        <figcaption>Every solve's rolling averages, heat-mapped so good runs stand out.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src={`${base}screenshots/timer.webp`} width="1462" height="940" decoding="async" alt="The timer screen: the solve list, scramble, digits, scramble preview and session statistics" loading="lazy" />
+        <figcaption>The timer, with your solves on the left and your session on the right.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="band keys" id="keys">
+    <h2>Every action has a key.</h2>
+    <p class="lead">The mouse is optional in cube. Press a key to see what it does. You can rebind any of them, or remove them.</p>
+
+    <div class="readout" id="readout" aria-live="polite">
+      <dl id="readout-list">
+        <div><dt>Space</dt><dd>{BINDINGS.Space[0][1]}</dd></div>
+      </dl>
+    </div>
+
+    <div class="keyboard" id="keyboard" aria-hidden="true">
+      {KEYBOARD.map((row) => (
+        <div class="key-row">
+          {row.map((cap) =>
+            cap.code ? (
+              <button
+                type="button"
+                tabindex="-1"
+                class:list={['cap', { bound: cap.code in BINDINGS }]}
+                data-code={cap.code}
+                style={`flex-grow: ${cap.width ?? 1}`}
+              >{cap.label}</button>
+            ) : (
+              <span class="cap-gap" style={`flex-grow: ${cap.width}`}></span>
+            ),
+          )}
+        </div>
+      ))}
+    </div>
+
+    <dl class="key-list">
+      {mainKeys.map((code) => (
+        <div><dt>{BINDINGS[code][0][0]}</dt><dd>{BINDINGS[code][0][1]}</dd></div>
+      ))}
+    </dl>
+
+    <p><a class="text-link" href={doc('keybinds')}>See all the shortcuts</a></p>
+  </section>
+
+  <section class="band data">
+    <div>
+      <h2>Your times are a file on your computer.</h2>
+      <p>Every solve is stored in one plain <code>times.json</code>, with automatic backups next to it. If that file ever can't be read, cube stops saving instead of overwriting it.</p>
+      <p><a class="text-link" href="https://github.com/enekocm7/cube-tui">cube-tui</a>, the terminal version, uses the same file. Move between the two with nothing to import.</p>
+      <p><a class="text-link" href={doc('data')}>How your data is stored</a></p>
+    </div>
+    <pre class="json" tabindex="0" aria-label="One solve in times.json"><code>{`{
+  "session_name": "Practice",
+  "times": [
+    {
+      "timestamp_in_millis": 9120,
+      "event": "Cube3x3",
+      "scramble": "U2 B' D2 R' F U B' R B R2 D2 L2",
+      "solved_at_unix_ms": 1760000000000,
+      "modifier": "None",
+      "comment": "PLL skip"
+    }
+  ]
+}`}</code></pre>
+  </section>
+
+  <section class="download" id="download">
+    <h2>Download cube</h2>
+    <ul>
+      <li><a href={RELEASES}><strong>Windows</strong><span>x64 installer or portable .zip</span></a></li>
+      <li><a href={RELEASES}><strong>Linux</strong><span>x64 .tar.gz</span></a></li>
+      <li><a href={RELEASES}><strong>macOS</strong><span>Apple silicon .tar.gz</span></a></li>
+    </ul>
+    <p>Or build it from source with Rust. The <a href={doc('install')}>install guide</a> covers both.</p>
+  </section>
+</Base>

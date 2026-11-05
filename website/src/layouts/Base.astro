@@ -1,0 +1,75 @@
+---
+import '@fontsource-variable/archivo/wdth.css';
+import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
+import archivo from '@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2?url';
+import cubeMono from '../../../fonts/CubeMono.woff2?url';
+import Icon from '../components/Icon.astro';
+import { REPO } from '../lib/site';
+
+interface Props {
+  title: string;
+  description: string;
+  current?: 'home' | 'docs';
+}
+
+const { title, description, current } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const canonical = `https://enekocm7.github.io${Astro.url.pathname}`;
+const ogImage = 'https://enekocm7.github.io/cube-gui/screenshots/timer.png';
+---
+
+<!doctype html>
+<html lang="en" data-phase="idle" transition:animate="none">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preload" href={archivo} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={cubeMono} as="font" type="font/woff2" crossorigin />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="cube" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="theme-color" content="#000000" />
+    <link rel="icon" href={`${base}logo.svg`} type="image/svg+xml" />
+    <ClientRouter />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class:list={['site-header', 'chrome', { overlay: current === 'home' }]}>
+      <a class="brand" href={base}>
+        <img src={`${base}logo.svg`} alt="" width="26" height="26" />
+        cube
+      </a>
+      <nav aria-label="Primary">
+        <a href={`${base}docs/install/`} aria-current={current === 'docs' ? 'page' : undefined}>Docs</a>
+        <a href={REPO}><Icon name="github" /><span class="nav-label">GitHub</span></a>
+        <a class="nav-download" href={`${base}#download`}><Icon name="download" />Download</a>
+      </nav>
+    </header>
+    <main id="main">
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <p>cube is free software under the GPL-3.0-or-later license.</p>
+      <nav aria-label="Footer">
+        <a href={`${base}docs/install/`}>Docs</a>
+        <a href={`${REPO}/releases`}>Releases</a>
+        <a href={`${REPO}/issues`}>Issues</a>
+        <a href="https://github.com/enekocm7/cube-tui">cube-tui</a>
+      </nav>
+    </footer>
+    <script>
+      import '../scripts/page';
+    </script>
+  </body>
+</html>

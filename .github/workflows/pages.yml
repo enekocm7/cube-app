@@ -3,7 +3,7 @@ name: Pages
 on:
   push:
     branches: [master]
-    paths: ["docs/**", "assets/logo.svg", ".github/workflows/pages.yml"]
+    paths: ["website/**", "fonts/**", "assets/logo.svg", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -23,10 +23,25 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - run: cp assets/logo.svg docs/logo.svg
+
+      - name: Copy branding
+        run: |
+          cp assets/logo.svg website/public/logo.svg
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install website dependencies
+        working-directory: website
+        run: bun install --frozen-lockfile
+
+      - name: Build website
+        working-directory: website
+        run: bun run build
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: docs
+          path: website/dist
       - id: deployment
         uses: actions/deploy-pages@v4

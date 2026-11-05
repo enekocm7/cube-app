@@ -1,4 +1,9 @@
-# Scramble performance
+---
+title: Scramble performance
+description: How fast official scrambles generate, and why the app precomputes them per event.
+section: Reference
+order: 5
+---
 
 Numbers for comparing future changes, recorded for issue #70. They come from
 an AMD Ryzen 7 5800X3D (16 threads) on Windows 11, with `tnoodle-rs` 0.1.1 and

@@ -1,0 +1,26 @@
+---
+import { NET_LAYOUT, netColors } from '../lib/cube';
+
+interface Props {
+  scramble: string;
+}
+
+const CELL = 10;
+const GAP = 1;
+const FACE_GAP = 3;
+const FACE = CELL * 3 + GAP * 2;
+const colors = netColors(Astro.props.scramble);
+const cells = NET_LAYOUT.flatMap(({ col, row }, f) =>
+  Array.from({ length: 9 }, (_, i) => ({
+    x: col * (FACE + FACE_GAP) + (i % 3) * (CELL + GAP),
+    y: row * (FACE + FACE_GAP) + Math.floor(i / 3) * (CELL + GAP),
+    color: colors[f * 9 + i],
+  })),
+);
+const width = FACE * 4 + FACE_GAP * 3;
+const height = FACE * 3 + FACE_GAP * 2;
+---
+
+<svg class="net" id="net" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="The cube after this scramble, unfolded">
+  {cells.map((c) => <rect x={c.x} y={c.y} width={CELL} height={CELL} rx="1" class={`fill-${c.color}`} />)}
+</svg>

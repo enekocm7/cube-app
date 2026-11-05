@@ -1,4 +1,9 @@
-# Keyboard shortcuts
+---
+title: Keyboard shortcuts
+description: Every action has a shortcut, every shortcut can be rebound, and the whole app works without a mouse.
+section: Timing
+order: 2
+---
 
 cube is meant to be fully controllable from the keyboard. The timer, solves,
 events, sessions, stats, settings and help all have shortcuts, dialogs stay
