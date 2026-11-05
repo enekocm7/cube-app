@@ -2,12 +2,12 @@ import { defineConfig } from 'astro/config';
 
 // https://docs.astro.build/en/reference/configuration-reference/
 export default defineConfig({
-  // Project pages site: https://enekocm7.github.io/cube-gui/
+  // Project pages site: https://enekocm7.github.io/cube-app/
   site: 'https://enekocm7.github.io',
-  base: '/cube-gui/',
+  base: '/cube-app/',
   output: 'static',
   redirects: {
-    '/docs': '/cube-gui/docs/install/',
+    '/docs': '/cube-app/docs/install/',
   },
   build: {
     format: 'directory',

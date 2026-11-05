@@ -7,7 +7,7 @@ order: 1
 
 ## Pick your build
 
-Download the latest release from [GitHub Releases](https://github.com/enekocm7/cube-gui/releases/latest):
+Download the latest release from [GitHub Releases](https://github.com/enekocm7/cube-app/releases/latest):
 
 | System | Download | How to run it |
 |---|---|---|
@@ -15,13 +15,13 @@ Download the latest release from [GitHub Releases](https://github.com/enekocm7/c
 | Linux x64 | `linux-x64` `.tar.gz` | Unpack and run `cube` |
 | macOS (Apple silicon) | `macos-arm64` `.tar.gz` | Unpack and run `cube` |
 
-> Linux and macOS builds exist but have not been fully tested yet (see [FAQ](/cube-gui/docs/faq/)). If the app misbehaves there, please [open an issue](https://github.com/enekocm7/cube-gui/issues) with your OS version.
+> Linux and macOS builds exist but have not been fully tested yet (see [FAQ](/cube-app/docs/faq/)). If the app misbehaves there, please [open an issue](https://github.com/enekocm7/cube-app/issues) with your OS version.
 
 ## Windows notes
 
 - The installer and portable zip are **unsigned**, so Windows SmartScreen may warn you. Click *More info → Run anyway* if you trust the release.
 - No admin rights are needed for the portable build.
-- Your data lives outside the install folder, so updating never wipes your solves (see [Data](/cube-gui/docs/data/)).
+- Your data lives outside the install folder, so updating never wipes your solves (see [Data](/cube-app/docs/data/)).
 
 ## Build from source
 
@@ -31,7 +31,7 @@ You need [Rust](https://rustup.rs/) (stable). Then from the repository root:
 cargo run --release
 ```
 
-On Linux you also need GPUI's system libraries. The package list for Ubuntu 24.04 lives in the [release workflow](https://github.com/enekocm7/cube-gui/blob/master/.github/workflows/release.yml) and comes from the [GPUI Kit install guide](https://gpui-kit.com/docs/).
+On Linux you also need GPUI's system libraries. The package list for Ubuntu 24.04 lives in the [release workflow](https://github.com/enekocm7/cube-app/blob/master/.github/workflows/release.yml) and comes from the [GPUI Kit install guide](https://gpui-kit.com/docs/).
 
 Commands for working on the code:
 

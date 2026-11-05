@@ -184,7 +184,7 @@ pub const STRINGS: Strings = Strings {
     theme_dark: "Donker",
 
     help_title: "Sneltoetsen",
-    help_hint: "Gebruik Bewerken om een sneltoets te wijzigen, of bewerk [keybindings] in cube-gui.toml.",
+    help_hint: "Gebruik Bewerken om een sneltoets te wijzigen, of bewerk [keybindings] in cube-app.toml.",
     help_any_key_stops: "Elke toets stopt een lopende timer; Escape annuleert hem zonder iets op te slaan.",
     help_section_timer: "Timer",
     help_section_solves: "Solves",

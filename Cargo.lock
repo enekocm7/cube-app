@@ -1294,6 +1294,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "cube-app"
+version = "0.1.0"
+dependencies = [
+ "cube-ui",
+ "cube-updater",
+ "embed-resource",
+ "resvg 0.45.1",
+]
+
+[[package]]
 name = "cube-bluetooth"
 version = "0.1.0"
 dependencies = [
@@ -1316,16 +1326,6 @@ dependencies = [
  "serde_json",
  "tnoodle-rs",
  "toml 0.8.23",
-]
-
-[[package]]
-name = "cube-gui"
-version = "0.1.0"
-dependencies = [
- "cube-ui",
- "cube-updater",
- "embed-resource",
- "resvg 0.45.1",
 ]
 
 [[package]]

@@ -10,7 +10,7 @@ order: 2
 The installer and portable builds are **unsigned**, so SmartScreen warns on first run. This is expected until releases are code-signed:
 
 1. Click *More info*.
-2. Click *Run anyway* if you downloaded from [GitHub Releases](https://github.com/enekocm7/cube-gui/releases).
+2. Click *Run anyway* if you downloaded from [GitHub Releases](https://github.com/enekocm7/cube-app/releases).
 
 ## "Your history couldn't be read"
 

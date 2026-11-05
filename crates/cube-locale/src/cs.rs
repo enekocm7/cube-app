@@ -184,7 +184,7 @@ pub const STRINGS: Strings = Strings {
     theme_dark: "Tmavý",
 
     help_title: "Klávesové zkratky",
-    help_hint: "Pomocí Upravit změňte zkratku, nebo upravte [keybindings] v cube-gui.toml.",
+    help_hint: "Pomocí Upravit změňte zkratku, nebo upravte [keybindings] v cube-app.toml.",
     help_any_key_stops: "Libovolná klávesa zastaví běžící časovač; Escape jej zruší bez záznamu.",
     help_section_timer: "Časovač",
     help_section_solves: "Solves",

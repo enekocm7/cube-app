@@ -14,7 +14,7 @@ same solve history, so a save from one must keep working in the other. See
 
 | Crate | Contents |
 |---|---|
-| `cube-gui` (root) | The `cube` binary (`src/main.rs`) and icon embedding (`build.rs`) |
+| `cube-app` (root) | The `cube` binary (`src/main.rs`) and icon embedding (`build.rs`) |
 | `crates/cube-core` | Solves, statistics, the timer state machine, scrambles and persistence, with no GUI dependency |
 | `crates/cube-locale` | Translated strings (`en.rs`, `es.rs`) |
 | `crates/cube-updater` | GitHub release check, verified download and self-update |
@@ -145,7 +145,7 @@ settings, import/export dialogs and help.
   markers consistent across languages (the
   `every_language_keeps_the_placeholders` test enforces this). Placeholders
   are filled with `str::replace` by the caller.
-- **Settings** (`cube-core::settings`, stored in `cube-gui.toml`, separate
+- **Settings** (`cube-core::settings`, stored in `cube-app.toml`, separate
   from cube-tui's `config.toml`) need a sensible default and must keep older
   files loading: `#[serde(default)]` on the struct, tolerate missing and
   unknown keys (see `missing_and_unknown_keys_are_tolerated`). Never share

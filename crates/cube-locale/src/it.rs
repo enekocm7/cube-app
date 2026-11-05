@@ -184,7 +184,7 @@ pub const STRINGS: Strings = Strings {
     theme_dark: "Scuro",
 
     help_title: "Scorciatoie da tastiera",
-    help_hint: "Usa Modifica per cambiare una scorciatoia, oppure modifica [keybindings] in cube-gui.toml.",
+    help_hint: "Usa Modifica per cambiare una scorciatoia, oppure modifica [keybindings] in cube-app.toml.",
     help_any_key_stops: "Qualsiasi tasto ferma un timer in corso; Esc lo annulla senza registrarlo.",
     help_section_timer: "Timer",
     help_section_solves: "Solve",

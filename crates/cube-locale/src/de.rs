@@ -184,7 +184,7 @@ pub const STRINGS: Strings = Strings {
     theme_dark: "Dunkel",
 
     help_title: "Tastenkürzel",
-    help_hint: "Verwende Bearbeiten, um ein Kürzel zu ändern, oder bearbeite [keybindings] in cube-gui.toml.",
+    help_hint: "Verwende Bearbeiten, um ein Kürzel zu ändern, oder bearbeite [keybindings] in cube-app.toml.",
     help_any_key_stops: "Jede Taste stoppt einen laufenden Timer; Escape bricht ihn ab, ohne etwas aufzuzeichnen.",
     help_section_timer: "Timer",
     help_section_solves: "Solves",

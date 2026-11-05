@@ -4,7 +4,7 @@
 
 <p align="center">A desktop timer and session manager for speedcubing, built with Rust and <a href="https://gpui-kit.com/docs/">GPUI Kit</a>.</p>
 
-<p align="center"><a href="https://enekocm7.github.io/cube-gui/">Website and docs</a> · <a href="https://github.com/enekocm7/cube-gui/releases">Releases</a></p>
+<p align="center"><a href="https://enekocm7.github.io/cube-app/">Website and docs</a> · <a href="https://github.com/enekocm7/cube-app/releases">Releases</a></p>
 
 ![cube's timer screen](website/public/screenshots/timer.png)
 
@@ -20,7 +20,7 @@ solve history, so you can move between the terminal and the desktop without impo
 
 ## Get started
 
-1. Download the build for your system from the [releases](https://github.com/enekocm7/cube-gui/releases) page.
+1. Download the build for your system from the [releases](https://github.com/enekocm7/cube-app/releases) page.
 
    | System | Download |
    |---|---|
@@ -38,7 +38,7 @@ Press `F1` at any time to see every shortcut.
 ## Keyboard shortcuts
 
 cube is designed to be fully usable from the keyboard. Every action below has a shortcut, and any of them can be
-changed or removed. The [keyboard reference](https://enekocm7.github.io/cube-gui/docs/keybinds/) is the full reference, with the key name syntax and the rules
+changed or removed. The [keyboard reference](https://enekocm7.github.io/cube-app/docs/keybinds/) is the full reference, with the key name syntax and the rules
 for valid bindings.
 
 | Key | Action |
@@ -86,7 +86,7 @@ Around the shortcuts:
 - **Dialogs.** They are reachable with `Tab`, `Enter` and `Space`. `Enter` runs a dialog's primary action and `Esc`
   closes it.
 - **Rebinding.** In the `F1` panel, **Edit** (opposite **Close**) shows a pencil to rebind an action and a trash can to
-  remove its shortcut. You can also edit the `[keybindings]` table in `cube-gui.toml` by hand.
+  remove its shortcut. You can also edit the `[keybindings]` table in `cube-app.toml` by hand.
 - **Settings.** `Up` and `Down` move through the categories, and `Tab` or `Right` moves into the settings.
 - **Search.** The shortcuts panel and the settings dialog both have a search field. Press `/` to jump to it, or
   reach it with `Tab`. Type to filter rows by label or current value, such as `space`, `ctrl` or `unassigned` for
@@ -147,11 +147,11 @@ Around the shortcuts:
 - Import and export csTimer sessions with file pickers. See [Import and export](#import-and-export).
 - The history is shared with cube-tui. See [Your data](#your-data).
 
-Features still on the way are tracked in the [issues](https://github.com/enekocm7/cube-gui/issues).
+Features still on the way are tracked in the [issues](https://github.com/enekocm7/cube-app/issues).
 
 ## Settings
 
-Open settings with `Ctrl + ,`. They are saved to `cube-gui.toml` (see [Your data](#your-data)).
+Open settings with `Ctrl + ,`. They are saved to `cube-app.toml` (see [Your data](#your-data)).
 
 Pick a category on the left to see its settings on the right.
 
@@ -212,7 +212,7 @@ accent = "#FFD700"
 | What | File | Shared with cube-tui |
 |---|---|---|
 | Solves and sessions | `times.json` | Yes |
-| This app's settings | `cube-gui.toml` | No (cube-tui uses `config.toml`) |
+| This app's settings | `cube-app.toml` | No (cube-tui uses `config.toml`) |
 | Themes | `themes/` | Yes |
 | Backups of your solves | `backups/` | No |
 
@@ -281,13 +281,13 @@ open a pull request.
 
 | Crate | Contents |
 |---|---|
-| `cube-gui` (root) | The `cube` binary and icon embedding |
+| `cube-app` (root) | The `cube` binary and icon embedding |
 | `crates/cube-core` | Solves, statistics, the timer state machine, scrambles and persistence, with no GUI dependency |
 | `crates/cube-locale` | Translated strings |
 | `crates/cube-updater` | GitHub release check, verified download and self-update |
 | `crates/cube-ui` | The GPUI interface |
 
-Scramble timings and the reasoning behind the queue are in [Scramble performance](https://enekocm7.github.io/cube-gui/docs/scramble-performance/).
+Scramble timings and the reasoning behind the queue are in [Scramble performance](https://enekocm7.github.io/cube-app/docs/scramble-performance/).
 
 ## License
 

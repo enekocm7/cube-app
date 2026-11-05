@@ -1,6 +1,6 @@
 ---
 title: Your data
-description: Where times.json and cube-gui.toml live, how cube-tui sharing works, and how backups keep you safe.
+description: Where times.json and cube-app.toml live, how cube-tui sharing works, and how backups keep you safe.
 section: Reference
 order: 2
 ---
@@ -10,7 +10,7 @@ order: 2
 | What | File | Shared with cube-tui |
 |---|---|---|
 | Solves and sessions | `times.json` | Yes |
-| This app's settings | `cube-gui.toml` | No (cube-tui uses `config.toml`) |
+| This app's settings | `cube-app.toml` | No (cube-tui uses `config.toml`) |
 | Themes | `themes/` | Yes |
 | Automatic backups | `backups/` | No |
 

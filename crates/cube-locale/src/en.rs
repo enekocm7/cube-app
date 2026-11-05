@@ -184,7 +184,7 @@ pub const STRINGS: Strings = Strings {
     theme_dark: "Dark",
 
     help_title: "Keyboard shortcuts",
-    help_hint: "Use Edit to change a shortcut, or edit [keybindings] in cube-gui.toml.",
+    help_hint: "Use Edit to change a shortcut, or edit [keybindings] in cube-app.toml.",
     help_any_key_stops: "Any key stops a running timer; Escape cancels it without recording.",
     help_section_timer: "Timer",
     help_section_solves: "Solves",

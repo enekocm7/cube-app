@@ -184,7 +184,7 @@ pub const STRINGS: Strings = Strings {
     theme_dark: "Koyu",
 
     help_title: "Klavye kısayolları",
-    help_hint: "Bir kısayolu değiştirmek için Düzenle'yi kullan veya cube-gui.toml içindeki [keybindings] bölümünü düzenle.",
+    help_hint: "Bir kısayolu değiştirmek için Düzenle'yi kullan veya cube-app.toml içindeki [keybindings] bölümünü düzenle.",
     help_any_key_stops: "Herhangi bir tuş çalışan zamanlayıcıyı durdurur; Escape kaydetmeden iptal eder.",
     help_section_timer: "Zamanlayıcı",
     help_section_solves: "Solveler",

@@ -1,4 +1,4 @@
-export const REPO = 'https://github.com/enekocm7/cube-gui';
+export const REPO = 'https://github.com/enekocm7/cube-app';
 export const RELEASES = `${REPO}/releases/latest`;
 
 /** The sticker that marks each docs section, in reading order. */

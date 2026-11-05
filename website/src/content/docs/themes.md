@@ -5,7 +5,7 @@ section: Reference
 order: 3
 ---
 
-cube reads the same theme files as [cube-tui](https://github.com/enekocm7/cube-tui), so a theme works in both apps. They live in the `themes` folder inside your [data folder](/cube-gui/docs/data/).
+cube reads the same theme files as [cube-tui](https://github.com/enekocm7/cube-tui), so a theme works in both apps. They live in the `themes` folder inside your [data folder](/cube-app/docs/data/).
 
 ## Using themes
 

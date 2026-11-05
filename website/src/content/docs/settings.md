@@ -1,11 +1,11 @@
 ---
 title: Settings reference
-description: Every option, where it lives in the dialog, and what it writes to cube-gui.toml.
+description: Every option, where it lives in the dialog, and what it writes to cube-app.toml.
 section: Reference
 order: 1
 ---
 
-Open settings with `Ctrl + ,`. They save to `cube-gui.toml` next to your solves (see [Data](/cube-gui/docs/data/)). The dialog lists its categories on the left and shows the selected one on the right. The search field above the list looks through every category. The [keyboard shortcuts](/cube-gui/docs/keybinds/#keys-inside-dialogs) page covers moving around without the mouse.
+Open settings with `Ctrl + ,`. They save to `cube-app.toml` next to your solves (see [Data](/cube-app/docs/data/)). The dialog lists its categories on the left and shows the selected one on the right. The search field above the list looks through every category. The [keyboard shortcuts](/cube-app/docs/keybinds/#keys-inside-dialogs) page covers moving around without the mouse.
 
 ## General
 
@@ -39,7 +39,7 @@ Sixteen languages, including English, Spanish, German, French, Japanese, and Chi
 
 ### Theme
 
-Light, dark, or system — plus your theme files. See [Themes](/cube-gui/docs/themes/).
+Light, dark, or system — plus your theme files. See [Themes](/cube-app/docs/themes/).
 
 ### Font size
 
@@ -59,11 +59,11 @@ Light, dark, or system — plus your theme files. See [Themes](/cube-gui/docs/th
 
 ## Keyboard shortcuts
 
-Opens the `F1` panel, where shortcuts are rebound. See [Keyboard shortcuts](/cube-gui/docs/keybinds/).
+Opens the `F1` panel, where shortcuts are rebound. See [Keyboard shortcuts](/cube-app/docs/keybinds/).
 
 ## Data
 
-Import and export csTimer sessions, pick your own backup folder, and trigger a manual backup. See [Data](/cube-gui/docs/data/).
+Import and export csTimer sessions, pick your own backup folder, and trigger a manual backup. See [Data](/cube-app/docs/data/).
 
 ## Updates
 

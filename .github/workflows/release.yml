@@ -35,7 +35,7 @@ jobs:
           } else {
             # The workspace keeps a single version in [workspace.package].
             $meta = cargo metadata --no-deps --format-version 1 | ConvertFrom-Json
-            $version = ($meta.packages | Where-Object { $_.name -eq "cube-gui" }).version
+            $version = ($meta.packages | Where-Object { $_.name -eq "cube-app" }).version
           }
           "version=$version" >> $env:GITHUB_OUTPUT
           Write-Host "Version: $version"
@@ -130,7 +130,7 @@ jobs:
           else
             # The workspace keeps a single version in [workspace.package].
             version=$(cargo metadata --no-deps --format-version 1 \
-              | jq -r '.packages[] | select(.name == "cube-gui") | .version')
+              | jq -r '.packages[] | select(.name == "cube-app") | .version')
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "Version: $version"
