@@ -21,10 +21,6 @@ export function initHome(signal: AbortSignal) {
   const note = document.getElementById('session-note')!;
   const netCells = document.querySelectorAll('#net rect');
 
-  const touch = matchMedia('(hover: none)').matches;
-  hint.innerHTML = touch
-    ? 'Touch and hold the digits until they turn green, then let go to start. Tap to stop.'
-    : hint.innerHTML;
   hint.hidden = false;
 
   // The primary button names the visitor's system.
@@ -150,9 +146,10 @@ export function initHome(signal: AbortSignal) {
     }
   }
 
-  // Space is only the timer while the timer is on screen; further down it
-  // scrolls as usual, and a focused link or button keeps its own Space.
-  const timerInView = () => window.scrollY < stage.offsetHeight * 0.5;
+  // Space is only the timer while the timer is on screen; further down, or on a
+  // layout without the timer, it scrolls as usual, and a focused link or button
+  // keeps its own Space.
+  const timerInView = () => digits.offsetWidth > 0 && window.scrollY < stage.offsetHeight * 0.5;
   const onControl = (target: EventTarget | null) =>
     target instanceof Element && target.closest('a, button, input, pre') !== null;
 
@@ -175,20 +172,11 @@ export function initHome(signal: AbortSignal) {
     }
   });
 
-  // Touch has no Space key, so it holds the digits. A mouse click never starts
-  // the timer.
-  digits.addEventListener('pointerdown', (event) => {
-    if (phase === 'idle' && event.pointerType === 'touch') {
-      event.preventDefault();
-      digits.setPointerCapture(event.pointerId);
-      press();
-    }
-  });
+  // A mouse click never starts the timer, but it can stop one.
   stage.addEventListener('pointerdown', () => {
     if (phase === 'running') stop(true);
   });
   on('pointerup', release);
-  on('pointercancel', release);
   on('blur', () => {
     if (phase === 'holding' || phase === 'ready') {
       window.clearTimeout(holdTimer);

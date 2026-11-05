@@ -23,17 +23,26 @@ const flat = sections.flatMap((section) => section.docs);
 const index = flat.findIndex((doc) => docSlug(doc.id) === slug);
 const prev = flat[index - 1];
 const next = flat[index + 1];
+const section = sections.find((s) => s.docs.includes(flat[index]));
 ---
 
 <Base title={`${title} | cube docs`} description={description} current="docs">
   <div class="docs-layout">
-    <aside class="docs-side" aria-label="Documentation">
-      <input class="docs-filter" id="docs-filter" type="search" placeholder="Filter" aria-label="Filter the docs" />
+    <button class="docs-bar" type="button" popovertarget="docs-side">
+      <span class={`sticker bg-${section?.color}`}></span>
+      <span class="docs-bar-title">{title}</span>
+      <span class="docs-bar-action">Contents</span>
+    </button>
+    <aside class="docs-side" id="docs-side" popover aria-label="Documentation">
+      <div class="docs-side-head">
+        <input class="docs-filter" id="docs-filter" type="search" placeholder="Filter" aria-label="Filter the docs" />
+        <button class="docs-close" type="button" popovertarget="docs-side" popovertargetaction="hide">Close</button>
+      </div>
       <div id="docs-nav">
-        {sections.map((section) => (
+        {sections.map((group) => (
           <div class="docs-group">
-            <p class="docs-group-name"><span class={`sticker bg-${section.color}`}></span>{section.name}</p>
-            {section.docs.map((doc) => (
+            <p class="docs-group-name"><span class={`sticker bg-${group.color}`}></span>{group.name}</p>
+            {group.docs.map((doc) => (
               <a
                 href={`${base}docs/${docSlug(doc.id)}/`}
                 aria-current={docSlug(doc.id) === slug ? 'page' : undefined}
