@@ -2,11 +2,12 @@
 
 use cube_core::Settings;
 use cube_core::persistence;
-use cube_core::settings::parse_scramble_pt;
 use cube_core::settings::{
-    FontChoice, InvalidScramblePt, MAX_SCRAMBLE_PT, MIN_SCRAMBLE_PT, ScrambleSize, ThemePreference,
-    UpdateChannel, UpdateFrequency,
+    FontChoice, InvalidSizePt, MAX_SCRAMBLE_PT, MAX_TEXT_PT, MAX_TIMER_PT, MIN_SCRAMBLE_PT,
+    MIN_TEXT_PT, MIN_TIMER_PT, ScrambleSize, TextSize, ThemePreference, TimerSize, UpdateChannel,
+    UpdateFrequency,
 };
+use cube_core::settings::{parse_scramble_pt, parse_text_pt, parse_timer_pt};
 use cube_core::theme;
 use cube_core::theme::{ThemeColor, ThemeFile};
 use cube_locale::{Language, Strings};
@@ -41,6 +42,14 @@ struct SettingsView {
     scramble_pt: Entity<InputState>,
     /// Whether the text in `scramble_pt` is not a valid size.
     scramble_pt_invalid: bool,
+    /// The custom text size in points, blank for the preset.
+    text_pt: Entity<InputState>,
+    /// Whether the text in `text_pt` is not a valid size.
+    text_pt_invalid: bool,
+    /// The custom timer size in points, blank for the preset.
+    timer_pt: Entity<InputState>,
+    /// Whether the text in `timer_pt` is not a valid size.
+    timer_pt_invalid: bool,
     /// Filters the rows by label and visible value.
     search: Entity<InputState>,
     /// Holds focus so `/` reaches the dialog before anything is clicked.
@@ -286,6 +295,7 @@ impl SettingsView {
                 .outline()
                 .small()
                 .label(font_label(strings, current))
+                .dropdown_caret(true)
                 .tab_stop(false)
                 .dropdown_menu(move |mut menu, _, _| {
                     for choice in FontChoice::ALL {
@@ -307,6 +317,106 @@ impl SettingsView {
         )
     }
 
+    /// How large the interface text is drawn.
+    fn text_size_row(&self, settings: &Settings, strings: &'static Strings) -> AnyElement {
+        let current = settings.text_size;
+        let app = self.app.clone();
+        let input = self.text_pt.clone();
+        row(
+            strings.setting_text_size,
+            Button::new("text-size")
+                .outline()
+                .small()
+                .label(text_size_label(strings, current))
+                .dropdown_caret(true)
+                .tab_stop(false)
+                .dropdown_menu(move |mut menu, _, _| {
+                    for choice in TextSize::ALL {
+                        let app = app.clone();
+                        menu = menu.item(
+                            PopupMenuItem::new(text_size_label(strings, choice))
+                                .checked(choice == current)
+                                .on_click({
+                                    let input = input.clone();
+                                    move |_, window, cx| {
+                                        // Start the custom size from what is shown now.
+                                        let mut start = None;
+                                        app.update(cx, |app, cx| {
+                                            app.update_settings(window, cx, |settings| {
+                                                if choice == TextSize::Custom
+                                                    && settings.text_custom_pt.is_none()
+                                                {
+                                                    settings.text_custom_pt =
+                                                        Some(settings.text_pt());
+                                                }
+                                                settings.text_size = choice;
+                                                start = settings.text_custom_pt;
+                                            });
+                                        });
+                                        if let Some(points) = start {
+                                            input.update(cx, |input, cx| {
+                                                input.set_value(points.to_string(), window, cx);
+                                            });
+                                        }
+                                    }
+                                }),
+                        );
+                    }
+                    menu
+                }),
+        )
+    }
+
+    /// How large the timer's digits are drawn.
+    fn timer_size_row(&self, settings: &Settings, strings: &'static Strings) -> AnyElement {
+        let current = settings.timer_size;
+        let app = self.app.clone();
+        let input = self.timer_pt.clone();
+        row(
+            strings.setting_timer_size,
+            Button::new("timer-size")
+                .outline()
+                .small()
+                .label(timer_size_label(strings, current))
+                .dropdown_caret(true)
+                .tab_stop(false)
+                .dropdown_menu(move |mut menu, _, _| {
+                    for choice in TimerSize::ALL {
+                        let app = app.clone();
+                        menu = menu.item(
+                            PopupMenuItem::new(timer_size_label(strings, choice))
+                                .checked(choice == current)
+                                .on_click({
+                                    let input = input.clone();
+                                    move |_, window, cx| {
+                                        // Start the custom size from what is shown now.
+                                        let mut start = None;
+                                        app.update(cx, |app, cx| {
+                                            app.update_settings(window, cx, |settings| {
+                                                if choice == TimerSize::Custom
+                                                    && settings.timer_custom_pt.is_none()
+                                                {
+                                                    settings.timer_custom_pt =
+                                                        Some(settings.timer_pt());
+                                                }
+                                                settings.timer_size = choice;
+                                                start = settings.timer_custom_pt;
+                                            });
+                                        });
+                                        if let Some(points) = start {
+                                            input.update(cx, |input, cx| {
+                                                input.set_value(points.to_string(), window, cx);
+                                            });
+                                        }
+                                    }
+                                }),
+                        );
+                    }
+                    menu
+                }),
+        )
+    }
+
     /// How large the scramble is drawn.
     fn scramble_size_row(&self, settings: &Settings, strings: &'static Strings) -> AnyElement {
         let current = settings.scramble_size;
@@ -318,6 +428,7 @@ impl SettingsView {
                 .outline()
                 .small()
                 .label(scramble_size_label(strings, current))
+                .dropdown_caret(true)
                 .tab_stop(false)
                 .dropdown_menu(move |mut menu, _, _| {
                     for choice in ScrambleSize::ALL {
@@ -356,19 +467,25 @@ impl SettingsView {
         )
     }
 
-    /// The exact scramble size field, shown while the size is custom.
-    fn custom_scramble_rows(&self, strings: &'static Strings) -> Vec<AnyElement> {
+    /// A size's exact field, shown while that size is custom.
+    fn custom_size_rows(
+        &self,
+        label: &'static str,
+        input: &Entity<InputState>,
+        invalid: bool,
+        min: u32,
+        max: u32,
+        strings: &'static Strings,
+    ) -> Vec<AnyElement> {
         let mut rows = vec![row(
-            strings.setting_scramble_custom,
-            div()
-                .w(px(96.))
-                .child(Input::new(&self.scramble_pt).small().w_full()),
+            label,
+            div().w(px(96.)).child(Input::new(input).small().w_full()),
         )];
-        if self.scramble_pt_invalid {
+        if invalid {
             let message = strings
-                .scramble_custom_invalid
-                .replace("{min}", &MIN_SCRAMBLE_PT.to_string())
-                .replace("{max}", &MAX_SCRAMBLE_PT.to_string());
+                .size_custom_invalid
+                .replace("{min}", &min.to_string())
+                .replace("{max}", &max.to_string());
             rows.push(
                 div()
                     .px_3()
@@ -749,6 +866,36 @@ impl SettingsView {
     }
 }
 
+/// Wires a size field to its parser and settings, flagging invalid input.
+fn observe_size_input(
+    input: &Entity<InputState>,
+    window: &mut Window,
+    cx: &mut Context<SettingsView>,
+    parse: fn(&str) -> Result<Option<u32>, InvalidSizePt>,
+    set_value: fn(&mut Settings, Option<u32>),
+    set_invalid: fn(&mut SettingsView, bool),
+) {
+    cx.subscribe_in(
+        input,
+        window,
+        move |view, input, event: &InputEvent, window, cx| {
+            if !matches!(event, InputEvent::Change) {
+                return;
+            }
+            let text = input.read(cx).value().to_string();
+            match parse(&text) {
+                Ok(points) => {
+                    set_invalid(view, false);
+                    view.change(window, cx, move |settings| set_value(settings, points));
+                }
+                Err(InvalidSizePt) => set_invalid(view, true),
+            }
+            cx.notify();
+        },
+    )
+    .detach();
+}
+
 impl Render for SettingsView {
     #[allow(clippy::too_many_lines, reason = "one tagged row list per section")]
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
@@ -829,77 +976,134 @@ impl Render for SettingsView {
         }
         let themes = tagged(theme_texts, theme_rows);
 
-        let mut appearance_texts = vec![
+        let mut font_size_texts = vec![format!(
+            "{} {}",
+            strings.setting_font,
+            font_label(strings, settings.font)
+        )];
+        let mut font_size_rows = vec![self.font_row(&settings, strings)];
+
+        font_size_texts.push(format!(
+            "{} {}",
+            strings.setting_text_size,
+            text_size_label(strings, settings.text_size)
+        ));
+        font_size_rows.push(self.text_size_row(&settings, strings));
+        if settings.text_size == TextSize::Custom {
+            let custom = self.custom_size_rows(
+                strings.setting_text_custom,
+                &self.text_pt,
+                self.text_pt_invalid,
+                MIN_TEXT_PT,
+                MAX_TEXT_PT,
+                strings,
+            );
+            font_size_texts.extend(
+                custom
+                    .iter()
+                    .map(|_| strings.setting_text_custom.to_owned()),
+            );
+            font_size_rows.extend(custom);
+        }
+
+        font_size_texts.push(format!(
+            "{} {}",
+            strings.setting_timer_size,
+            timer_size_label(strings, settings.timer_size)
+        ));
+        font_size_rows.push(self.timer_size_row(&settings, strings));
+        if settings.timer_size == TimerSize::Custom {
+            let custom = self.custom_size_rows(
+                strings.setting_timer_custom,
+                &self.timer_pt,
+                self.timer_pt_invalid,
+                MIN_TIMER_PT,
+                MAX_TIMER_PT,
+                strings,
+            );
+            font_size_texts.extend(
+                custom
+                    .iter()
+                    .map(|_| strings.setting_timer_custom.to_owned()),
+            );
+            font_size_rows.extend(custom);
+        }
+
+        font_size_texts.push(format!(
+            "{} {}",
+            strings.setting_scramble_size,
+            scramble_size_label(strings, settings.scramble_size)
+        ));
+        font_size_rows.push(self.scramble_size_row(&settings, strings));
+        if settings.scramble_size == ScrambleSize::Custom {
+            let custom = self.custom_size_rows(
+                strings.setting_scramble_custom,
+                &self.scramble_pt,
+                self.scramble_pt_invalid,
+                MIN_SCRAMBLE_PT,
+                MAX_SCRAMBLE_PT,
+                strings,
+            );
+            font_size_texts.extend(
+                custom
+                    .iter()
+                    .map(|_| strings.setting_scramble_custom.to_owned()),
+            );
+            font_size_rows.extend(custom);
+        }
+
+        let font_size = tagged(font_size_texts, font_size_rows);
+
+        let appearance_texts = vec![
             state(strings.setting_solve_list_ao5, settings.solve_list_ao5),
             state(
                 strings.setting_always_show_scrollbar,
                 settings.always_show_scrollbar,
             ),
-            format!(
-                "{} {}",
-                strings.setting_font,
-                font_label(strings, settings.font)
-            ),
-            format!(
-                "{} {}",
-                strings.setting_scramble_size,
-                scramble_size_label(strings, settings.scramble_size)
-            ),
+            state(strings.setting_scramble_preview, settings.scramble_preview),
+            state(strings.setting_toasts, settings.toasts),
+            state(strings.setting_confirm_delete, settings.confirm_delete),
         ];
-        let mut appearance = vec![
-            self.switch(
-                "solve-list-ao5",
-                strings.setting_solve_list_ao5,
-                settings.solve_list_ao5,
-                |settings, value| settings.solve_list_ao5 = value,
-                cx,
-            ),
-            self.switch(
-                "always-show-scrollbar",
-                strings.setting_always_show_scrollbar,
-                settings.always_show_scrollbar,
-                |settings, value| settings.always_show_scrollbar = value,
-                cx,
-            ),
-            self.font_row(&settings, strings),
-            self.switch(
-                "scramble-preview",
-                strings.setting_scramble_preview,
-                settings.scramble_preview,
-                |settings, value| settings.scramble_preview = value,
-                cx,
-            ),
-            self.scramble_size_row(&settings, strings),
-        ];
-        if settings.scramble_size == ScrambleSize::Custom {
-            let custom = self.custom_scramble_rows(strings);
-            appearance_texts.extend(
-                custom
-                    .iter()
-                    .map(|_| strings.setting_scramble_custom.to_owned()),
-            );
-            appearance.extend(custom);
-        }
-        appearance_texts.push(state(strings.setting_toasts, settings.toasts));
-        appearance.push(self.switch(
-            "toasts",
-            strings.setting_toasts,
-            settings.toasts,
-            |settings, value| settings.toasts = value,
-            cx,
-        ));
-        appearance_texts.push(state(
-            strings.setting_confirm_delete,
-            settings.confirm_delete,
-        ));
-        appearance.push(self.switch(
-            "confirm-delete",
-            strings.setting_confirm_delete,
-            settings.confirm_delete,
-            |settings, value| settings.confirm_delete = value,
-            cx,
-        ));
-        let appearance = tagged(appearance_texts, appearance);
+        let appearance = tagged(
+            appearance_texts,
+            vec![
+                self.switch(
+                    "solve-list-ao5",
+                    strings.setting_solve_list_ao5,
+                    settings.solve_list_ao5,
+                    |settings, value| settings.solve_list_ao5 = value,
+                    cx,
+                ),
+                self.switch(
+                    "always-show-scrollbar",
+                    strings.setting_always_show_scrollbar,
+                    settings.always_show_scrollbar,
+                    |settings, value| settings.always_show_scrollbar = value,
+                    cx,
+                ),
+                self.switch(
+                    "scramble-preview",
+                    strings.setting_scramble_preview,
+                    settings.scramble_preview,
+                    |settings, value| settings.scramble_preview = value,
+                    cx,
+                ),
+                self.switch(
+                    "toasts",
+                    strings.setting_toasts,
+                    settings.toasts,
+                    |settings, value| settings.toasts = value,
+                    cx,
+                ),
+                self.switch(
+                    "confirm-delete",
+                    strings.setting_confirm_delete,
+                    settings.confirm_delete,
+                    |settings, value| settings.confirm_delete = value,
+                    cx,
+                ),
+            ],
+        );
 
         let mut update_texts = vec![
             state(strings.setting_check_updates, settings.updates.auto_check),
@@ -962,6 +1166,7 @@ impl Render for SettingsView {
         let search = query(&self.search, cx);
         let sections: Vec<AnyElement> = [
             (strings.settings_timer, timer),
+            (strings.settings_font_size, font_size),
             (strings.settings_theme, themes),
             (strings.settings_appearance, appearance),
             (strings.settings_updates, updates),
@@ -1066,6 +1271,28 @@ fn theme_hsla(color: ThemeColor) -> Hsla {
     rgb(color.rgb()).into()
 }
 
+/// The menu label for a text size.
+fn text_size_label(strings: &'static Strings, size: TextSize) -> &'static str {
+    match size {
+        TextSize::Small => strings.text_size_small,
+        TextSize::Normal => strings.text_size_normal,
+        TextSize::Large => strings.text_size_large,
+        TextSize::Largest => strings.text_size_largest,
+        TextSize::Custom => strings.text_size_custom,
+    }
+}
+
+/// The menu label for a timer size.
+fn timer_size_label(strings: &'static Strings, size: TimerSize) -> &'static str {
+    match size {
+        TimerSize::Small => strings.timer_size_small,
+        TimerSize::Normal => strings.timer_size_normal,
+        TimerSize::Large => strings.timer_size_large,
+        TimerSize::Largest => strings.timer_size_largest,
+        TimerSize::Custom => strings.timer_size_custom,
+    }
+}
+
 /// The menu label for a scramble size.
 fn scramble_size_label(strings: &'static Strings, size: ScrambleSize) -> &'static str {
     match size {
@@ -1108,43 +1335,62 @@ impl CubeApp {
         // pick from.
         let _ = persistence::ensure_default_theme();
         let themes = persistence::list_themes().unwrap_or_default();
-        let custom = self.settings.scramble_custom_pt;
+        let scramble_custom = self.settings.scramble_custom_pt;
+        let text_custom = self.settings.text_custom_pt;
+        let timer_custom = self.settings.timer_custom_pt;
         let strings = self.strings();
         let scramble_pt = cx.new(|cx| {
             InputState::new(window, cx)
-                .default_value(custom.map_or_default(|pt| pt.to_string()))
+                .default_value(scramble_custom.map_or_default(|pt| pt.to_string()))
+                .placeholder("pt")
+        });
+        let text_pt = cx.new(|cx| {
+            InputState::new(window, cx)
+                .default_value(text_custom.map_or_default(|pt| pt.to_string()))
+                .placeholder("pt")
+        });
+        let timer_pt = cx.new(|cx| {
+            InputState::new(window, cx)
+                .default_value(timer_custom.map_or_default(|pt| pt.to_string()))
                 .placeholder("pt")
         });
         let view = cx.new(|cx| {
             cx.observe(&app, |_: &mut SettingsView, _, cx| cx.notify())
                 .detach();
             let search = new_search(strings, window, cx);
-            cx.subscribe_in(
+            observe_size_input(
                 &scramble_pt,
                 window,
-                |view, input, event: &InputEvent, window, cx| {
-                    if !matches!(event, InputEvent::Change) {
-                        return;
-                    }
-                    let text = input.read(cx).value().to_string();
-                    match parse_scramble_pt(&text) {
-                        Ok(points) => {
-                            view.scramble_pt_invalid = false;
-                            view.change(window, cx, move |settings| {
-                                settings.scramble_custom_pt = points;
-                            });
-                        }
-                        Err(InvalidScramblePt) => view.scramble_pt_invalid = true,
-                    }
-                    cx.notify();
-                },
-            )
-            .detach();
+                cx,
+                parse_scramble_pt,
+                |settings, points| settings.scramble_custom_pt = points,
+                |view, invalid| view.scramble_pt_invalid = invalid,
+            );
+            observe_size_input(
+                &text_pt,
+                window,
+                cx,
+                parse_text_pt,
+                |settings, points| settings.text_custom_pt = points,
+                |view, invalid| view.text_pt_invalid = invalid,
+            );
+            observe_size_input(
+                &timer_pt,
+                window,
+                cx,
+                parse_timer_pt,
+                |settings, points| settings.timer_custom_pt = points,
+                |view, invalid| view.timer_pt_invalid = invalid,
+            );
             SettingsView {
                 app: app.clone(),
                 themes,
                 scramble_pt: scramble_pt.clone(),
                 scramble_pt_invalid: false,
+                text_pt: text_pt.clone(),
+                text_pt_invalid: false,
+                timer_pt: timer_pt.clone(),
+                timer_pt_invalid: false,
                 search,
                 focus: cx.focus_handle(),
             }

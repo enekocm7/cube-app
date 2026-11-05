@@ -147,6 +147,9 @@ pub fn apply(settings: &Settings, cx: &mut App) {
         let theme = Theme::global_mut(cx);
         theme.font_family = system.sans;
         theme.mono_font_family = system.mono;
+        // The root view turns this into the window's rem size on every frame,
+        // which is what every rem-based text size in the interface follows.
+        theme.font_size = px(settings.rem_px());
     }
 
     let bundled = if settings.font == FontChoice::System {
