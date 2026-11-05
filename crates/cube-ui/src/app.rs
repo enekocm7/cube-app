@@ -37,6 +37,7 @@ use crate::charts_screen::{ChartData, KEY_ZOOM};
 use crate::palette;
 use crate::panel_resize::{PanelSide, render_grab};
 use crate::preview::PreviewCache;
+use crate::scoped_rem::ScopedRem;
 
 /// The most sessions cube-tui can display.
 pub const MAX_SESSIONS: usize = 99;
@@ -216,11 +217,23 @@ pub struct CubeApp {
     window_save: Option<Task<()>>,
 }
 
-/// The padding `TitleBar` leaves before its content (`gpui-kit` keeps it private).
+/// How much wider the title bar's left column is than its right one, or the
+/// other way round, so the event picker between them sits on the window's
+/// center. `TitleBar` takes 80 px on the left on macOS for the traffic lights;
+/// elsewhere it takes 12 px on the left and three 34 px window controls on the
+/// right (`gpui-kit` keeps these private).
 #[cfg(target_os = "macos")]
-const TITLE_BAR_LEFT_PADDING: Pixels = px(80.);
+const TITLE_BAR_COLUMN_BASES: (Pixels, Pixels) = (px(0.), px(80.));
 #[cfg(not(target_os = "macos"))]
-const TITLE_BAR_LEFT_PADDING: Pixels = px(12.);
+const TITLE_BAR_COLUMN_BASES: (Pixels, Pixels) = (px(90.), px(0.));
+
+/// Room kept beside the event picker for the scramble button hanging off it.
+const EVENT_PICKER_HANG: Rems = Rems(2.25);
+
+/// The largest rem the title bar follows. The bar has a fixed height and must
+/// fit the smallest window, with its window controls, in every language, so
+/// past the largest preset it stops growing with the rest of the interface.
+const TITLE_BAR_MAX_REM: Pixels = px(22.);
 
 /// How many deletions Undo remembers.
 const UNDO_LIMIT: usize = 100;
@@ -1733,6 +1746,7 @@ impl CubeApp {
         cx: &mut Context<Self>,
     ) -> impl IntoElement + use<> {
         let strings = self.strings();
+        let rem = window.rem_size().min(TITLE_BAR_MAX_REM);
         let tab =
             |id: &'static str, label: &'static str, screen: Screen, cx: &mut Context<Self>| {
                 Button::new(id)
@@ -1748,86 +1762,93 @@ impl CubeApp {
                         app.focus.focus(window, cx);
                     }))
             };
-        TitleBar::new().child(
-            h_flex()
-                .relative()
-                .w_full()
-                .justify_between()
-                .child(
-                    h_flex()
-                        .gap_2()
-                        .child(img(logo()).size(px(18.)))
-                        .child(
-                            div()
-                                .text_sm()
-                                .font_weight(FontWeight::SEMIBOLD)
-                                .child("cube"),
-                        )
-                        .child(
-                            // The title bar is a drag region; only occluded children get clicks.
-                            h_flex()
-                                .occlude()
-                                .ml_4()
-                                .gap_1()
-                                .child(tab("nav-timer", strings.nav_timer, Screen::Timer, cx))
-                                .child(tab("nav-stats", strings.nav_stats, Screen::Stats, cx))
-                                .child(tab("nav-charts", strings.nav_charts, Screen::Charts, cx)),
-                        ),
-                )
-                // Centered on the window, not on the space the tabs and the window
-                // controls leave: the overlay starts where the title bar's own left
-                // padding ends and is as wide as the window. It lets clicks through;
-                // only the group is occluded.
-                .child(
-                    h_flex()
-                        .absolute()
-                        .top_0()
-                        .bottom_0()
-                        .left(-TITLE_BAR_LEFT_PADDING)
-                        .w(window.viewport_size().width)
-                        .justify_center()
-                        .items_center()
-                        .child(self.render_event_picker(cx)),
-                )
-                .child(
-                    h_flex()
-                        .occlude()
-                        .mr_2()
-                        .gap_1()
-                        .child(self.render_bluetooth_button(cx))
-                        .child(
-                            Button::new("open-help")
-                                .ghost()
-                                .small()
-                                .icon(IconName::Keyboard)
-                                .tooltip(strings.help_title)
-                                .accessibility_label(strings.help_title)
-                                .tab_stop(false)
-                                .on_click(cx.listener(|app, _, window, cx| {
-                                    if app.timer.is_active() {
-                                        app.focus.focus(window, cx);
-                                    } else {
-                                        app.open_help(window, cx);
-                                    }
-                                })),
-                        )
-                        .child(
-                            Button::new("open-settings")
-                                .ghost()
-                                .small()
-                                .icon(IconName::Settings)
-                                .tooltip(strings.settings)
-                                .accessibility_label(strings.settings)
-                                .tab_stop(false)
-                                .on_click(cx.listener(|app, _, window, cx| {
-                                    if app.timer.is_active() {
-                                        app.focus.focus(window, cx);
-                                    } else {
-                                        app.open_settings(window, cx);
-                                    }
-                                })),
-                        ),
-                ),
+        let (left_basis, right_basis) = TITLE_BAR_COLUMN_BASES;
+        // The columns share the free room equally, which puts the picker on the
+        // window's center. A column never gets narrower than what it holds, so
+        // when the text is too large for that the picker moves aside rather
+        // than landing on the tabs.
+        ScopedRem::new(
+            rem,
+            TitleBar::new().child(
+                h_flex()
+                    .w_full()
+                    .h_full()
+                    .child(
+                        h_flex()
+                            .flex_grow(1.)
+                            .flex_basis(left_basis)
+                            .gap_2()
+                            .child(img(logo()).size(px(18.)).flex_none())
+                            .child(
+                                div()
+                                    .text_sm()
+                                    .font_weight(FontWeight::SEMIBOLD)
+                                    .child("cube"),
+                            )
+                            .child(
+                                // The title bar is a drag region; only occluded children get clicks.
+                                h_flex()
+                                    .occlude()
+                                    .ml_4()
+                                    .gap_1()
+                                    .child(tab("nav-timer", strings.nav_timer, Screen::Timer, cx))
+                                    .child(tab("nav-stats", strings.nav_stats, Screen::Stats, cx))
+                                    .child(tab(
+                                        "nav-charts",
+                                        strings.nav_charts,
+                                        Screen::Charts,
+                                        cx,
+                                    )),
+                            ),
+                    )
+                    .child(self.render_event_picker(cx))
+                    .child(
+                        h_flex()
+                            .flex_grow(1.)
+                            .flex_basis(right_basis)
+                            .justify_end()
+                            .child(
+                                h_flex()
+                                    .occlude()
+                                    .ml(EVENT_PICKER_HANG)
+                                    .mr_2()
+                                    .gap_1()
+                                    .child(self.render_bluetooth_button(cx))
+                                    .child(
+                                        Button::new("open-help")
+                                            .ghost()
+                                            .small()
+                                            .icon(IconName::Keyboard)
+                                            .tooltip(strings.help_title)
+                                            .accessibility_label(strings.help_title)
+                                            .tab_stop(false)
+                                            .on_click(cx.listener(|app, _, window, cx| {
+                                                if app.timer.is_active() {
+                                                    app.focus.focus(window, cx);
+                                                } else {
+                                                    app.open_help(window, cx);
+                                                }
+                                            })),
+                                    )
+                                    .child(
+                                        Button::new("open-settings")
+                                            .ghost()
+                                            .small()
+                                            .icon(IconName::Settings)
+                                            .tooltip(strings.settings)
+                                            .accessibility_label(strings.settings)
+                                            .tab_stop(false)
+                                            .on_click(cx.listener(|app, _, window, cx| {
+                                                if app.timer.is_active() {
+                                                    app.focus.focus(window, cx);
+                                                } else {
+                                                    app.open_settings(window, cx);
+                                                }
+                                            })),
+                                    ),
+                            ),
+                    ),
+            ),
         )
     }
 }

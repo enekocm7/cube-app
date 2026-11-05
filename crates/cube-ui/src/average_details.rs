@@ -19,12 +19,14 @@ use crate::sidebar::solve_time_color;
 const DIALOG_SIZE: DialogSize = DialogSize::STANDARD;
 /// Room for the result and the range under it, which stay put while the
 /// attempts scroll.
-const HERO_HEIGHT: Pixels = px(92.);
-const LEGEND_HEIGHT: Pixels = px(24.);
-const ROW_HEIGHT: Pixels = px(34.);
-const NUMBER_WIDTH: Pixels = px(36.);
-const TIME_WIDTH: Pixels = px(96.);
-const NOTE_WIDTH: Pixels = px(64.);
+const HERO_HEIGHT: Rems = Rems(5.75);
+const LEGEND_HEIGHT: Rems = Rems(1.5);
+const ROW_HEIGHT: Rems = Rems(2.125);
+const NUMBER_WIDTH: Rems = Rems(2.25);
+const TIME_WIDTH: Rems = Rems(6.);
+const NOTE_WIDTH: Rems = Rems(4.);
+/// How far the lanes start: the number and time columns and the gap after them.
+const LANE_INDENT: Rems = Rems(NUMBER_WIDTH.0 + TIME_WIDTH.0 + 0.75);
 const DOT_SIZE: Pixels = px(10.);
 const STEM_HEIGHT: Pixels = px(2.);
 
@@ -112,7 +114,7 @@ impl CubeApp {
             let strings = state.strings();
             let title = average_title(strings, state.language(), size);
             let max_height = dialog_body_height(DIALOG_SIZE, window);
-            let body = render_body(&app, end, size, max_height, cx);
+            let body = render_body(&app, end, size, max_height, window.rem_size(), cx);
             let copy_app = app.clone();
             dialog
                 .title(dialog_title(title, strings.close))
@@ -151,6 +153,7 @@ fn render_body(
     end: usize,
     size: usize,
     max_height: Pixels,
+    rem_size: Pixels,
     cx: &App,
 ) -> AnyElement {
     let state = app.read(cx);
@@ -185,8 +188,8 @@ fn render_body(
                     .h(HERO_HEIGHT)
                     .child(
                         div()
-                            .text_size(px(48.))
-                            .line_height(px(54.))
+                            .text_size(Rems(3.))
+                            .line_height(Rems(3.375))
                             .font_family(mono)
                             .when(is_dnf, |result| result.text_color(Palette::of(cx).red))
                             .child(format_average(Some(detail.average()))),
@@ -196,7 +199,12 @@ fn render_body(
             .child(lane_legend(strings, !is_dnf, muted))
             .child(
                 FadeScroll::new("average-solves", background)
-                    .max_h((max_height - HERO_HEIGHT - LEGEND_HEIGHT).max(px(0.)))
+                    .max_h(
+                        (max_height
+                            - HERO_HEIGHT.to_pixels(rem_size)
+                            - LEGEND_HEIGHT.to_pixels(rem_size))
+                        .max(px(0.)),
+                    )
                     .children(rows),
             ),
     )
@@ -211,7 +219,7 @@ fn lane_legend(strings: &Strings, show: bool, muted: Hsla) -> impl IntoElement +
         .gap_3()
         .text_xs()
         .text_color(muted)
-        .child(div().w(NUMBER_WIDTH + TIME_WIDTH + px(12.)))
+        .child(div().w(LANE_INDENT).flex_none())
         .child(
             h_flex()
                 .flex_1()
@@ -223,7 +231,7 @@ fn lane_legend(strings: &Strings, show: bool, muted: Hsla) -> impl IntoElement +
                         .child(strings.average_slower.to_owned())
                 }),
         )
-        .child(div().w(NOTE_WIDTH))
+        .child(div().w(NOTE_WIDTH).flex_none())
 }
 
 /// One attempt, as a button that opens the solve.
@@ -295,6 +303,8 @@ fn render_attempt(
                 .child(
                     div()
                         .w(NUMBER_WIDTH)
+                        .flex_none()
+                        .whitespace_nowrap()
                         .text_xs()
                         .text_right()
                         .text_color(muted)
@@ -303,6 +313,8 @@ fn render_attempt(
                 .child(
                     div()
                         .w(TIME_WIDTH)
+                        .flex_none()
+                        .whitespace_nowrap()
                         .text_right()
                         .when_some(time_color, gpui_kit::Styled::text_color)
                         .child(detail.attempt_text(position)),
@@ -311,6 +323,8 @@ fn render_attempt(
                 .child(
                     div()
                         .w(NOTE_WIDTH)
+                        .flex_none()
+                        .whitespace_nowrap()
                         .text_xs()
                         .text_right()
                         .text_color(note_color)
@@ -346,8 +360,6 @@ impl Lane {
         let Some(offset) = offset else {
             return lane;
         };
-        let middle = (ROW_HEIGHT - STEM_HEIGHT) / 2.;
-        let dot_top = (ROW_HEIGHT - DOT_SIZE) / 2.;
         let at = offset.mul_add(0.5, 0.5);
         lane.child(
             div()
@@ -362,7 +374,8 @@ impl Lane {
             lane.child(
                 div()
                     .absolute()
-                    .top(middle)
+                    .top(relative(0.5))
+                    .mt(-STEM_HEIGHT / 2.)
                     .left(relative(at.min(0.5)))
                     .w(relative((at - 0.5).abs()))
                     .h(STEM_HEIGHT)
@@ -372,7 +385,8 @@ impl Lane {
         .child(
             div()
                 .absolute()
-                .top(dot_top)
+                .top(relative(0.5))
+                .mt(-DOT_SIZE / 2.)
                 .left(relative(at))
                 .ml(-DOT_SIZE / 2.)
                 .size(DOT_SIZE)

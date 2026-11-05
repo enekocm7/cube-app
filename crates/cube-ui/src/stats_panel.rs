@@ -1,6 +1,7 @@
 //! The right panel: current and best statistics of the session.
 
 use cube_core::format::format_ms;
+use cube_core::panels::stats_rows_stack;
 use cube_core::stats::Average;
 use cube_locale::Strings;
 use gpui_kit::component::{ActiveTheme as _, h_flex, v_flex};
@@ -8,6 +9,12 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::{CubeApp, average_label, format_average};
+use crate::scroll_fade::FadeScroll;
+
+/// Height of a row, which follows the text size.
+const ROW_HEIGHT: Rems = Rems(1.75);
+/// Width of the column naming each row.
+const LABEL_WIDTH: Rems = Rems(3.25);
 
 /// What clicking a value of the panel opens.
 #[derive(Clone, Copy)]
@@ -26,6 +33,7 @@ impl CubeApp {
         let stats = &self.stats;
         let theme = cx.theme();
         let (border, muted) = (theme.border, theme.muted_foreground);
+        let background = theme.background;
         let (hover, selected_bg) = (theme.muted, theme.accent);
         let mono = theme.mono_font_family.clone();
         let optional_ms = |ms: Option<u64>| ms.map_or_else(|| "–".to_owned(), format_ms);
@@ -33,19 +41,15 @@ impl CubeApp {
         let cell = |text: String| {
             div()
                 .flex_1()
+                .min_w_0()
+                .truncate()
                 .font_family(mono.clone())
                 .text_right()
                 .child(text)
         };
+        let stacked = stats_rows_stack(f32::from(width) as u32, self.settings.text_scale());
         let row = |label: String, current: AnyElement, best: AnyElement| {
-            h_flex()
-                .h(px(28.))
-                .px_3()
-                .gap_2()
-                .text_sm()
-                .child(div().w(px(52.)).text_color(muted).child(label))
-                .child(current)
-                .child(best)
+            stats_row(label, current, best, stacked, muted)
         };
         let value = |id: ElementId, text: String, target: Option<Target>| {
             cell(text)
@@ -104,33 +108,83 @@ impl CubeApp {
             .py_2()
             .border_l_1()
             .border_color(border)
-            .child(panel_header(strings, muted))
-            .child(row(
-                strings.stat_single.to_owned(),
-                value(
-                    "stats-latest-single".into(),
-                    latest,
-                    last_solve.map(Target::Solve),
-                ),
-                value(
-                    "stats-best-single".into(),
-                    optional_ms(stats.best.map(|(ms, _)| ms)),
-                    stats.best.map(|(_, index)| Target::Solve(index)),
-                ),
-            ))
-            .children(windows)
+            .child(panel_header(strings, muted, stacked))
+            .child(
+                FadeScroll::new("stats-panel", background)
+                    .flex_1()
+                    .min_h_0()
+                    .child(row(
+                        strings.stat_single.to_owned(),
+                        value(
+                            "stats-latest-single".into(),
+                            latest,
+                            last_solve.map(Target::Solve),
+                        ),
+                        value(
+                            "stats-best-single".into(),
+                            optional_ms(stats.best.map(|(ms, _)| ms)),
+                            stats.best.map(|(_, index)| Target::Solve(index)),
+                        ),
+                    ))
+                    .children(windows),
+            )
+    }
+}
+
+/// One row of the panel: its label beside its values, or above them when
+/// `stacked`.
+fn stats_row(
+    label: String,
+    current: AnyElement,
+    best: AnyElement,
+    stacked: bool,
+    muted: Hsla,
+) -> Div {
+    let name = div().flex_none().truncate().text_color(muted).child(label);
+    if stacked {
+        v_flex()
+            .flex_none()
+            .px_3()
+            .py_1()
+            .text_sm()
+            .child(name)
+            .child(
+                h_flex()
+                    .w_full()
+                    .gap_2()
+                    .text_xs()
+                    .child(current)
+                    .child(best),
+            )
+    } else {
+        h_flex()
+            .flex_none()
+            .h(ROW_HEIGHT)
+            .px_3()
+            .gap_2()
+            .text_sm()
+            .child(name.w(LABEL_WIDTH))
+            .child(current)
+            .child(best)
     }
 }
 
 /// The names of the two value columns.
-fn panel_header(strings: &'static Strings, muted: Hsla) -> impl IntoElement {
+fn panel_header(strings: &'static Strings, muted: Hsla, stacked: bool) -> impl IntoElement {
     h_flex()
-        .h(px(28.))
+        .h(ROW_HEIGHT)
         .px_3()
         .gap_2()
         .text_xs()
         .text_color(muted)
-        .child(div().w(px(52.)))
-        .child(div().flex_1().text_right().child(strings.stats_current))
-        .child(div().flex_1().text_right().child(strings.stats_best))
+        .when(!stacked, |header| {
+            header.child(div().w(LABEL_WIDTH).flex_none())
+        })
+        .child(heading(strings.stats_current))
+        .child(heading(strings.stats_best))
+}
+
+/// The name of a value column, cut short rather than folded.
+fn heading(text: &'static str) -> Div {
+    div().flex_1().min_w_0().truncate().text_right().child(text)
 }

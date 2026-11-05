@@ -20,12 +20,18 @@ use crate::palette::Palette;
 use crate::scroll_fade::fading_scroll;
 
 /// The widest the session picker gets, however long the session's name is.
-const SESSION_MAX_WIDTH: Pixels = px(120.);
+const SESSION_MAX_WIDTH: Rems = Rems(7.5);
 
 /// The widest a session's name gets in the session menu.
-const SESSION_MENU_MAX_WIDTH: Pixels = px(260.);
+const SESSION_MENU_MAX_WIDTH: Rems = Rems(16.25);
 
-const AVERAGE_WIDTH: Pixels = px(64.);
+const AVERAGE_WIDTH: Rems = Rems(4.);
+
+/// Height of a solve's row, which follows the text size.
+const ROW_HEIGHT: Rems = Rems(1.75);
+
+/// Width of the solve number column.
+const NUMBER_WIDTH: Rems = Rems(2.25);
 
 /// Extra right padding while the average column is shown, so the averages
 /// clear the overlay scrollbar instead of touching it.
@@ -285,7 +291,7 @@ impl CubeApp {
                     h_flex()
                         .id(("solve", index))
                         .w_full()
-                        .h(px(28.))
+                        .h(ROW_HEIGHT)
                         .px_3()
                         .when(show_average, |row| {
                             row.pr(px(12.) + AVERAGE_SCROLLBAR_GUTTER)
@@ -298,7 +304,9 @@ impl CubeApp {
                         .hover(move |row| row.bg(hover))
                         .child(
                             div()
-                                .w(px(36.))
+                                .w(NUMBER_WIDTH)
+                                .flex_none()
+                                .truncate()
                                 .text_xs()
                                 .text_color(muted)
                                 .child(self.language().format_count((index + 1) as u64)),
@@ -306,6 +314,8 @@ impl CubeApp {
                         .child(
                             div()
                                 .flex_1()
+                                .min_w_0()
+                                .truncate()
                                 .when_some(time_color, gpui_kit::Styled::text_color)
                                 .child(solve.to_string()),
                         )
@@ -313,6 +323,8 @@ impl CubeApp {
                             row.child(
                                 div()
                                     .w(AVERAGE_WIDTH)
+                                    .flex_none()
+                                    .truncate()
                                     .text_right()
                                     .text_xs()
                                     .text_color(muted)

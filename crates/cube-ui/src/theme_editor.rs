@@ -22,7 +22,7 @@ use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_tit
 use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
 use crate::scroll_fade::FadeScroll;
 
-const ROW_MIN_HEIGHT: Pixels = px(44.);
+const ROW_MIN_HEIGHT: Rems = Rems(2.75);
 
 /// The seven colors a cube-tui theme stores.
 #[derive(Clone, Copy)]
@@ -293,7 +293,7 @@ impl ThemeEditor {
         Button::new(("theme-format", index))
             .outline()
             .small()
-            .w(px(72.))
+            .w(Rems(4.5))
             .label(current.label())
             .dropdown_caret(true)
             .dropdown_menu(move |mut menu, _, _| {
@@ -337,7 +337,7 @@ impl ThemeEditor {
                 .child(ColorPicker::new(&draft.picker).small())
                 .child(self.format_button(index, cx))
                 .child(
-                    div().w(px(210.)).child(
+                    div().w(Rems(13.125)).child(
                         Input::new(&draft.input)
                             .small()
                             .w_full()
@@ -432,7 +432,7 @@ impl Render for ThemeEditor {
                 .child(row(
                     strings.theme_name,
                     div()
-                        .w(px(330.))
+                        .w(Rems(20.625))
                         .child(Input::new(&self.name).small().w_full()),
                 ))
                 .when_some(self.error.clone(), |body, error| {

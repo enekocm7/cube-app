@@ -3,6 +3,7 @@
 use std::time::Instant;
 
 use cube_core::format::format_ms;
+use cube_core::panels::fit_font_px;
 use cube_core::{Action, ManualEntry, ManualError, Modifier, Readiness, TimerPhase};
 use gpui_kit::component::tooltip::Tooltip;
 use gpui_kit::component::{ActiveTheme as _, h_flex, v_flex};
@@ -25,6 +26,16 @@ const SCRAMBLE_MAX_LINES: f32 = 8.;
 /// The share of the window's height the scramble preview may take.
 const PREVIEW_HEIGHT_SHARE: f32 = 0.28;
 
+/// The share of the window's height the scramble may take, however large its
+/// text, so the digits stay on screen.
+const SCRAMBLE_HEIGHT_SHARE: f32 = 0.3;
+
+/// The share of the window's height the digits may take.
+const DIGITS_HEIGHT_SHARE: f32 = 0.3;
+
+/// The padding on each side of the timer panel.
+const PANEL_PADDING: Rems = Rems(1.5);
+
 /// What the digits show at a given moment.
 struct Display {
     text: String,
@@ -44,15 +55,17 @@ impl CubeApp {
         let mono = fonts::timer_digits(cx).unwrap_or_else(|| theme.mono_font_family.clone());
         let muted = theme.muted_foreground;
         let preview = self.scramble_preview(window.viewport_size().height);
-        let digits = px(self.settings.timer_digits_px());
+        let digits = self.fit_digits(&display.text, &mono, attempt, window);
 
         v_flex()
             .flex_1()
             .min_w_0()
             .h_full()
             .items_center()
-            .p_6()
-            .when(!attempt, |panel| panel.child(self.render_scramble_bar(cx)))
+            .p(PANEL_PADDING)
+            .when(!attempt, |panel| {
+                panel.child(self.render_scramble_bar(window, cx))
+            })
             .child(
                 v_flex()
                     .id("timer-pad")
@@ -81,6 +94,8 @@ impl CubeApp {
                             .font_family(mono)
                             .text_size(digits)
                             .line_height(digits)
+                            .flex_none()
+                            .whitespace_nowrap()
                             .font_weight(FontWeight::MEDIUM)
                             .text_color(display.color)
                             .child(display.text),
@@ -90,6 +105,46 @@ impl CubeApp {
                     }),
             )
             .when(!attempt, |panel| panel.children(preview))
+    }
+
+    /// The size of the digits: the chosen one, unless `text` would not fit the
+    /// timer's panel on one line at that size. A time never folds.
+    fn fit_digits(
+        &self,
+        text: &str,
+        family: &SharedString,
+        attempt: bool,
+        window: &Window,
+    ) -> Pixels {
+        let chosen = self.settings.timer_digits_px();
+        let viewport = window.viewport_size();
+        let padding = PANEL_PADDING.to_pixels(window.rem_size()) * 2.;
+        let panels = if attempt {
+            px(0.)
+        } else {
+            let (sidebar, stats) = self.panel_widths(window);
+            sidebar + stats
+        };
+        let mut digits = font(family.clone());
+        digits.weight = FontWeight::MEDIUM;
+        let run = TextRun {
+            len: text.len(),
+            font: digits,
+            color: black(),
+            background_color: None,
+            underline: None,
+            strikethrough: None,
+        };
+        let shaped =
+            window
+                .text_system()
+                .shape_line(text.to_owned().into(), px(chosen), &[run], None);
+        px(fit_font_px(
+            chosen,
+            f32::from(shaped.width),
+            f32::from(viewport.width - panels - padding),
+            f32::from(viewport.height) * DIGITS_HEIGHT_SHARE,
+        ))
     }
 
     /// The drawing of the current scramble, unless it is hidden or not ready.
@@ -209,11 +264,16 @@ impl CubeApp {
         }
     }
 
-    fn render_scramble_bar(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
+    fn render_scramble_bar(
+        &self,
+        window: &Window,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement + use<> {
         let strings = self.strings();
         let scramble = self.scramble.clone();
         let font_size = px(self.settings.scramble_font_px());
         let line = px(self.settings.scramble_line_px());
+        let tallest = window.viewport_size().height * SCRAMBLE_HEIGHT_SHARE;
         let theme = cx.theme();
         let mono = theme.mono_font_family.clone();
         let muted = theme.muted_foreground;
@@ -231,14 +291,14 @@ impl CubeApp {
         h_flex()
             .flex_none()
             .w_full()
-            .min_h(line * SCRAMBLE_MIN_LINES)
+            .min_h((line * SCRAMBLE_MIN_LINES).min(tallest))
             .pb_3()
             .child(
                 FadeScroll::new(scroll_id, theme.background)
                     .flex_1()
                     .min_w_0()
                     .h_auto()
-                    .max_h(line * SCRAMBLE_MAX_LINES)
+                    .max_h((line * SCRAMBLE_MAX_LINES).min(tallest))
                     .text_center()
                     .font_family(mono)
                     .text_size(font_size)

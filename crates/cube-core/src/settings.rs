@@ -412,6 +412,11 @@ impl Settings {
         self.text_pt() as f32 * 4.0 / 3.0
     }
 
+    /// How many times larger the text is than the normal size.
+    pub fn text_scale(&self) -> f32 {
+        self.text_pt() as f32 / TextSize::Normal.points() as f32
+    }
+
     /// Timer size in points: the custom size when chosen, else the preset.
     pub fn timer_pt(&self) -> u32 {
         match (self.timer_size, self.timer_custom_pt) {
@@ -570,6 +575,7 @@ mod tests {
         let mut settings = Settings::default();
         assert_eq!(settings.text_size, TextSize::Normal);
         assert!((settings.rem_px() - 16.).abs() < f32::EPSILON);
+        assert!((settings.text_scale() - 1.).abs() < f32::EPSILON);
 
         let sizes: Vec<u32> = TextSize::ALL[..4]
             .iter()

@@ -11,6 +11,9 @@
 /// outside the viewport and taken out of the body height.
 pub const BODY_INSET: f32 = 12.;
 
+/// The size of one rem in pixels at the normal text size.
+pub const NORMAL_REM_PX: f32 = 16.;
+
 /// The size rules of one dialog: a share of the window, kept between a floor
 /// and a ceiling.
 #[derive(Clone, Copy, Debug)]
@@ -88,14 +91,17 @@ impl DialogSize {
         chrome_height: 64.,
     };
 
-    /// The dialog's width in a window `viewport_width` pixels wide.
+    /// The dialog's width in a window `viewport_width` pixels wide, with text
+    /// `text_scale` times the normal size.
     ///
-    /// A window narrower than the minimum gets its whole width, leaving the
-    /// dialog's own margins to keep it on screen, instead of a width that
-    /// would overflow.
-    pub fn width(self, viewport_width: f32) -> f32 {
-        (viewport_width * self.width_share)
-            .clamp(self.min_width, self.max_width)
+    /// Larger text widens the dialog in proportion, so its rows keep the same
+    /// number of words; smaller text leaves it as it is. A window narrower than
+    /// the minimum gets its whole width, leaving the dialog's own margins to
+    /// keep it on screen, instead of a width that would overflow.
+    pub fn width(self, viewport_width: f32, text_scale: f32) -> f32 {
+        let scale = text_scale.max(1.);
+        (viewport_width * self.width_share * scale)
+            .clamp(self.min_width * scale, self.max_width * scale)
             .min(viewport_width)
     }
 
@@ -114,9 +120,16 @@ impl DialogSize {
 }
 
 /// The width of the settings dialog's category list in a dialog `dialog_width`
-/// pixels wide.
-pub fn settings_nav_width(dialog_width: f32) -> f32 {
-    (dialog_width * 0.24).clamp(180., 260.).min(dialog_width)
+/// pixels wide, with text `text_scale` times the normal size.
+///
+/// Larger text widens the list, but it never takes the settings' share of the
+/// dialog.
+pub fn settings_nav_width(dialog_width: f32, text_scale: f32) -> f32 {
+    let scale = text_scale.max(1.);
+    (dialog_width * 0.24)
+        .clamp(180. * scale, 260. * scale)
+        .min((dialog_width * 0.4).max(180.))
+        .min(dialog_width)
 }
 
 /// How far a scroll region must move so a row it holds comes into view, keeping
@@ -156,20 +169,20 @@ mod tests {
 
     #[test]
     fn a_dialog_grows_with_the_window_then_stops_at_its_maximum() {
-        close(DialogSize::STANDARD.width(1180.0), 590.0);
-        close(DialogSize::STANDARD.width(1920.0), 900.0);
-        assert!(DialogSize::WIDE.width(1920.0) > DialogSize::WIDE.width(1180.0));
+        close(DialogSize::STANDARD.width(1180.0, 1.), 590.0);
+        close(DialogSize::STANDARD.width(1920.0, 1.), 900.0);
+        assert!(DialogSize::WIDE.width(1920.0, 1.) > DialogSize::WIDE.width(1180.0, 1.));
     }
 
     #[test]
     fn a_narrow_window_holds_a_dialog_to_its_minimum_and_never_overflows() {
-        close(DialogSize::STANDARD.width(700.0), 480.0);
+        close(DialogSize::STANDARD.width(700.0, 1.), 480.0);
         for size in SIZES {
             for viewport in [200.0, 400.0, 910.0] {
                 assert!(
-                    size.width(viewport) <= viewport,
+                    size.width(viewport, 1.) <= viewport,
                     "{viewport}: {} overflows the window",
-                    size.width(viewport)
+                    size.width(viewport, 1.)
                 );
             }
         }
@@ -204,16 +217,16 @@ mod tests {
     #[test]
     fn the_settings_dialog_fits_the_smallest_window() {
         let (width, height) = (910.0, 560.0);
-        assert!(DialogSize::SETTINGS.width(width) <= width);
+        assert!(DialogSize::SETTINGS.width(width, 1.) <= width);
         assert!(DialogSize::SETTINGS.body_height(height) >= 320.0);
     }
 
     #[test]
     fn the_category_list_stays_a_readable_share_of_the_dialog() {
-        close(settings_nav_width(720.0), 180.0);
-        close(settings_nav_width(900.0), 216.0);
-        close(settings_nav_width(1120.0), 260.0);
-        close(settings_nav_width(100.0), 100.0);
+        close(settings_nav_width(720.0, 1.), 180.0);
+        close(settings_nav_width(900.0, 1.), 216.0);
+        close(settings_nav_width(1120.0, 1.), 260.0);
+        close(settings_nav_width(100.0, 1.), 100.0);
     }
 
     #[test]
@@ -230,5 +243,30 @@ mod tests {
     #[test]
     fn a_row_taller_than_the_region_shows_its_top() {
         close(reveal_shift((150.0, 500.0), (100.0, 300.0), 10.0), -40.0);
+    }
+
+    #[test]
+    fn larger_text_widens_a_dialog() {
+        close(DialogSize::COMPACT.width(1000., 1.25), 500.);
+        close(DialogSize::COMPACT.width(1600., 1.5), 840.);
+    }
+
+    #[test]
+    fn smaller_text_leaves_a_dialog_alone() {
+        close(
+            DialogSize::COMPACT.width(1000., 0.83),
+            DialogSize::COMPACT.width(1000., 1.),
+        );
+    }
+
+    #[test]
+    fn larger_text_never_widens_a_dialog_past_the_window() {
+        close(DialogSize::SETTINGS.width(910., 2.), 910.);
+    }
+
+    #[test]
+    fn larger_text_widens_the_settings_categories_within_their_share() {
+        close(settings_nav_width(1180., 2.), 360.);
+        close(settings_nav_width(800., 2.), 320.);
     }
 }
