@@ -1,5 +1,5 @@
 //! Prints per-event scramble timings as the tables in
-//! `docs/scramble-performance.md`.
+//! `website/src/content/docs/scramble-performance.md`.
 //!
 //! ```sh
 //! cargo run --release -p cube-core --example scramble_bench

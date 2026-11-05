@@ -1,5 +1,5 @@
 // The default shortcuts, as drawn on the landing page keyboard. Keep in step
-// with docs/keybinds.md.
+// with src/content/docs/keybinds.md.
 
 export type Binding = readonly [combo: string, action: string];
 

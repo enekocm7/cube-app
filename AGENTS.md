@@ -21,6 +21,10 @@ same solve history, so a save from one must keep working in the other. See
 | `crates/cube-bluetooth` | GAN Bluetooth timers: protocol, scanning and connections on a background runtime |
 | `crates/cube-ui` | The GPUI interface |
 
+Outside the workspace, `website/` is the Astro site and all the documentation,
+as markdown in `website/src/content/docs/`, and `fonts/` holds Cube Mono for both
+the app and the website.
+
 Dependency direction: `ui -> core`, `ui -> locale`, `ui -> updater`,
 `ui -> bluetooth -> core`. **Only
 `cube-ui` may depend on GPUI / `gpui-kit`**; keep everything else GUI-free so
@@ -45,6 +49,15 @@ cargo check --workspace --all-targets
 cargo run --release
 ```
 
+The website uses [Bun](https://bun.sh), not npm, and is deployed to GitHub Pages
+from `master`. From `website/`:
+
+```sh
+bun install
+bun run dev
+bun run build
+```
+
 Before opening a PR, at minimum `cargo test --workspace` and
 `cargo check --workspace --all-targets` must pass. Also run `cargo fmt --all`
 and `cargo clippy --workspace --all-targets -- -D warnings` and fix new
@@ -58,7 +71,7 @@ Notes:
   (`tnoodle-rs` at 3, other deps at 2). Don't "simplify" those profiles away.
 - When a change affects scramble speed, rerun
   `cargo run --release -p cube-core --example scramble_bench` and update
-  `docs/scramble-performance.md`.
+  `website/src/content/docs/scramble-performance.md`.
 - Tests must never touch real user data: `CUBE_DATA_DIR` overrides the data
   directory, and debug builds use a `debug` subfolder automatically. Follow
   the existing `temporary_path()` pattern in `persistence.rs` tests.
@@ -86,7 +99,7 @@ settings, import/export dialogs and help.
 
 - Every primary action needs an `Action` in `cube-core::keybind`, a default in
   `Keybinds::default`, a row in the `F1` keyboard shortcuts panel, and an entry
-  in `docs/keybinds.md`. That panel is also the editor: keep its pencil, trash
+  in `website/src/content/docs/keybinds.md`. That panel is also the editor: keep its pencil, trash
   and capture controls reachable with `Tab` and activatable with `Enter` or
   `Space`; do not make the mouse the only way to reach a control.
 - Every dialog routes Enter through `cube_ui::dialog_submit`
@@ -100,7 +113,7 @@ settings, import/export dialogs and help.
   than silently ignoring an invalid change.
 - All actions except the timer can be unbound. Persist a removal explicitly
   (`""` or `"none"` in `[keybindings]`) so a copied default does not return.
-- Keep `docs/keybinds.md` and the README shortcut table in sync with the
+- Keep `website/src/content/docs/keybinds.md` and the README shortcut table in sync with the
   defaults whenever you add or change a binding.
 - Parsing, matching and validation belong in `cube-core::keybind` and need
   tests there. `cube-ui` only captures a key and renders the result.
@@ -172,8 +185,8 @@ settings, import/export dialogs and help.
   `cube-locale`, `cube-bluetooth`); `cube-ui` has no test harness, so keep logic out of it.
 - Update `README.md` when you add or change a user-visible feature, a
   setting, or a key binding. When a key binding changes, update
-  `docs/keybinds.md` as well: it is the complete keyboard reference.
+  `website/src/content/docs/keybinds.md` as well: it is the complete keyboard reference.
   Keep README entries short and plain: one line per feature or shortcut,
   saying what it is and not how it works. Do not list examples, key
   sequences, edge cases or behaviour details there; those belong in
-  `docs/keybinds.md` or the code.
+  `website/src/content/docs/keybinds.md` or the code.

@@ -6,7 +6,7 @@
 
 <p align="center"><a href="https://enekocm7.github.io/cube-gui/">Website and docs</a> · <a href="https://github.com/enekocm7/cube-gui/releases">Releases</a></p>
 
-![cube's timer screen](docs/screenshot.png)
+![cube's timer screen](website/public/screenshots/timer.png)
 
 cube times your solves with WCA inspection, generates official scrambles, and keeps a history you can search, edit and
 chart. It is fully usable from the keyboard.
@@ -38,7 +38,7 @@ Press `F1` at any time to see every shortcut.
 ## Keyboard shortcuts
 
 cube is designed to be fully usable from the keyboard. Every action below has a shortcut, and any of them can be
-changed or removed. [docs/keybinds.md](docs/keybinds.md) is the full reference, with the key name syntax and the rules
+changed or removed. The [keyboard reference](https://enekocm7.github.io/cube-gui/docs/keybinds/) is the full reference, with the key name syntax and the rules
 for valid bindings.
 
 | Key | Action |
@@ -282,7 +282,7 @@ open a pull request.
 | `crates/cube-updater` | GitHub release check, verified download and self-update |
 | `crates/cube-ui` | The GPUI interface |
 
-Scramble timings and the reasoning behind the queue are in [docs/scramble-performance.md](docs/scramble-performance.md).
+Scramble timings and the reasoning behind the queue are in [Scramble performance](https://enekocm7.github.io/cube-gui/docs/scramble-performance/).
 
 ## License
 

@@ -14,7 +14,7 @@ The project homepage and docs. Built with [Astro](https://astro.build/) (static 
 | `src/scripts/` | Client code. Pages swap without a reload, so `page.ts` sets everything up on `astro:page-load` |
 | `../fonts/` | Cube Mono, shared with the app: JetBrains Mono with a plain zero, under the OFL |
 | `src/lib/cube.ts` | 3x3x3 simulator behind the timer's scramble net |
-| `src/lib/keys.ts` | Default shortcuts for the landing page keyboard. Keep in step with `docs/keybinds.md` |
+| `src/lib/keys.ts` | Default shortcuts for the landing page keyboard. Keep in step with `src/content/docs/keybinds.md` |
 | `src/styles/global.css` | All styles. Colors come from a cube's stickers and a stackmat's lights |
 | `public/` | `logo.svg`, `screenshots/*.webp` (real app captures, 1462x940), `screenshots/timer.png` (social preview) |
 
@@ -23,13 +23,13 @@ The project homepage and docs. Built with [Astro](https://astro.build/) (static 
 From this folder (`website/`):
 
 ```sh
-npm install
-npm run dev      # local preview with hot reload
-npm run build    # static output in website/dist/
-npm run preview  # serve the built site
+bun install
+bun run dev      # local preview with hot reload
+bun run build    # static output in website/dist/
+bun run preview  # serve the built site
 ```
 
-The GitHub Pages workflow (`../.github/workflows/pages.yml`) installs, builds, and deploys `website/dist/` on pushes to `master` touching `website/`, `docs/`, or `assets/logo.svg`.
+The GitHub Pages workflow (`../.github/workflows/pages.yml`) installs, builds, and deploys `website/dist/` on pushes to `master` touching `website/`, `fonts/`, or `assets/logo.svg`.
 
 ## Editing docs
 
@@ -44,9 +44,8 @@ order: 3
 ---
 ```
 
-Sections used: `Start here`, `Timing`, `History`, `Reference`. The sidebar, cards, search filter, and prev/next links update automatically.
+Sections used: `Start here`, `Timing`, `History`, `Reference`. The sidebar, filter, and prev/next links update automatically.
 
 ## Replacing screenshots
 
-- `public/screenshots/timer.png` is the real app capture (copied from `docs/screenshot.png`).
-- `stats.svg`, `charts.svg`, `settings.svg` are placeholder interface diagrams. Replace them with real captures (same filenames) whenever fresh ones are available — no code changes needed.
+- `public/screenshots/` holds real app captures. `timer.png` is the social preview.
