@@ -166,7 +166,7 @@ settings, import/export dialogs and help.
 - **Dialogs and panels size themselves from the window**, never with
   hard-coded widths or body heights:
   - Dialogs use `cube_core::dialogs::DialogSize` (`COMPACT`, `STANDARD`,
-    `FORM`, `WIDE`) with `crate::dialog_size::dialog_width` for `.w(...)` and
+    `FORM`, `WIDE`, `SETTINGS`) with `crate::dialog_size::dialog_width` for `.w(...)` and
     `crate::dialog_size::dialog_body_height` for the scrolling body's
     `max_h`. Add a size constant there when a new dialog needs one, and keep
     its body scrollable.

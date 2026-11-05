@@ -9,7 +9,7 @@ cube reads the same theme files as [cube-tui](https://github.com/enekocm7/cube-t
 
 ## Using themes
 
-In **Settings → Theme**, every valid theme is listed. Pick one to apply it, use the pencil to edit it, the trash can to delete it, or **New theme** to create one. Themes you drop into the folder appear the next time the dialog opens.
+In **Settings → Appearance**, every valid theme is listed. Pick one to apply it, use the pencil to edit it, the trash can to delete it, or **New theme** to create one. Themes you drop into the folder appear the next time the dialog opens.
 
 ## The format
 

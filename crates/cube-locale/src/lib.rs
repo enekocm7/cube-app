@@ -390,6 +390,39 @@ pub struct Strings {
     pub settings_font_size: &'static str,
     pub settings_theme: &'static str,
     pub settings_data: &'static str,
+    pub settings_general: &'static str,
+    pub settings_notifications: &'static str,
+    pub settings_scrambles: &'static str,
+    pub settings_solve_list: &'static str,
+    pub settings_import_export: &'static str,
+    pub settings_backups: &'static str,
+    pub settings_search_results: &'static str,
+    pub settings_open_shortcuts: &'static str,
+    pub setting_inspection_desc: &'static str,
+    pub setting_inspection_audio_desc: &'static str,
+    pub setting_touch_to_start_desc: &'static str,
+    pub setting_accurate_desc: &'static str,
+    pub setting_scramble_preview_desc: &'static str,
+    pub setting_theme_desc: &'static str,
+    pub custom_themes_desc: &'static str,
+    pub setting_font_desc: &'static str,
+    pub setting_text_size_desc: &'static str,
+    pub setting_timer_size_desc: &'static str,
+    pub setting_scramble_size_desc: &'static str,
+    pub size_custom_range: &'static str,
+    pub setting_solve_list_ao5_desc: &'static str,
+    pub setting_always_show_scrollbar_desc: &'static str,
+    pub setting_toasts_desc: &'static str,
+    pub setting_confirm_delete_desc: &'static str,
+    pub setting_language_desc: &'static str,
+    pub setting_import_desc: &'static str,
+    pub setting_export_desc: &'static str,
+    pub setting_backup_now_desc: &'static str,
+    pub setting_check_updates_desc: &'static str,
+    pub setting_update_channel_desc: &'static str,
+    pub setting_update_frequency_desc: &'static str,
+    pub setting_check_now_desc: &'static str,
+    pub setting_shortcuts_desc: &'static str,
     pub setting_inspection: &'static str,
     pub setting_inspection_audio: &'static str,
     pub setting_touch_to_start: &'static str,
@@ -776,6 +809,8 @@ mod tests {
             assert!(strings.hint_stop.contains("{key}"));
             assert!(strings.size_custom_invalid.contains("{min}"));
             assert!(strings.size_custom_invalid.contains("{max}"));
+            assert!(strings.size_custom_range.contains("{min}"));
+            assert!(strings.size_custom_range.contains("{max}"));
             assert!(strings.keybind_capture_hint.contains("{action}"));
             assert!(strings.keybind_error_conflict.contains("{action}"));
             assert!(strings.setting_skipping.contains("{version}"));

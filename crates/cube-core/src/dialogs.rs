@@ -43,7 +43,7 @@ impl DialogSize {
         chrome_height: 160.,
     };
 
-    /// The settings, release notes and updater dialogs.
+    /// The release notes and updater dialogs.
     pub const STANDARD: Self = Self {
         width_share: 0.5,
         min_width: 480.,
@@ -76,6 +76,18 @@ impl DialogSize {
         chrome_height: 190.,
     };
 
+    /// The settings dialog, with its category list beside the settings. It has
+    /// no title or footer of its own, so nearly all of it is body.
+    pub const SETTINGS: Self = Self {
+        width_share: 0.72,
+        min_width: 720.,
+        max_width: 1120.,
+        body_share: 0.76,
+        min_body_height: 320.,
+        max_body_height: 860.,
+        chrome_height: 64.,
+    };
+
     /// The dialog's width in a window `viewport_width` pixels wide.
     ///
     /// A window narrower than the minimum gets its whole width, leaving the
@@ -101,15 +113,38 @@ impl DialogSize {
     }
 }
 
+/// The width of the settings dialog's category list in a dialog `dialog_width`
+/// pixels wide.
+pub fn settings_nav_width(dialog_width: f32) -> f32 {
+    (dialog_width * 0.24).clamp(180., 260.).min(dialog_width)
+}
+
+/// How far a scroll region must move so a row it holds comes into view, keeping
+/// `margin` clear of the region's edges. Positive moves the content down.
+///
+/// A row taller than the region lines up with its top, so its label shows.
+pub fn reveal_shift(row: (f32, f32), region: (f32, f32), margin: f32) -> f32 {
+    let (row_top, row_bottom) = row;
+    let (top, bottom) = (region.0 + margin, region.1 - margin);
+    if row_top < top || row_bottom - row_top > bottom - top {
+        top - row_top
+    } else if row_bottom > bottom {
+        bottom - row_bottom
+    } else {
+        0.
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    const SIZES: [DialogSize; 4] = [
+    const SIZES: [DialogSize; 5] = [
         DialogSize::COMPACT,
         DialogSize::STANDARD,
         DialogSize::FORM,
         DialogSize::WIDE,
+        DialogSize::SETTINGS,
     ];
 
     fn close(actual: f32, expected: f32) {
@@ -164,5 +199,36 @@ mod tests {
     #[test]
     fn a_tiny_window_leaves_no_body_room_instead_of_a_negative_height() {
         close(DialogSize::STANDARD.body_height(100.0), 0.0);
+    }
+
+    #[test]
+    fn the_settings_dialog_fits_the_smallest_window() {
+        let (width, height) = (910.0, 560.0);
+        assert!(DialogSize::SETTINGS.width(width) <= width);
+        assert!(DialogSize::SETTINGS.body_height(height) >= 320.0);
+    }
+
+    #[test]
+    fn the_category_list_stays_a_readable_share_of_the_dialog() {
+        close(settings_nav_width(720.0), 180.0);
+        close(settings_nav_width(900.0), 216.0);
+        close(settings_nav_width(1120.0), 260.0);
+        close(settings_nav_width(100.0), 100.0);
+    }
+
+    #[test]
+    fn a_row_in_view_does_not_move_the_region() {
+        close(reveal_shift((120.0, 160.0), (100.0, 300.0), 10.0), 0.0);
+    }
+
+    #[test]
+    fn a_row_past_an_edge_moves_just_far_enough_to_clear_the_margin() {
+        close(reveal_shift((80.0, 120.0), (100.0, 300.0), 10.0), 30.0);
+        close(reveal_shift((280.0, 320.0), (100.0, 300.0), 10.0), -30.0);
+    }
+
+    #[test]
+    fn a_row_taller_than_the_region_shows_its_top() {
+        close(reveal_shift((150.0, 500.0), (100.0, 300.0), 10.0), -40.0);
     }
 }

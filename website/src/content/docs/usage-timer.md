@@ -37,8 +37,8 @@ Touching the digits with the mouse does the same thing while **Timer → Touch t
 
 - Official random-state scrambles for all 12 events, generated with `tnoodle-rs`.
 - Scrambles are prepared ahead of time per event, so switching events is instant.
-- **Font size → Scramble size** picks Small, Normal, Large, Largest, or a Custom size in points (6–120).
-- The puzzle preview under the timer draws the scrambled state. Toggle it with `P` or **Appearance → Show the scramble preview**.
+- **Appearance → Scramble size** picks Small, Normal, Large, Largest, or a Custom size in points (6–120).
+- The puzzle preview under the timer draws the scrambled state. Toggle it with `P` or **Timer → Show the scramble preview**.
 - **Timer → Shorter 3x3x3 scrambles** trades speed for shorter scrambles (slower to generate).
 
 Supported events: 2x2x2, 3x3x3, 4x4x4, 5x5x5, 6x6x6, 7x7x7, Megaminx, Pyraminx, FTO, Skewb, Square-1, Clock.

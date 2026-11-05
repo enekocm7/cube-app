@@ -87,7 +87,8 @@ Around the shortcuts:
   closes it.
 - **Rebinding.** In the `F1` panel, **Edit** (opposite **Close**) shows a pencil to rebind an action and a trash can to
   remove its shortcut. You can also edit the `[keybindings]` table in `cube-gui.toml` by hand.
-- **Search.** The shortcuts panel and the settings dialog both start with a search field. Press `/` to jump to it, or
+- **Settings.** `Up` and `Down` move through the categories, and `Tab` or `Right` moves into the settings.
+- **Search.** The shortcuts panel and the settings dialog both have a search field. Press `/` to jump to it, or
   reach it with `Tab`. Type to filter rows by label or current value, such as `space`, `ctrl` or `unassigned` for
   shortcuts, or `dark` or `off` for settings. Matching ignores case and uses the interface language.
 - **Start hint.** The "press to start" hint is shown only until your first solve, and names whichever key the timer is
@@ -152,30 +153,29 @@ Features still on the way are tracked in the [issues](https://github.com/enekocm
 
 Open settings with `Ctrl + ,`. They are saved to `cube-gui.toml` (see [Your data](#your-data)).
 
-| Section | What you can change |
-|---|---|
-| **Timer** | WCA inspection, its 8 s and 12 s audio cues, touching the digits to start or stop, and shorter 3x3x3 scrambles (slower to generate) |
-| **Font size** | Font, interface text size, timer size and scramble size, each with presets and a custom point size |
-| **Theme** | Light, dark or system, and your theme files. See [Themes](#themes) |
-| **Appearance** | Scramble preview, ao5 in the solve list, an always-visible solve list scrollbar, notifications, and confirmation before deleting |
-| **Updates** | Automatic checks, release channel and check frequency. See [Updates](#updates) |
-| **Language** | Sixteen languages, including English and Spanish |
-| **Data** | Import and export csTimer sessions, and choose your own backup folder. See [Your data](#your-data) |
+Pick a category on the left to see its settings on the right.
 
-Shortcuts are rebound from the `F1` panel instead. See [Keyboard shortcuts](#keyboard-shortcuts).
+| Category | What you can change |
+|---|---|
+| **General** | Sixteen languages, including English and Spanish, notifications, and confirmation before deleting |
+| **Timer** | WCA inspection, its 8 s and 12 s audio cues, touching the digits to start or stop, shorter 3x3x3 scrambles (slower to generate) and the scramble preview |
+| **Appearance** | Light, dark or system and your theme files (see [Themes](#themes)), font and sizes with presets and a custom point size, ao5 in the solve list, and an always-visible solve list scrollbar |
+| **Keyboard shortcuts** | Opens the `F1` panel, where shortcuts are rebound. See [Keyboard shortcuts](#keyboard-shortcuts) |
+| **Data** | Import and export csTimer sessions, and choose your own backup folder. See [Your data](#your-data) |
+| **Updates** | Automatic checks, release channel and check frequency. See [Updates](#updates) |
 
 Details worth knowing:
 
-- **Font.** Times use the bundled Cube Mono by default. **Font size → Font** can limit it to the timer, extend it to
+- **Font.** Times use the bundled Cube Mono by default. **Appearance → Font** can limit it to the timer, extend it to
   the whole interface, or switch to the system fonts. The font is bundled under the SIL Open Font License.
-- **Text size.** **Font size → Text size** picks Small, Normal (default), Large, Largest or Custom, which takes an exact
+- **Text size.** **Appearance → Text size** picks Small, Normal (default), Large, Largest or Custom, which takes an exact
   size in points (8 to 24). It changes the interface text without changing the panels and dialogs around it.
-- **Timer size.** **Font size → Timer size** picks Small, Normal (default), Large, Largest or Custom, which takes an
+- **Timer size.** **Appearance → Timer size** picks Small, Normal (default), Large, Largest or Custom, which takes an
   exact size in points (24 to 240) for the timer's digits.
-- **Scramble size.** **Font size → Scramble size** picks Small, Normal (default), Large, Largest or Custom, which takes
+- **Scramble size.** **Appearance → Scramble size** picks Small, Normal (default), Large, Largest or Custom, which takes
   an exact size in points (6 to 120). Long scrambles still scroll.
 - **Scramble preview.** The preview draws the puzzle as the scramble leaves it, under the timer and in the solve
-  details, where it follows the scramble you are editing. Turn it off with **Appearance → Show the scramble preview**,
+  details, where it follows the scramble you are editing. Turn it off with **Timer → Show the scramble preview**,
   or toggle it with `P`.
 - **Scrollbar.** The solve list scrollbar appears only while you scroll. Turn on **Appearance → Always show the solve
   list scrollbar** to keep it visible.
@@ -185,7 +185,7 @@ Details worth knowing:
 cube reads the same theme files as [cube-tui](https://github.com/enekocm7/cube-tui), so a theme works in both apps.
 They live in the `themes` folder inside your [data folder](#your-data).
 
-In **Settings → Theme**, every valid theme is listed. Pick one to apply it, use the pencil to edit it, the trash can
+In **Settings → Appearance**, every valid theme is listed. Pick one to apply it, use the pencil to edit it, the trash can
 to delete it, or **New theme** to create one. Themes you add to the folder appear the next time the dialog opens.
 
 A theme is a TOML file of six-digit colors:
