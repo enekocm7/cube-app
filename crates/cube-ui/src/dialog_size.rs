@@ -41,13 +41,16 @@ pub(crate) fn dialog_title(title: impl IntoElement, close_label: &'static str) -
         .justify_between()
         .pb_2()
         .child(title)
-        .child(
-            Button::new("dialog-close-icon")
-                .ghost()
-                .with_size(ComponentSize::Size(px(36.)))
-                .icon(IconName::Close)
-                .tooltip(close_label)
-                .accessibility_label(close_label)
-                .on_click(|_, window, cx| window.close_dialog(cx)),
-        )
+        .child(dialog_close_button(close_label))
+}
+
+/// The shared close `X`, for a dialog that lays out its own header.
+pub(crate) fn dialog_close_button(close_label: &'static str) -> Button {
+    Button::new("dialog-close-icon")
+        .ghost()
+        .with_size(ComponentSize::Size(px(36.)))
+        .icon(IconName::Close)
+        .tooltip(close_label)
+        .accessibility_label(close_label)
+        .on_click(|_, window, cx| window.close_dialog(cx))
 }

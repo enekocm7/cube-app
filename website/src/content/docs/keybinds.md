@@ -134,6 +134,19 @@ field `Enter` inserts a newline, and in an open menu it picks the highlighted
 item. While the shortcuts panel waits for a key, `Enter` and `Esc` go to the
 capture rather than the dialog.
 
+The settings dialog opens on its category list, which is one `Tab` stop:
+
+| Key | What it does |
+|---|---|
+| `Up` / `Down` | Shows the previous or next category, wrapping at the ends |
+| `Home` / `End` | Shows the first or last category |
+| `Tab`, `Right`, `Enter` or `Space` | Moves from the list to the first setting |
+| `Left` | Moves from a setting back to the list, except in a text field |
+| `/` | Jumps to the search field |
+
+While you search, the list keeps only the categories with a match and the right
+pane shows matches from all of them. Picking a category ends the search.
+
 ## Changing shortcuts in the app
 
 Press `F1` (or use the keyboard icon in the title bar) to open the shortcuts
