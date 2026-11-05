@@ -16,6 +16,15 @@ Open settings with `Ctrl + ,`. They save to `cube-gui.toml` next to your solves 
 | Touch the digits | Off | Pressing the digits with mouse/touch works like the timer key |
 | Shorter 3x3x3 scrambles | Off | Searches longer for short scrambles; noticeably slower to generate |
 
+## Font size
+
+| Option | Default | What it does |
+|---|---|---|
+| Font | All times | Cube Mono for the timer only, every time, or the whole interface, or the system fonts |
+| Text size | Normal | Small / Normal / Large / Largest / Custom (8–24 pt) for the interface text |
+| Timer size | Normal | Small / Normal / Large / Largest / Custom (24–240 pt) for the timer's digits |
+| Scramble size | Normal | Small / Normal / Large / Largest / Custom (6–120 pt) |
+
 ## Theme
 
 Light, dark, or system — plus your theme files. See [Themes](/cube-gui/docs/themes/).
@@ -24,8 +33,6 @@ Light, dark, or system — plus your theme files. See [Themes](/cube-gui/docs/th
 
 | Option | Default | What it does |
 |---|---|---|
-| Font | All times | Cube Mono for the timer only, every time, or the whole interface, or the system fonts |
-| Scramble size | Normal | Small / Normal / Large / Largest / Custom (6–120 pt) |
 | Show the scramble preview | On | Draw the scrambled puzzle under the timer and in solve details (`P` toggles it too) |
 | ao5 in the solve list | Off | Adds a rolling ao5 column next to each solve |
 | Always show the solve list scrollbar | Off | Keeps it visible instead of only while scrolling |
