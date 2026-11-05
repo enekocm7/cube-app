@@ -184,7 +184,7 @@ pub const STRINGS: Strings = Strings {
     theme_dark: "어둡게",
 
     help_title: "키보드 단축키",
-    help_hint: "편집을 사용해 단축키를 바꾸거나 cube-gui.toml의 [keybindings]를 편집하세요.",
+    help_hint: "편집을 사용해 단축키를 바꾸거나 cube-app.toml의 [keybindings]를 편집하세요.",
     help_any_key_stops: "아무 키나 누르면 실행 중인 타이머가 멈춥니다. Escape는 기록하지 않고 취소합니다.",
     help_section_timer: "타이머",
     help_section_solves: "솔브",

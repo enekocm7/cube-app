@@ -12,7 +12,7 @@ members = [
 version = "0.1.0"
 edition = "2024"
 license = "GPL-3.0-or-later"
-repository = "https://github.com/enekocm7/cube-gui"
+repository = "https://github.com/enekocm7/cube-app"
 
 [workspace.dependencies]
 cube-bluetooth = { path = "crates/cube-bluetooth" }
@@ -58,7 +58,7 @@ cast_sign_loss = "allow"
 unreadable_literal = "allow"
 
 [package]
-name = "cube-gui"
+name = "cube-app"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

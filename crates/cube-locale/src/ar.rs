@@ -184,7 +184,7 @@ pub const STRINGS: Strings = Strings {
     theme_dark: "داكن",
 
     help_title: "اختصارات لوحة المفاتيح",
-    help_hint: "استخدم تعديل لتغيير اختصار، أو عدّل [keybindings] في cube-gui.toml.",
+    help_hint: "استخدم تعديل لتغيير اختصار، أو عدّل [keybindings] في cube-app.toml.",
     help_any_key_stops: "أي مفتاح يوقف المؤقت الجاري؛ ومفتاح Escape يلغيه دون تسجيل.",
     help_section_timer: "المؤقت",
     help_section_solves: "المحاولات",

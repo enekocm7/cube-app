@@ -54,4 +54,4 @@ Press `M` to type in times taken on another timer:
 
 ## Bluetooth timers
 
-Connect a GAN timer and it records solves on its own: press `B`, pick your timer with `Up`/`Down`, `Enter` to connect. While connected, the timer key and digits follow the hardware timer and inspection is skipped. See [Bluetooth](/cube-gui/docs/bluetooth/).
+Connect a GAN timer and it records solves on its own: press `B`, pick your timer with `Up`/`Down`, `Enter` to connect. While connected, the timer key and digits follow the hardware timer and inspection is skipped. See [Bluetooth](/cube-app/docs/bluetooth/).

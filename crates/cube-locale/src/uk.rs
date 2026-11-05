@@ -184,7 +184,7 @@ pub const STRINGS: Strings = Strings {
     theme_dark: "Темна",
 
     help_title: "Гарячі клавіші",
-    help_hint: "Використовуйте «Змінити», щоб змінити сполучення, або відредагуйте [keybindings] у cube-gui.toml.",
+    help_hint: "Використовуйте «Змінити», щоб змінити сполучення, або відредагуйте [keybindings] у cube-app.toml.",
     help_any_key_stops: "Будь-яка клавіша зупиняє поточний таймер; Escape скасовує його без запису.",
     help_section_timer: "Таймер",
     help_section_solves: "Збірки",

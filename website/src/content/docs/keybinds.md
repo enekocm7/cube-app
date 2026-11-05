@@ -176,11 +176,11 @@ keys and `F1` through `F24`, each optionally with `Ctrl`, `Alt` and/or `Shift`.
 On macOS the platform key (Command) is treated as `Ctrl`, and on Windows the
 Windows key is too.
 
-Changes are saved to `cube-gui.toml` immediately.
+Changes are saved to `cube-app.toml` immediately.
 
 ## Changing shortcuts in the file
 
-The same settings live in a `[keybindings]` table in `cube-gui.toml`. You only
+The same settings live in a `[keybindings]` table in `cube-app.toml`. You only
 need to list the bindings you want to change; everything else keeps its default.
 Hand edits are read when the app starts.
 
@@ -229,7 +229,7 @@ asking for the same key. The shortcuts panel shows the effective bindings, so
 
 ## Where the settings live
 
-`cube-gui.toml` is in cube's user data folder, the same folder as the shared
+`cube-app.toml` is in cube's user data folder, the same folder as the shared
 `times.json`. On Windows that is `%APPDATA%\cube-tui`; debug builds use a
 `debug` subfolder, and `CUBE_DATA_DIR` overrides the location. It is separate
 from cube-tui's `config.toml`.

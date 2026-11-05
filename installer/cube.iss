@@ -17,7 +17,7 @@
 #define AppName "cube"
 #define AppExe "cube.exe"
 #define AppPublisher "enekocm7"
-#define AppUrl "https://github.com/enekocm7/cube-gui"
+#define AppUrl "https://github.com/enekocm7/cube-app"
 
 [Setup]
 AppId={{C0BE6A11-3F27-4D1E-9A52-7E1D5B0C3A77}

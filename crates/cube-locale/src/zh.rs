@@ -184,7 +184,7 @@ pub const STRINGS: Strings = Strings {
     theme_dark: "深色",
 
     help_title: "键盘快捷键",
-    help_hint: "使用“编辑”更改快捷键，或编辑 cube-gui.toml 中的 [keybindings]。",
+    help_hint: "使用“编辑”更改快捷键，或编辑 cube-app.toml 中的 [keybindings]。",
     help_any_key_stops: "按任意键停止正在运行的计时器；Escape 取消且不记录。",
     help_section_timer: "计时器",
     help_section_solves: "复原",

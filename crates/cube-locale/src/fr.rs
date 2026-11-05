@@ -185,7 +185,7 @@ pub const STRINGS: Strings = Strings {
     theme_dark: "Sombre",
 
     help_title: "Raccourcis clavier",
-    help_hint: "Utilisez Modifier pour changer un raccourci, ou modifiez [keybindings] dans cube-gui.toml.",
+    help_hint: "Utilisez Modifier pour changer un raccourci, ou modifiez [keybindings] dans cube-app.toml.",
     help_any_key_stops: "N'importe quelle touche arrête un chronomètre en cours ; Échap l'annule sans l'enregistrer.",
     help_section_timer: "Chronomètre",
     help_section_solves: "Solves",

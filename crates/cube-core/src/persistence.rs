@@ -49,8 +49,23 @@ pub fn history_file() -> Result<PathBuf> {
 }
 
 /// Returns the settings file of the desktop app.
+///
+/// Settings used to live in `cube-gui.toml`; when only that file exists it is
+/// copied to the new name so existing settings survive the rename.
 pub fn settings_file() -> Result<PathBuf> {
-    Ok(data_dir()?.join("cube-gui.toml"))
+    settings_file_in(&data_dir()?)
+}
+
+/// The settings file inside `dir`, migrating the pre-rename file when needed.
+fn settings_file_in(dir: &Path) -> Result<PathBuf> {
+    let path = dir.join("cube-app.toml");
+    let legacy = dir.join("cube-gui.toml");
+    if !path.try_exists()? && legacy.try_exists()? {
+        fs::copy(&legacy, &path).with_context(|| {
+            format!("Could not copy {} to {}", legacy.display(), path.display())
+        })?;
+    }
+    Ok(path)
 }
 
 /// Returns the folder holding cube-tui theme files, creating it when needed.
@@ -564,6 +579,33 @@ mod tests {
             std::process::id(),
             NEXT_ID.fetch_add(1, Ordering::Relaxed)
         ))
+    }
+
+    #[test]
+    fn settings_move_from_the_old_file_name() {
+        let dir = temporary_path();
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("cube-gui.toml"), "language = \"es\"\n").unwrap();
+
+        let path = settings_file_in(&dir).unwrap();
+
+        assert_eq!(path, dir.join("cube-app.toml"));
+        assert_eq!(fs::read_to_string(&path).unwrap(), "language = \"es\"\n");
+        assert!(dir.join("cube-gui.toml").exists());
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn the_new_settings_file_wins_over_the_old_one() {
+        let dir = temporary_path();
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("cube-gui.toml"), "old").unwrap();
+        fs::write(dir.join("cube-app.toml"), "new").unwrap();
+
+        let path = settings_file_in(&dir).unwrap();
+
+        assert_eq!(fs::read_to_string(path).unwrap(), "new");
+        fs::remove_dir_all(&dir).unwrap();
     }
 
     #[test]

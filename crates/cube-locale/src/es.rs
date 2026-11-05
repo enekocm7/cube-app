@@ -184,7 +184,7 @@ pub const STRINGS: Strings = Strings {
     theme_dark: "Oscuro",
 
     help_title: "Atajos de teclado",
-    help_hint: "Usa Editar para cambiar un atajo, o edita [keybindings] en cube-gui.toml.",
+    help_hint: "Usa Editar para cambiar un atajo, o edita [keybindings] en cube-app.toml.",
     help_any_key_stops: "Cualquier tecla detiene el cronómetro; Escape lo cancela sin registrarlo.",
     help_section_timer: "Temporizador",
     help_section_solves: "Solves",

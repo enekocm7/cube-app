@@ -184,7 +184,7 @@ pub const STRINGS: Strings = Strings {
     theme_dark: "ダーク",
 
     help_title: "キーボードショートカット",
-    help_hint: "「編集」でショートカットを変更するか、cube-gui.toml の [keybindings] を編集してください。",
+    help_hint: "「編集」でショートカットを変更するか、cube-app.toml の [keybindings] を編集してください。",
     help_any_key_stops: "実行中のタイマーは任意のキーで停止します。Escape は記録せずにキャンセルします。",
     help_section_timer: "タイマー",
     help_section_solves: "ソルブ",

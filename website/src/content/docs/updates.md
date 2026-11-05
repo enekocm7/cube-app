@@ -30,4 +30,4 @@ Under **Settings → Updates**:
 - Pre-release: also offers release candidates and betas.
 - Every release publishes `SHA256SUMS` files alongside the archives; the updater refuses a download whose hash mismatches.
 
-See [Install](/cube-gui/docs/install/) for the per-platform artifacts, and the [releases page](https://github.com/enekocm7/cube-gui/releases) for notes.
+See [Install](/cube-app/docs/install/) for the per-platform artifacts, and the [releases page](https://github.com/enekocm7/cube-app/releases) for notes.

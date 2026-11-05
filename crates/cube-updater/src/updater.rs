@@ -16,8 +16,8 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 
-const LATEST_URL: &str = "https://api.github.com/repos/enekocm7/cube-gui/releases/latest";
-const RELEASES_URL: &str = "https://api.github.com/repos/enekocm7/cube-gui/releases?per_page=20";
+const LATEST_URL: &str = "https://api.github.com/repos/enekocm7/cube-app/releases/latest";
+const RELEASES_URL: &str = "https://api.github.com/repos/enekocm7/cube-app/releases?per_page=20";
 const UPDATE_DIR: &str = "cube-update";
 
 /// Version of the running binary.
