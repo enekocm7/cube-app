@@ -46,7 +46,7 @@ for valid bindings.
 | `Space` | Start inspection, hold and release to start the solve, press to stop |
 | Any other key | Stop a running solve |
 | Left mouse button or touch on the digits | Same as the timer key when **Timer → Touch the digits** is on (off by default) |
-| `Esc` | Cancel the current attempt without recording it, or leave the stats or charts screen |
+| `Esc` | Cancel the current attempt without recording it, or leave the stats, charts or goals screen |
 | `N` | New scramble (hold to keep generating) |
 | `I` | Turn WCA inspection on or off |
 | `P` | Show or hide the scramble preview |
@@ -69,6 +69,8 @@ for valid bindings.
 | `A` | Show stats, or return to the timer |
 | `G` | Show charts, or return to the timer |
 | `B` | Connect or disconnect a Bluetooth timer |
+| `Shift + G` | Show goals, or return to the timer |
+| `Shift + N` | New goal, on the goals screen |
 | `V` | Show the next charts view |
 | `F` | Filter charts by the next event |
 | `R` / `Shift + R` | Filter charts by the next range, or by custom dates |
@@ -120,6 +122,7 @@ Around the shortcuts:
 **Statistics**
 
 - Current and best single, mo3, ao5, ao12, ao50 and ao100, plus mean, deviation and DNF count.
+- Practice goals: solves per day or week, a target time or a streak, with progress on the timer screen.
 - A stats screen with a heat-mapped table of every solve's rolling averages. Click a value, in the table or the stats
   panel, to see the solves behind it and how far each landed from the average, with the trimmed ones marked. Copy an
   average as text to share it.

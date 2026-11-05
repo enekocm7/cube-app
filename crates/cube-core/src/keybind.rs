@@ -36,6 +36,8 @@ pub enum Action {
     OpenStats,
     OpenCharts,
     OpenBluetooth,
+    OpenGoals,
+    NewGoal,
     NextChartView,
     NextChartEvent,
     NextChartRange,
@@ -55,7 +57,7 @@ pub enum Action {
 
 impl Action {
     /// Every action, in the order the help dialog lists them.
-    pub const ALL: [Self; 39] = [
+    pub const ALL: [Self; 41] = [
         Self::Timer,
         Self::Cancel,
         Self::NextScramble,
@@ -80,6 +82,8 @@ impl Action {
         Self::OpenStats,
         Self::OpenCharts,
         Self::OpenBluetooth,
+        Self::OpenGoals,
+        Self::NewGoal,
         Self::NextChartView,
         Self::NextChartEvent,
         Self::NextChartRange,
@@ -124,6 +128,8 @@ impl Action {
             Self::OpenStats => "open_stats",
             Self::OpenCharts => "open_charts",
             Self::OpenBluetooth => "open_bluetooth",
+            Self::OpenGoals => "open_goals",
+            Self::NewGoal => "new_goal",
             Self::NextChartView => "next_chart_view",
             Self::NextChartEvent => "next_chart_event",
             Self::NextChartRange => "next_chart_range",
@@ -331,6 +337,8 @@ impl Default for Keybinds {
             (Action::OpenStats, "a"),
             (Action::OpenCharts, "g"),
             (Action::OpenBluetooth, "b"),
+            (Action::OpenGoals, "Shift+G"),
+            (Action::NewGoal, "Shift+N"),
             (Action::NextChartView, "v"),
             (Action::NextChartEvent, "f"),
             (Action::NextChartRange, "r"),
@@ -822,6 +830,14 @@ mod tests {
         ] {
             assert_eq!(keybinds.action_for(&press(key, shift)), Some(action));
         }
+    }
+
+    #[test]
+    fn the_goal_actions_have_their_default_keys() {
+        let binds = Keybinds::default();
+        let shifted = |key| KeyPress::new(key, false, false, true).unwrap();
+        assert_eq!(binds.action_for(&shifted("g")), Some(Action::OpenGoals));
+        assert_eq!(binds.action_for(&shifted("n")), Some(Action::NewGoal));
     }
 
     #[test]

@@ -11,6 +11,7 @@ order: 2
 |---|---|---|
 | Solves and sessions | `times.json` | Yes |
 | This app's settings | `cube-app.toml` | No (cube-tui uses `config.toml`) |
+| Practice goals | `goals.json` | No |
 | Themes | `themes/` | Yes |
 | Automatic backups | `backups/` | No |
 

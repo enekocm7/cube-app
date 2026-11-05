@@ -449,13 +449,13 @@ impl SolveForm {
 }
 
 /// A small muted caption above a field.
-fn field_label(text: &'static str, muted: Hsla) -> impl IntoElement {
+pub(crate) fn field_label(text: &'static str, muted: Hsla) -> impl IntoElement {
     div().text_xs().text_color(muted).child(text)
 }
 
 /// Wraps a text field so presses inside it never reach the dialog
 /// background, which would pull focus away from the field just pressed.
-fn keep_focus(id: &'static str, field: impl IntoElement) -> impl IntoElement {
+pub(crate) fn keep_focus(id: &'static str, field: impl IntoElement) -> impl IntoElement {
     div()
         .id(id)
         .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
@@ -463,7 +463,7 @@ fn keep_focus(id: &'static str, field: impl IntoElement) -> impl IntoElement {
 }
 
 /// A validation message below a field, if there is one.
-fn field_error(message: Option<&String>, red: Hsla) -> Option<AnyElement> {
+pub(crate) fn field_error(message: Option<&String>, red: Hsla) -> Option<AnyElement> {
     message.cloned().map(|message| {
         div()
             .text_xs()

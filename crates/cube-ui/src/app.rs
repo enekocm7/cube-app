@@ -6,19 +6,20 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use chrono::NaiveDate;
+use chrono::{Local, NaiveDate};
 use cube_bluetooth::Client;
 use cube_core::charts::{ChartFilter, ChartView, ChartZoom};
 use cube_core::cstimer::{self, ImportReport};
+use cube_core::goals;
 use cube_core::history_writer::{HistoryWriter, Merge, WriterEvent};
 use cube_core::persistence::{self, HistoryStore};
 use cube_core::scramble::{self, ScrambleQueue};
 use cube_core::stats::{self, Average, AverageTable, SessionStats};
 use cube_core::window_state::WindowState;
 use cube_core::{
-    Action, BindingError, History, KeyBinding, KeyPress, Keybinds, ManualEntry, MergeSummary,
-    Modifier, Settings, Solve, SolveSnapshot, Timer, TimerOutcome, TimerPhase, WcaEvent,
-    format::format_ms,
+    Action, BindingError, Goal, GoalProgress, History, KeyBinding, KeyPress, Keybinds, ManualEntry,
+    MergeSummary, Modifier, Settings, Solve, SolveSnapshot, Timer, TimerOutcome, TimerPhase,
+    WcaEvent, format::format_ms,
 };
 use cube_locale::{Language, Strings};
 use cube_updater::Release;
@@ -56,6 +57,7 @@ pub enum Screen {
     Timer,
     Stats,
     Charts,
+    Goals,
 }
 
 /// Everything read from disk at startup.
@@ -66,12 +68,47 @@ pub struct Loaded {
     /// a file this version cannot read is never overwritten.
     history: Option<HistoryStore>,
     settings_path: Option<PathBuf>,
+    problems: LoadProblems,
+    goals: Vec<Goal>,
+    /// `None` when the goals could not be loaded, which keeps saving off so a
+    /// file this version cannot read is never overwritten.
+    goals_path: Option<PathBuf>,
+}
+
+/// What went wrong reading from disk at startup.
+struct LoadProblems {
     /// Why the history could not be loaded.
-    load_error: Option<String>,
+    history: Option<String>,
     /// The newest backup, offered when the history could not be loaded.
     backup: Option<PathBuf>,
     /// Where unreadable settings are, now that the defaults replace them.
     settings_aside: Option<PathBuf>,
+    /// Why the goals could not be loaded.
+    goals: Option<String>,
+}
+
+impl LoadProblems {
+    /// Tells the user, once the window can show notifications.
+    fn report(self, strings: &Strings, window: &Window) {
+        if let Some(error) = self.history {
+            let mut message = strings.toast_load_failed.replace("{error}", &error);
+            if let Some(backup) = self.backup {
+                let path = backup.display().to_string();
+                message.push(' ');
+                message.push_str(&strings.toast_backup_available.replace("{path}", &path));
+            }
+            notify_when_ready(Notification::error(message), window);
+        }
+        if let Some(error) = self.goals {
+            let message = strings.toast_goals_load_failed.replace("{error}", &error);
+            notify_when_ready(Notification::error(message), window);
+        }
+        if let Some(aside) = self.settings_aside {
+            let path = aside.display().to_string();
+            let message = strings.toast_settings_reset.replace("{path}", &path);
+            notify_when_ready(Notification::warning(message), window);
+        }
+    }
 }
 
 impl Loaded {
@@ -103,15 +140,33 @@ impl Loaded {
         if let Some(store) = &mut history {
             store.set_user_backups(settings.user_backups());
         }
+        let (goals, goals_path, goals_error) = load_goals();
         Self {
             settings,
             sessions,
             history,
             settings_path,
-            load_error,
-            backup,
-            settings_aside,
+            problems: LoadProblems {
+                history: load_error,
+                backup,
+                settings_aside,
+                goals: goals_error,
+            },
+            goals,
+            goals_path,
         }
+    }
+}
+
+/// Loads the goals. Unlike settings there are no defaults worth saving over a
+/// file that cannot be read, so it stays where it is and saving turns off.
+fn load_goals() -> (Vec<Goal>, Option<PathBuf>, Option<String>) {
+    let Ok(path) = persistence::goals_file() else {
+        return (Vec::new(), None, None);
+    };
+    match persistence::load_goals(&path) {
+        Ok(goals) => (goals, Some(path), None),
+        Err(error) => (Vec::new(), None, Some(format!("{error:#}"))),
     }
 }
 
@@ -129,6 +184,15 @@ fn load_settings(path: Option<PathBuf>) -> (Settings, Option<PathBuf>, Option<Pa
             Err(_) => (Settings::default(), None, Some(path)),
         },
     }
+}
+
+/// Shows a notification that stays until dismissed, on the next frame: the
+/// notification layer belongs to the root view, which wraps this one and does
+/// not exist until construction finishes.
+fn notify_when_ready(notification: Notification, window: &Window) {
+    window.on_next_frame(move |window, cx| {
+        window.push_notification(notification.autohide(false), cx);
+    });
 }
 
 /// The result shown on the timer once an attempt ends.
@@ -195,6 +259,18 @@ pub struct CubeApp {
     /// The average selected with the keyboard, as an index into
     /// `stats::AVERAGE_SIZES`.
     pub(crate) selected_average: Option<usize>,
+    pub(crate) goals: Vec<Goal>,
+    /// Where the goals are saved; `None` keeps saving off.
+    pub(crate) goals_path: Option<PathBuf>,
+    /// Each goal's progress, in the order of `goals`.
+    pub(crate) goal_progress: Vec<GoalProgress>,
+    /// Whether the solves changed since `goal_progress` was worked out.
+    pub(crate) goals_stale: bool,
+    /// The day `goal_progress` was worked out on, since a new one resets it.
+    pub(crate) goals_day: NaiveDate,
+    /// The goal selected with the keyboard, as an index into `goals`.
+    pub(crate) selected_goal: Option<usize>,
+    pub(crate) goals_scroll: UniformListScrollHandle,
     keybinds: Keybinds,
     /// Deletions Undo can restore, oldest first.
     undo_stack: Vec<Deleted>,
@@ -258,9 +334,9 @@ impl CubeApp {
             mut sessions,
             history,
             settings_path,
-            load_error,
-            backup,
-            settings_aside,
+            problems,
+            goals,
+            goals_path,
         } = loaded;
         settings.adopt_existing_history(&sessions);
         if sessions.is_empty() {
@@ -268,6 +344,8 @@ impl CubeApp {
         }
         scramble::set_accurate_3x3(settings.accurate_3x3);
         let keybinds = settings.keybinds();
+        let now = Local::now();
+        let goal_progress = goals::progress_of(&goals, &sessions, &now);
 
         let event = session_event(&sessions[0]);
         let focus = cx.focus_handle();
@@ -305,6 +383,13 @@ impl CubeApp {
             solves_scroll: UniformListScrollHandle::new(),
             selected_solve: None,
             selected_average: None,
+            goals,
+            goals_path,
+            goal_progress,
+            goals_stale: true,
+            goals_day: now.date_naive(),
+            selected_goal: None,
+            goals_scroll: UniformListScrollHandle::new(),
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
             keybinds,
@@ -318,27 +403,7 @@ impl CubeApp {
             panel_resizing: false,
             window_save: None,
         };
-        if let Some(error) = load_error {
-            let strings = app.strings();
-            let mut message = strings.toast_load_failed.replace("{error}", &error);
-            if let Some(backup) = backup {
-                let path = backup.display().to_string();
-                message.push(' ');
-                message.push_str(&strings.toast_backup_available.replace("{path}", &path));
-            }
-            // The notification layer belongs to the root view, which wraps this
-            // one and does not exist until construction finishes.
-            window.on_next_frame(move |window, cx| {
-                window.push_notification(Notification::error(message).autohide(false), cx);
-            });
-        }
-        if let Some(aside) = settings_aside {
-            let path = aside.display().to_string();
-            let message = app.strings().toast_settings_reset.replace("{path}", &path);
-            window.on_next_frame(move |window, cx| {
-                window.push_notification(Notification::warning(message).autohide(false), cx);
-            });
-        }
+        problems.report(app.strings(), window);
         app.next_scramble(cx);
         app.listen_for_scrambles(cx);
         app.start_ticking(window, cx);
@@ -443,10 +508,10 @@ impl CubeApp {
         }
         if self.timer.is_active() {
             cx.notify();
-            ACTIVE_TICK
-        } else {
-            IDLE_TICK
+            return ACTIVE_TICK;
         }
+        self.refresh_goals(window, cx);
+        IDLE_TICK
     }
 
     /// Shows a scramble the moment the worker delivers one, if none is showing.
@@ -582,6 +647,16 @@ impl CubeApp {
     /// key going down and up.
     fn run_action(&mut self, action: Action, window: &mut Window, cx: &mut Context<Self>) {
         match action {
+            Action::PreviousSolve | Action::NextSolve if self.screen == Screen::Goals => {
+                self.step_goal(action == Action::NextSolve, cx);
+            }
+            Action::OpenSolve if self.screen == Screen::Goals => {
+                self.open_target_goal(window, cx);
+            }
+            Action::DeleteSolve if self.screen == Screen::Goals => {
+                self.delete_target_goal(window, cx);
+            }
+            Action::NewGoal if self.screen != Screen::Goals => {}
             Action::DeleteSolve | Action::PenaltyPlusTwo | Action::PenaltyDnf
                 if self.screen != Screen::Timer => {}
             Action::NextChartView
@@ -632,6 +707,8 @@ impl CubeApp {
             Action::OpenStats => self.toggle_screen(Screen::Stats, cx),
             Action::OpenCharts => self.toggle_screen(Screen::Charts, cx),
             Action::OpenBluetooth => self.open_bluetooth(window, cx),
+            Action::OpenGoals => self.toggle_screen(Screen::Goals, cx),
+            Action::NewGoal => self.open_goal_form(None, window, cx),
             Action::NextChartView => self.next_chart_view(cx),
             Action::NextChartEvent => self.next_chart_event(cx),
             Action::NextChartRange => self.next_chart_range(cx),
@@ -934,7 +1011,7 @@ impl CubeApp {
     }
 
     /// Shows `screen`, or returns to the timer when it is already showing.
-    fn toggle_screen(&mut self, screen: Screen, cx: &mut Context<Self>) {
+    pub(crate) fn toggle_screen(&mut self, screen: Screen, cx: &mut Context<Self>) {
         let next = if self.screen == screen {
             Screen::Timer
         } else {
@@ -1084,6 +1161,7 @@ impl CubeApp {
     ) {
         if let Some(session) = self.sessions.get_mut(index) {
             session.set_name(name.trim().to_owned());
+            self.goals_stale = true;
             self.save_history(window, cx);
             cx.notify();
         }
@@ -1115,6 +1193,7 @@ impl CubeApp {
             return None;
         }
         let history = self.sessions.remove(index);
+        goals::session_removed(&mut self.goals, index);
         // Removing an entry above the open one shifts it up a place.
         let shifted = if index < self.current {
             self.current - 1
@@ -1292,6 +1371,7 @@ impl CubeApp {
                         history: history.clone(),
                     });
                     self.sessions.insert(index, history);
+                    goals::session_inserted(&mut self.goals, index);
                     self.select_session(index, cx);
                     self.save_history(window, cx);
                 }
@@ -1366,6 +1446,7 @@ impl CubeApp {
                 && self.sessions[0].name().is_empty()
             {
                 self.sessions.clear();
+                goals::sessions_replaced(&mut self.goals);
                 0
             } else {
                 self.sessions.len()
@@ -1514,6 +1595,7 @@ impl CubeApp {
     fn refresh_stats(&mut self) {
         let stats = &mut self.stats;
         stats.update(self.sessions[self.current].solves());
+        self.goals_stale = true;
         self.clear_chart_data();
         self.stats_table = None;
     }
@@ -1807,49 +1889,54 @@ impl CubeApp {
                             .flex_grow(1.)
                             .flex_basis(right_basis)
                             .justify_end()
-                            .child(
-                                h_flex()
-                                    .occlude()
-                                    .ml(EVENT_PICKER_HANG)
-                                    .mr_2()
-                                    .gap_1()
-                                    .child(self.render_bluetooth_button(cx))
-                                    .child(
-                                        Button::new("open-help")
-                                            .ghost()
-                                            .small()
-                                            .icon(IconName::Keyboard)
-                                            .tooltip(strings.help_title)
-                                            .accessibility_label(strings.help_title)
-                                            .tab_stop(false)
-                                            .on_click(cx.listener(|app, _, window, cx| {
-                                                if app.timer.is_active() {
-                                                    app.focus.focus(window, cx);
-                                                } else {
-                                                    app.open_help(window, cx);
-                                                }
-                                            })),
-                                    )
-                                    .child(
-                                        Button::new("open-settings")
-                                            .ghost()
-                                            .small()
-                                            .icon(IconName::Settings)
-                                            .tooltip(strings.settings)
-                                            .accessibility_label(strings.settings)
-                                            .tab_stop(false)
-                                            .on_click(cx.listener(|app, _, window, cx| {
-                                                if app.timer.is_active() {
-                                                    app.focus.focus(window, cx);
-                                                } else {
-                                                    app.open_settings(window, cx);
-                                                }
-                                            })),
-                                    ),
-                            ),
+                            .child(self.render_title_bar_buttons(cx)),
                     ),
             ),
         )
+    }
+
+    /// The buttons at the right of the title bar.
+    fn render_title_bar_buttons(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
+        let strings = self.strings();
+        h_flex()
+            .occlude()
+            .ml(EVENT_PICKER_HANG)
+            .mr_2()
+            .gap_1()
+            .child(self.render_bluetooth_button(cx))
+            .child(self.render_goals_button(cx))
+            .child(
+                Button::new("open-help")
+                    .ghost()
+                    .small()
+                    .icon(IconName::Keyboard)
+                    .tooltip(strings.help_title)
+                    .accessibility_label(strings.help_title)
+                    .tab_stop(false)
+                    .on_click(cx.listener(|app, _, window, cx| {
+                        if app.timer.is_active() {
+                            app.focus.focus(window, cx);
+                        } else {
+                            app.open_help(window, cx);
+                        }
+                    })),
+            )
+            .child(
+                Button::new("open-settings")
+                    .ghost()
+                    .small()
+                    .icon(IconName::Settings)
+                    .tooltip(strings.settings)
+                    .accessibility_label(strings.settings)
+                    .tab_stop(false)
+                    .on_click(cx.listener(|app, _, window, cx| {
+                        if app.timer.is_active() {
+                            app.focus.focus(window, cx);
+                        } else {
+                            app.open_settings(window, cx);
+                        }
+                    })),
+            )
     }
 }
 
@@ -1882,6 +1969,7 @@ impl Render for CubeApp {
             }
             Screen::Stats => self.render_table(cx),
             Screen::Charts => self.render_charts(cx),
+            Screen::Goals => self.render_goals(cx),
         };
         let theme = cx.theme();
         v_flex()

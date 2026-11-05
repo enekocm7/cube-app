@@ -10,6 +10,7 @@ pub mod dialog_keys;
 pub mod dialogs;
 pub mod event;
 pub mod format;
+pub mod goals;
 pub mod history;
 pub mod history_writer;
 pub mod keybind;
@@ -29,6 +30,7 @@ pub mod validation;
 pub mod window_state;
 
 pub use event::WcaEvent;
+pub use goals::{Goal, GoalError, GoalKind, GoalProgress, Measure, Period, SessionAnchor};
 pub use history::History;
 pub use keybind::{Action, BindingError, KeyBinding, KeyPress, Keybinds};
 pub use manual_entry::{ManualEntry, ManualError};

@@ -56,10 +56,12 @@ const AVERAGE_ACTIONS: [Action; 5] = [
     Action::OpenBestAverage,
     Action::CopyAverage,
 ];
-const SCREEN_ACTIONS: [Action; 5] = [
+const SCREEN_ACTIONS: [Action; 7] = [
     Action::OpenStats,
     Action::OpenCharts,
     Action::OpenBluetooth,
+    Action::OpenGoals,
+    Action::NewGoal,
     Action::OpenSettings,
     Action::ShowHelp,
 ];
@@ -451,6 +453,8 @@ fn action_label(strings: &'static Strings, action: Action) -> &'static str {
         Action::OpenStats => strings.action_open_stats,
         Action::OpenCharts => strings.action_open_charts,
         Action::OpenBluetooth => strings.action_open_bluetooth,
+        Action::OpenGoals => strings.action_open_goals,
+        Action::NewGoal => strings.goals_new,
         Action::NextChartView => strings.action_next_chart_view,
         Action::NextChartEvent => strings.action_next_chart_event,
         Action::NextChartRange => strings.action_next_chart_range,

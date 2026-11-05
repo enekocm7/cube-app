@@ -17,6 +17,7 @@ mod details;
 mod dialog_size;
 mod dialog_submit;
 mod fonts;
+mod goals_screen;
 mod help;
 mod palette;
 mod panel_resize;
