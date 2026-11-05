@@ -2,7 +2,7 @@
 
 use cube_core::format::format_ms;
 use cube_core::panels::stats_rows_stack;
-use cube_core::stats::Average;
+use cube_core::stats::{Average, SessionStats};
 use cube_locale::Strings;
 use gpui_kit::component::{ActiveTheme as _, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
@@ -128,7 +128,53 @@ impl CubeApp {
                     ))
                     .children(windows),
             )
+            .child(session_summary(strings, stats, &mono, border, muted))
     }
+}
+
+/// The session-wide figures pinned below the averages.
+fn session_summary(
+    strings: &'static Strings,
+    stats: &SessionStats,
+    mono: &SharedString,
+    border: Hsla,
+    muted: Hsla,
+) -> Div {
+    let ms = |ms: Option<u64>| ms.map_or_else(|| "–".to_owned(), format_ms);
+    let rows = [
+        (strings.stat_solves, stats.count.to_string()),
+        (strings.stat_mean, ms(stats.mean)),
+        (strings.stat_std_dev, ms(stats.std_dev)),
+        (strings.stat_dnfs, stats.dnf_count.to_string()),
+    ];
+    v_flex()
+        .flex_none()
+        .pt_1()
+        .border_t_1()
+        .border_color(border)
+        .children(rows.map(|(label, text)| {
+            let value = div()
+                .flex_1()
+                .min_w_0()
+                .truncate()
+                .font_family(mono.clone())
+                .text_right()
+                .child(text);
+            summary_row(label, value, muted)
+        }))
+}
+
+/// One session-wide figure pinned below the averages: its label beside its
+/// value.
+fn summary_row(label: &'static str, value: Div, muted: Hsla) -> Div {
+    h_flex()
+        .flex_none()
+        .h(ROW_HEIGHT)
+        .px_3()
+        .gap_2()
+        .text_sm()
+        .child(div().flex_none().truncate().text_color(muted).child(label))
+        .child(value)
 }
 
 /// One row of the panel: its label beside its values, or above them when
