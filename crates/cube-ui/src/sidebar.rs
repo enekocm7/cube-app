@@ -33,6 +33,9 @@ const ROW_HEIGHT: Rems = Rems(1.75);
 /// Width of the solve number column.
 const NUMBER_WIDTH: Rems = Rems(2.25);
 
+/// Width of one character of the number column (`text_xs` monospace).
+const NUMBER_CHAR_WIDTH: f32 = 0.5;
+
 /// Extra right padding while the average column is shown, so the averages
 /// clear the overlay scrollbar instead of touching it.
 const AVERAGE_SCROLLBAR_GUTTER: Pixels = px(10.);
@@ -281,6 +284,10 @@ impl CubeApp {
         let total = solves.len();
         let show_average = self.settings.solve_list_ao5;
         let selected_solve = self.selected_solve;
+        // Size the number column for the largest number so it never truncates.
+        let widest = self.language().format_count(total as u64).chars().count();
+        #[allow(clippy::cast_precision_loss)]
+        let number_width = Rems(NUMBER_WIDTH.0.max(widest as f32 * NUMBER_CHAR_WIDTH));
 
         range
             .filter_map(|row| {
@@ -304,9 +311,9 @@ impl CubeApp {
                         .hover(move |row| row.bg(hover))
                         .child(
                             div()
-                                .w(NUMBER_WIDTH)
+                                .w(number_width)
                                 .flex_none()
-                                .truncate()
+                                .whitespace_nowrap()
                                 .text_xs()
                                 .text_color(muted)
                                 .child(self.language().format_count((index + 1) as u64)),
