@@ -71,6 +71,77 @@ impl FontChoice {
     pub const ALL: [Self; 4] = [Self::System, Self::Timer, Self::Times, Self::Whole];
 }
 
+/// How large the interface text is drawn.
+///
+/// The scale applies to text only: panels, dialogs and other layout dimensions
+/// keep their pixel sizes, so the interface fits the window at every choice.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TextSize {
+    Small,
+    #[default]
+    Normal,
+    Large,
+    Largest,
+    /// The size in `text_custom_pt`.
+    Custom,
+}
+
+impl TextSize {
+    /// Every size, in the order the settings menu lists them.
+    pub const ALL: [Self; 5] = [
+        Self::Small,
+        Self::Normal,
+        Self::Large,
+        Self::Largest,
+        Self::Custom,
+    ];
+
+    /// Text size in points. `Custom` has no fixed size and reports the default.
+    pub const fn points(self) -> u32 {
+        match self {
+            Self::Small => 10,
+            Self::Normal | Self::Custom => 12,
+            Self::Large => 14,
+            Self::Largest => 15,
+        }
+    }
+}
+
+/// How large the timer's digits are drawn.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TimerSize {
+    Small,
+    #[default]
+    Normal,
+    Large,
+    Largest,
+    /// The size in `timer_custom_pt`.
+    Custom,
+}
+
+impl TimerSize {
+    /// Every size, in the order the settings menu lists them.
+    pub const ALL: [Self; 5] = [
+        Self::Small,
+        Self::Normal,
+        Self::Large,
+        Self::Largest,
+        Self::Custom,
+    ];
+
+    /// Digits size in points. `Custom` has no fixed size and reports the default.
+    pub const fn points(self) -> u32 {
+        match self {
+            Self::Small => 63,
+            Self::Normal | Self::Custom => 84,
+            Self::Large => 105,
+            Self::Largest => 126,
+        }
+    }
+}
+
 /// How large the scramble is drawn.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -107,27 +178,51 @@ impl ScrambleSize {
     }
 }
 
+/// Smallest custom text size, in points.
+pub const MIN_TEXT_PT: u32 = 8;
+/// Largest custom text size, in points.
+pub const MAX_TEXT_PT: u32 = 24;
+
+/// Smallest custom timer size, in points.
+pub const MIN_TIMER_PT: u32 = 24;
+/// Largest custom timer size, in points.
+pub const MAX_TIMER_PT: u32 = 240;
+
 /// Smallest custom scramble size, in points.
 pub const MIN_SCRAMBLE_PT: u32 = 6;
 /// Largest custom scramble size, in points.
 pub const MAX_SCRAMBLE_PT: u32 = 120;
 
-/// A custom scramble size that is not a whole number within range.
+/// A custom size that is not a whole number within its range.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct InvalidScramblePt;
+pub struct InvalidSizePt;
 
-/// Parses a custom scramble size typed by the user. Blank means "use the
-/// preset" (`Ok(None)`); anything else must be a whole number of points within
-/// [`MIN_SCRAMBLE_PT`]..=[`MAX_SCRAMBLE_PT`].
-pub fn parse_scramble_pt(input: &str) -> Result<Option<u32>, InvalidScramblePt> {
+/// Parses a size typed by the user. Blank means "use the preset" (`Ok(None)`);
+/// anything else must be a whole number of points within `min`..=`max`.
+fn parse_size_pt(input: &str, min: u32, max: u32) -> Result<Option<u32>, InvalidSizePt> {
     let input = input.trim().trim_end_matches("pt").trim();
     if input.is_empty() {
         return Ok(None);
     }
     match input.parse::<u32>() {
-        Ok(points) if (MIN_SCRAMBLE_PT..=MAX_SCRAMBLE_PT).contains(&points) => Ok(Some(points)),
-        _ => Err(InvalidScramblePt),
+        Ok(points) if (min..=max).contains(&points) => Ok(Some(points)),
+        _ => Err(InvalidSizePt),
     }
+}
+
+/// Parses a custom text size typed by the user.
+pub fn parse_text_pt(input: &str) -> Result<Option<u32>, InvalidSizePt> {
+    parse_size_pt(input, MIN_TEXT_PT, MAX_TEXT_PT)
+}
+
+/// Parses a custom timer size typed by the user.
+pub fn parse_timer_pt(input: &str) -> Result<Option<u32>, InvalidSizePt> {
+    parse_size_pt(input, MIN_TIMER_PT, MAX_TIMER_PT)
+}
+
+/// Parses a custom scramble size typed by the user.
+pub fn parse_scramble_pt(input: &str) -> Result<Option<u32>, InvalidSizePt> {
+    parse_size_pt(input, MIN_SCRAMBLE_PT, MAX_SCRAMBLE_PT)
 }
 
 /// Updater state and preferences.
@@ -211,6 +306,16 @@ pub struct Settings {
     pub always_show_scrollbar: bool,
     /// Which text uses the bundled `JetBrains Mono`.
     pub font: FontChoice,
+    /// How large the interface text is drawn.
+    pub text_size: TextSize,
+    /// The text size in points used when `text_size` is `custom`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_custom_pt: Option<u32>,
+    /// How large the timer's digits are drawn.
+    pub timer_size: TimerSize,
+    /// The timer size in points used when `timer_size` is `custom`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub timer_custom_pt: Option<u32>,
     /// How large the scramble is drawn.
     pub scramble_size: ScrambleSize,
     /// Draws the puzzle as the scramble leaves it, on the timer and in the
@@ -262,6 +367,10 @@ impl Default for Settings {
             solve_list_ao5: false,
             always_show_scrollbar: false,
             font: FontChoice::default(),
+            text_size: TextSize::default(),
+            text_custom_pt: None,
+            timer_size: TimerSize::default(),
+            timer_custom_pt: None,
             scramble_size: ScrambleSize::default(),
             scramble_preview: true,
             scramble_custom_pt: None,
@@ -289,6 +398,32 @@ impl Settings {
     /// Returns whether the idle timer should still show the start hint.
     pub const fn shows_start_hint(&self) -> bool {
         !self.start_hint_seen
+    }
+
+    /// Text size in points: the custom size when chosen, else the preset.
+    pub fn text_pt(&self) -> u32 {
+        match (self.text_size, self.text_custom_pt) {
+            (TextSize::Custom, Some(pt)) => pt.clamp(MIN_TEXT_PT, MAX_TEXT_PT),
+            (size, _) => size.points(),
+        }
+    }
+
+    /// The size of one rem in pixels for the chosen text size (1pt = 4/3px).
+    pub fn rem_px(&self) -> f32 {
+        self.text_pt() as f32 * 4.0 / 3.0
+    }
+
+    /// Timer size in points: the custom size when chosen, else the preset.
+    pub fn timer_pt(&self) -> u32 {
+        match (self.timer_size, self.timer_custom_pt) {
+            (TimerSize::Custom, Some(pt)) => pt.clamp(MIN_TIMER_PT, MAX_TIMER_PT),
+            (size, _) => size.points(),
+        }
+    }
+
+    /// The timer digits' font size in pixels (1pt = 4/3px).
+    pub fn timer_digits_px(&self) -> f32 {
+        self.timer_pt() as f32 * 4.0 / 3.0
     }
 
     /// Scramble text size in points: the custom size when chosen, else the preset.
@@ -430,6 +565,75 @@ mod tests {
     }
 
     #[test]
+    fn text_size_defaults_to_normal_and_scales_in_order() {
+        let mut settings = Settings::default();
+        assert_eq!(settings.text_size, TextSize::Normal);
+        assert!((settings.rem_px() - 16.).abs() < f32::EPSILON);
+
+        let sizes: Vec<u32> = TextSize::ALL[..4]
+            .iter()
+            .map(|size| size.points())
+            .collect();
+        assert!(sizes.windows(2).all(|pair| pair[0] < pair[1]));
+
+        let parsed: Settings = toml::from_str("text_size = 'largest'").unwrap();
+        assert_eq!(parsed.text_size, TextSize::Largest);
+        assert!((parsed.rem_px() - 20.).abs() < f32::EPSILON);
+
+        settings.text_custom_pt = Some(18);
+        assert_eq!(settings.text_pt(), 12, "ignored unless custom is chosen");
+        settings.text_size = TextSize::Custom;
+        assert_eq!(settings.text_pt(), 18);
+        assert!((settings.rem_px() - 24.).abs() < f32::EPSILON);
+        settings.text_custom_pt = Some(1000);
+        assert_eq!(settings.text_pt(), MAX_TEXT_PT);
+    }
+
+    #[test]
+    fn timer_size_defaults_to_its_original_digits() {
+        let mut settings = Settings::default();
+        assert_eq!(settings.timer_size, TimerSize::Normal);
+        assert!((settings.timer_digits_px() - 112.).abs() < f32::EPSILON);
+
+        let sizes: Vec<u32> = TimerSize::ALL[..4]
+            .iter()
+            .map(|size| size.points())
+            .collect();
+        assert!(sizes.windows(2).all(|pair| pair[0] < pair[1]));
+
+        let parsed: Settings = toml::from_str("timer_size = 'large'").unwrap();
+        assert_eq!(parsed.timer_size, TimerSize::Large);
+
+        settings.timer_custom_pt = Some(90);
+        assert_eq!(settings.timer_pt(), 84, "ignored unless custom is chosen");
+        settings.timer_size = TimerSize::Custom;
+        assert_eq!(settings.timer_pt(), 90);
+        assert!((settings.timer_digits_px() - 120.).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn custom_text_and_timer_sizes_are_parsed_strictly() {
+        assert_eq!(parse_text_pt(""), Ok(None));
+        assert_eq!(parse_text_pt("18pt"), Ok(Some(18)));
+        assert!(parse_text_pt("7").is_err());
+        assert!(parse_text_pt("25").is_err());
+        assert!(parse_text_pt("abc").is_err());
+
+        assert_eq!(parse_timer_pt(" 120 "), Ok(Some(120)));
+        assert!(parse_timer_pt("23").is_err());
+        assert!(parse_timer_pt("241").is_err());
+    }
+
+    #[test]
+    fn old_settings_files_keep_the_original_text_and_timer_sizes() {
+        let settings: Settings = toml::from_str("inspection = false").unwrap();
+        assert_eq!(settings.text_size, TextSize::Normal);
+        assert_eq!(settings.timer_size, TimerSize::Normal);
+        assert_eq!(settings.text_custom_pt, None);
+        assert_eq!(settings.timer_custom_pt, None);
+    }
+
+    #[test]
     fn the_scrollbar_is_transient_by_default_and_round_trips() {
         assert!(!Settings::default().always_show_scrollbar);
         let settings: Settings = toml::from_str("").unwrap();
@@ -453,6 +657,10 @@ mod tests {
             theme_file: "default.toml".into(),
             language: "es".into(),
             start_hint_seen: true,
+            text_size: TextSize::Custom,
+            text_custom_pt: Some(18),
+            timer_size: TimerSize::Custom,
+            timer_custom_pt: Some(90),
             keybindings: BTreeMap::from([("next_scramble".into(), "Ctrl+N".into())]),
             ..Settings::default()
         };

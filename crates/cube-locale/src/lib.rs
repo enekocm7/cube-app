@@ -387,6 +387,7 @@ pub struct Strings {
 
     pub settings_timer: &'static str,
     pub settings_appearance: &'static str,
+    pub settings_font_size: &'static str,
     pub settings_theme: &'static str,
     pub settings_data: &'static str,
     pub setting_inspection: &'static str,
@@ -396,6 +397,20 @@ pub struct Strings {
     pub setting_accurate: &'static str,
     pub setting_solve_list_ao5: &'static str,
     pub setting_always_show_scrollbar: &'static str,
+    pub setting_text_size: &'static str,
+    pub text_size_small: &'static str,
+    pub text_size_normal: &'static str,
+    pub text_size_large: &'static str,
+    pub text_size_largest: &'static str,
+    pub text_size_custom: &'static str,
+    pub setting_text_custom: &'static str,
+    pub setting_timer_size: &'static str,
+    pub timer_size_small: &'static str,
+    pub timer_size_normal: &'static str,
+    pub timer_size_large: &'static str,
+    pub timer_size_largest: &'static str,
+    pub timer_size_custom: &'static str,
+    pub setting_timer_custom: &'static str,
     pub setting_font: &'static str,
     pub font_system: &'static str,
     pub font_timer: &'static str,
@@ -404,7 +419,7 @@ pub struct Strings {
     pub setting_scramble_preview: &'static str,
     pub setting_scramble_size: &'static str,
     pub setting_scramble_custom: &'static str,
-    pub scramble_custom_invalid: &'static str,
+    pub size_custom_invalid: &'static str,
     pub scramble_size_small: &'static str,
     pub scramble_size_normal: &'static str,
     pub scramble_size_large: &'static str,
@@ -759,8 +774,8 @@ mod tests {
             assert!(strings.hint_start.contains("{key}"));
             assert!(strings.hint_inspecting.contains("{key}"));
             assert!(strings.hint_stop.contains("{key}"));
-            assert!(strings.scramble_custom_invalid.contains("{min}"));
-            assert!(strings.scramble_custom_invalid.contains("{max}"));
+            assert!(strings.size_custom_invalid.contains("{min}"));
+            assert!(strings.size_custom_invalid.contains("{max}"));
             assert!(strings.keybind_capture_hint.contains("{action}"));
             assert!(strings.keybind_error_conflict.contains("{action}"));
             assert!(strings.setting_skipping.contains("{version}"));

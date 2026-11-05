@@ -14,9 +14,6 @@ use crate::fonts;
 use crate::palette::Palette;
 use crate::scroll_fade::FadeScroll;
 
-/// Digit size of the timer.
-const DIGITS_SIZE: Pixels = px(112.);
-
 /// Lines the scramble row always reserves: enough for most events, so that the
 /// digits stay put from one scramble to the next.
 const SCRAMBLE_MIN_LINES: f32 = 2.;
@@ -47,6 +44,7 @@ impl CubeApp {
         let mono = fonts::timer_digits(cx).unwrap_or_else(|| theme.mono_font_family.clone());
         let muted = theme.muted_foreground;
         let preview = self.scramble_preview(window.viewport_size().height);
+        let digits = px(self.settings.timer_digits_px());
 
         v_flex()
             .flex_1()
@@ -81,8 +79,8 @@ impl CubeApp {
                     .child(
                         div()
                             .font_family(mono)
-                            .text_size(DIGITS_SIZE)
-                            .line_height(DIGITS_SIZE)
+                            .text_size(digits)
+                            .line_height(digits)
                             .font_weight(FontWeight::MEDIUM)
                             .text_color(display.color)
                             .child(display.text),

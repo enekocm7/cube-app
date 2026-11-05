@@ -153,8 +153,9 @@ Open settings with `Ctrl + ,`. They are saved to `cube-gui.toml` (see [Your data
 | Section | What you can change |
 |---|---|
 | **Timer** | WCA inspection, its 8 s and 12 s audio cues, touching the digits to start or stop, and shorter 3x3x3 scrambles (slower to generate) |
+| **Font size** | Font, interface text size, timer size and scramble size, each with presets and a custom point size |
 | **Theme** | Light, dark or system, and your theme files. See [Themes](#themes) |
-| **Appearance** | Font, scramble size, scramble preview, ao5 in the solve list, an always-visible solve list scrollbar, notifications, and confirmation before deleting |
+| **Appearance** | Scramble preview, ao5 in the solve list, an always-visible solve list scrollbar, notifications, and confirmation before deleting |
 | **Updates** | Automatic checks, release channel and check frequency. See [Updates](#updates) |
 | **Language** | Sixteen languages, including English and Spanish |
 | **Data** | Import and export csTimer sessions, and choose your own backup folder. See [Your data](#your-data) |
@@ -163,9 +164,13 @@ Shortcuts are rebound from the `F1` panel instead. See [Keyboard shortcuts](#key
 
 Details worth knowing:
 
-- **Font.** Times use the system's monospace font by default. **Appearance → Font** can switch to JetBrains Mono for
+- **Font.** Times use the system's monospace font by default. **Font size → Font** can switch to JetBrains Mono for
   the timer only, for every time, or for the whole interface. The font is bundled under the SIL Open Font License.
-- **Scramble size.** **Appearance → Scramble size** picks Small, Normal (default), Large, Largest or Custom, which takes
+- **Text size.** **Font size → Text size** picks Small, Normal (default), Large, Largest or Custom, which takes an exact
+  size in points (8 to 24). It changes the interface text without changing the panels and dialogs around it.
+- **Timer size.** **Font size → Timer size** picks Small, Normal (default), Large, Largest or Custom, which takes an
+  exact size in points (24 to 240) for the timer's digits.
+- **Scramble size.** **Font size → Scramble size** picks Small, Normal (default), Large, Largest or Custom, which takes
   an exact size in points (6 to 120). Long scrambles still scroll.
 - **Scramble preview.** The preview draws the puzzle as the scramble leaves it, under the timer and in the solve
   details, where it follows the scramble you are editing. Turn it off with **Appearance → Show the scramble preview**,
