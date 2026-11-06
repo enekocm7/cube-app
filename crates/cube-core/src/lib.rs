@@ -23,6 +23,8 @@ pub mod scramble;
 pub mod search;
 pub mod settings;
 pub mod settings_category;
+pub mod share_card;
+pub mod share_link;
 pub mod solve;
 mod solve_extras;
 pub mod stats;

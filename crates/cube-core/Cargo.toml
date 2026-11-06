@@ -10,6 +10,7 @@ description = "GUI-free solve model, statistics, timer, scrambles and persistenc
 anyhow.workspace = true
 chrono.workspace = true
 dirs.workspace = true
+resvg.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tnoodle-rs.workspace = true

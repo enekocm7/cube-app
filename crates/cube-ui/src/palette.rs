@@ -10,6 +10,7 @@
 use cube_core::Settings;
 use cube_core::persistence;
 use cube_core::settings::{FontChoice, ThemePreference};
+use cube_core::share_card::CardColors;
 use cube_core::theme::{ThemeColor, ThemeColors};
 use gpui_kit::component::{Theme, ThemeMode};
 use gpui_kit::*;
@@ -88,6 +89,24 @@ impl Palette {
             }
         }
     }
+}
+
+/// Returns the colors of a share card in the current theme.
+pub(crate) fn card_colors(cx: &App) -> CardColors {
+    let theme = Theme::global(cx);
+    CardColors {
+        background: theme_color(theme.background),
+        text: theme_color(theme.foreground),
+        muted: theme_color(theme.muted_foreground),
+        // `ring` is the accent in every theme; `accent` is a hover fill in ours.
+        accent: theme_color(theme.ring),
+    }
+}
+
+fn theme_color(color: Hsla) -> ThemeColor {
+    let color = Rgba::from(color);
+    let channel = |value: f32| (value * 255.).round() as u8;
+    ThemeColor::new(channel(color.r), channel(color.g), channel(color.b))
 }
 
 /// Assigns one color to both the theme's color table and its derived tokens,

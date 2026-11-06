@@ -32,8 +32,30 @@ const FILE_NAME: &str = "solve-extras.json";
 struct Entry {
     #[serde(flatten)]
     id: SolveId,
+    #[serde(flatten)]
+    extras: Extras,
+}
+
+/// What one solve has beyond `times.json`.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+struct Extras {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     tags: Vec<String>,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    solution: String,
+}
+
+impl Extras {
+    fn of(solve: &Solve) -> Self {
+        Self {
+            tags: solve.tags().to_vec(),
+            solution: solve.solution().to_owned(),
+        }
+    }
+
+    fn is_empty(&self) -> bool {
+        self.tags.is_empty() && self.solution.is_empty()
+    }
 }
 
 /// The contents of the file.
@@ -56,7 +78,7 @@ fn parse(bytes: &[u8], path: &Path) -> Result<ExtrasFile> {
     let file: ExtrasFile = serde_json::from_slice(bytes)
         .with_context(|| format!("Invalid solve extras in {}", path.display()))?;
     let valid = |tag: &&String| tags::parse(tag).is_ok_and(|parsed| parsed == **tag);
-    let mut every_tag = file.solves.iter().flat_map(|entry| &entry.tags);
+    let mut every_tag = file.solves.iter().flat_map(|entry| &entry.extras.tags);
     match every_tag.find(|tag| !valid(tag)) {
         Some(tag) => Err(anyhow!("Invalid tag {tag:?} in {}", path.display())),
         None => Ok(file),
@@ -67,7 +89,7 @@ fn parse(bytes: &[u8], path: &Path) -> Result<ExtrasFile> {
 pub(crate) struct SolveExtras {
     path: PathBuf,
     /// Entries of solves the history does not have.
-    missing: HashMap<SolveId, Vec<String>>,
+    missing: HashMap<SolveId, Extras>,
     /// The file's contents when this app last read or wrote it.
     synced: Option<Vec<u8>>,
 }
@@ -90,7 +112,7 @@ impl SolveExtras {
         let missing = file
             .solves
             .into_iter()
-            .map(|entry| (entry.id, entry.tags))
+            .map(|entry| (entry.id, entry.extras))
             .collect();
         let mut extras = Self {
             path,
@@ -123,28 +145,29 @@ impl SolveExtras {
         let ids: Vec<SolveId> = identified(sessions).map(|(id, _)| id).collect();
         let solves = sessions.iter_mut().flat_map(History::solves_mut);
         for (id, solve) in ids.iter().zip(solves) {
-            if let Some(tags) = self.missing.get(id) {
-                solve.set_tags(tags.clone());
+            if let Some(extras) = self.missing.get(id) {
+                solve.set_tags(extras.tags.clone());
+                solve.set_solution(extras.solution.clone());
             }
         }
     }
 
     /// Applies a change to the entries no solve is carrying.
     pub(crate) fn change_tags(&mut self, change: &TagChange) {
-        for tags in self.missing.values_mut() {
-            change.apply(tags);
+        for extras in self.missing.values_mut() {
+            change.apply(&mut extras.tags);
         }
-        self.missing.retain(|_, tags| !tags.is_empty());
+        self.missing.retain(|_, extras| !extras.is_empty());
     }
 
     /// Writes the extras of `sessions`, when the file would change.
     pub(crate) fn save(&mut self, sessions: &[History]) -> Result<()> {
         let mut solves: Vec<Entry> = identified(sessions)
-            .filter(|(_, solve)| !solve.tags().is_empty())
             .map(|(id, solve)| Entry {
                 id,
-                tags: solve.tags().to_vec(),
+                extras: Extras::of(solve),
             })
+            .filter(|entry| !entry.extras.is_empty())
             .collect();
         // A solve here carries its own extras, even when it has none left.
         let present: HashSet<SolveId> = if self.missing.is_empty() {
@@ -156,9 +179,9 @@ impl SolveExtras {
             .missing
             .iter()
             .filter(|(id, _)| !present.contains(*id))
-            .map(|(id, tags)| Entry {
+            .map(|(id, extras)| Entry {
                 id: id.clone(),
-                tags: tags.clone(),
+                extras: extras.clone(),
             })
             .collect();
         // The map has no order of its own, and the file should only change
@@ -256,6 +279,62 @@ mod tests {
         let mut loaded = session(&[10, 20]);
         SolveExtras::open(&path, &mut loaded).unwrap();
         assert_eq!(tags_of(&loaded), [vec![], vec!["GAN".to_owned()]]);
+        remove_folder_of(&path);
+    }
+
+    #[test]
+    fn solutions_come_back_and_leave_the_tags_alone() {
+        let path = temporary_history();
+        let mut sessions = session(&[10, 20]);
+        tag(&mut sessions, 0, "GAN");
+        assert!(sessions[0].set_solution(1, "R U // cross".to_owned()));
+        assert!(!sessions[0].set_solution(1, "R U // cross".to_owned()));
+        saved(&path, &sessions);
+
+        let mut loaded = session(&[10, 20]);
+        SolveExtras::open(&path, &mut loaded).unwrap();
+        assert_eq!(tags_of(&loaded), [vec!["GAN".to_owned()], vec![]]);
+        assert_eq!(loaded[0].solves()[0].solution(), "");
+        assert_eq!(loaded[0].solves()[1].solution(), "R U // cross");
+        remove_folder_of(&path);
+    }
+
+    #[test]
+    fn a_solution_never_reaches_times_json() {
+        let mut sessions = session(&[10]);
+        assert!(sessions[0].set_solution(0, "R U".to_owned()));
+        let json = serde_json::to_string(&sessions).unwrap();
+        assert!(!json.contains("solution"));
+    }
+
+    #[test]
+    fn a_solve_that_goes_missing_keeps_its_solution() {
+        let path = temporary_history();
+        let mut sessions = session(&[10]);
+        assert!(sessions[0].set_solution(0, "R U".to_owned()));
+        saved(&path, &sessions);
+
+        let mut extras = SolveExtras::open(&path, &mut session(&[])).unwrap();
+        // Tidying tags on what is left must not take the solution along.
+        extras.change_tags(&TagChange::Remove {
+            tag: "GAN".to_owned(),
+        });
+        extras.save(&session(&[])).unwrap();
+
+        let mut back = session(&[10]);
+        SolveExtras::open(&path, &mut back).unwrap();
+        assert_eq!(back[0].solves()[0].solution(), "R U");
+        remove_folder_of(&path);
+    }
+
+    #[test]
+    fn a_file_without_solutions_stays_that_way() {
+        let path = temporary_history();
+        let mut sessions = session(&[10]);
+        tag(&mut sessions, 0, "GAN");
+        saved(&path, &sessions);
+        let file = fs::read_to_string(path.with_file_name(FILE_NAME)).unwrap();
+        assert!(!file.contains("solution"));
         remove_folder_of(&path);
     }
 

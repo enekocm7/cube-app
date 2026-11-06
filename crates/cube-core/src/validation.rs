@@ -112,6 +112,12 @@ pub fn validate_comment(text: &str) -> bool {
             .all(|c| !c.is_control() || matches!(c, '\n' | '\r' | '\t'))
 }
 
+/// Checks a solution, which follows the same rules as a comment: `//` notes
+/// and line breaks are part of how solutions are written.
+pub fn validate_solution(text: &str) -> bool {
+    validate_comment(text)
+}
+
 /// Checks event-specific scramble notation, not whether a puzzle state is
 /// reachable.
 ///

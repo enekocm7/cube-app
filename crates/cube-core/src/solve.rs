@@ -44,6 +44,9 @@ pub struct Solve {
     /// know from `times.json`.
     #[serde(skip)]
     tags: Vec<String>,
+    /// The moves that solved it, kept beside the tags for the same reason.
+    #[serde(skip)]
+    solution: String,
 }
 
 /// The editable fields of a solve, without its audit trail.
@@ -99,6 +102,7 @@ impl Solve {
             changes: Vec::new(),
             was_single_record: false,
             tags: Vec::new(),
+            solution: String::new(),
         }
     }
 
@@ -151,6 +155,14 @@ impl Solve {
 
     pub fn set_tags(&mut self, tags: Vec<String>) {
         self.tags = tags;
+    }
+
+    pub fn solution(&self) -> &str {
+        &self.solution
+    }
+
+    pub fn set_solution(&mut self, solution: String) {
+        self.solution = solution;
     }
 
     /// Applies a change to a tag, if the solve has it.

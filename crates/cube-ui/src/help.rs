@@ -30,7 +30,7 @@ const TIMER_ACTIONS: [Action; 6] = [
     Action::ToggleScramblePreview,
     Action::ManualEntry,
 ];
-const SOLVE_ACTIONS: [Action; 9] = [
+const SOLVE_ACTIONS: [Action; 11] = [
     Action::PreviousSolve,
     Action::NextSolve,
     Action::OpenSolve,
@@ -40,6 +40,8 @@ const SOLVE_ACTIONS: [Action; 9] = [
     Action::EditTags,
     Action::ActiveTags,
     Action::ManageTags,
+    Action::ShareSolve,
+    Action::CopySolveLink,
 ];
 const SESSION_ACTIONS: [Action; 9] = [
     Action::NextEvent,
@@ -52,12 +54,13 @@ const SESSION_ACTIONS: [Action; 9] = [
     Action::UndoDelete,
     Action::RedoDelete,
 ];
-const AVERAGE_ACTIONS: [Action; 5] = [
+const AVERAGE_ACTIONS: [Action; 6] = [
     Action::PreviousAverage,
     Action::NextAverage,
     Action::OpenAverage,
     Action::OpenBestAverage,
     Action::CopyAverage,
+    Action::ShareAverage,
 ];
 const SCREEN_ACTIONS: [Action; 7] = [
     Action::OpenStats,
@@ -478,6 +481,9 @@ fn action_label(strings: &'static Strings, action: Action) -> &'static str {
         Action::OpenAverage => strings.action_open_average,
         Action::OpenBestAverage => strings.action_open_best_average,
         Action::CopyAverage => strings.action_copy_average,
+        Action::ShareSolve => strings.action_share_solve,
+        Action::ShareAverage => strings.action_share_average,
+        Action::CopySolveLink => strings.action_copy_solve_link,
         Action::OpenSettings => strings.settings,
         Action::ShowHelp => strings.action_show_help,
     }

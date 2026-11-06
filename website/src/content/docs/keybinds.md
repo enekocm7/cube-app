@@ -49,7 +49,10 @@ nothing is selected.
 | Select the longer average | `Right` | |
 | Open the selected average | `O` | Lists the solves of the average ending at the selected solve, marking the trimmed ones. Starts on ao5 |
 | Open the best of the selected average | `Shift + O` | |
+| Create an image of the selected solve | `K` | Draws the solve's card and opens it in the image preview: `Enter` copies it, `Tab` reaches **Download PNG**, **Close** and copying its link, and `Esc` closes. **Create image** in the solve's dialog does the same |
+| Copy a link to the selected solve | `U` | Copies an [alg.cubing.net](https://alg.cubing.net) link with the scramble, the solution if the solve has one, and the comment. Only for 2x2x2 to 7x7x7, the puzzles the site has |
 | Copy the selected average as text | `C` | Copies the result and every attempt with its scramble. The average's dialog has the same action on a button |
+| Create an image of the selected average | `Shift + K` | Draws the card of mo3, ao5 or ao12 and opens it in the image preview, with the same controls and a link to its fastest attempt. Longer averages have too many attempts for a card. **Create image** in the average's dialog does the same |
 | Show stats or the timer | `A` | Toggles the table of every solve's averages |
 | Show charts or the timer | `G` | |
 | Connect a Bluetooth timer | `B` | Also the Bluetooth icon in the title bar. See [Bluetooth timers](#bluetooth-timers) |

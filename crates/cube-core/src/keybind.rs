@@ -56,13 +56,16 @@ pub enum Action {
     OpenAverage,
     OpenBestAverage,
     CopyAverage,
+    ShareSolve,
+    ShareAverage,
+    CopySolveLink,
     OpenSettings,
     ShowHelp,
 }
 
 impl Action {
     /// Every action, in the order the help dialog lists them.
-    pub const ALL: [Self; 46] = [
+    pub const ALL: [Self; 49] = [
         Self::Timer,
         Self::Cancel,
         Self::NextScramble,
@@ -107,6 +110,9 @@ impl Action {
         Self::OpenAverage,
         Self::OpenBestAverage,
         Self::CopyAverage,
+        Self::ShareSolve,
+        Self::ShareAverage,
+        Self::CopySolveLink,
         Self::OpenSettings,
         Self::ShowHelp,
     ];
@@ -158,6 +164,9 @@ impl Action {
             Self::OpenAverage => "open_average",
             Self::OpenBestAverage => "open_best_average",
             Self::CopyAverage => "copy_average",
+            Self::ShareSolve => "share_solve",
+            Self::ShareAverage => "share_average",
+            Self::CopySolveLink => "copy_solve_link",
             Self::OpenSettings => "open_settings",
             Self::ShowHelp => "show_help",
         }
@@ -372,6 +381,9 @@ impl Default for Keybinds {
             (Action::OpenAverage, "o"),
             (Action::OpenBestAverage, "Shift+O"),
             (Action::CopyAverage, "c"),
+            (Action::ShareSolve, "k"),
+            (Action::ShareAverage, "Shift+K"),
+            (Action::CopySolveLink, "u"),
             (Action::OpenSettings, "Ctrl+,"),
             (Action::ShowHelp, "F1"),
         ];
@@ -847,6 +859,9 @@ mod tests {
             ("o", false, Action::OpenAverage),
             ("o", true, Action::OpenBestAverage),
             ("c", false, Action::CopyAverage),
+            ("k", false, Action::ShareSolve),
+            ("k", true, Action::ShareAverage),
+            ("u", false, Action::CopySolveLink),
         ] {
             assert_eq!(keybinds.action_for(&press(key, shift)), Some(action));
         }

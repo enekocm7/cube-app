@@ -134,10 +134,12 @@ fn merge_session(
     for (id, solve) in our_ids.iter().zip(ours.solves_mut()) {
         match their_solves.get(id) {
             Some(their) if revision(their) > revision(solve) => {
-                // The file knows nothing of tags: they stay with this copy.
+                // The file knows nothing of extras: they stay with this copy.
                 let tags = solve.tags().to_vec();
+                let solution = solve.solution().to_owned();
                 solve.clone_from(their);
                 solve.set_tags(tags);
+                solve.set_solution(solution);
                 summary.updated += 1;
             }
             None if known.contains_key(id) => summary.kept += 1,
@@ -267,6 +269,21 @@ mod tests {
                 kept: 1
             }
         );
+    }
+
+    #[test]
+    fn a_newer_edit_from_the_file_keeps_the_solution() {
+        let base = [session("", &[10])];
+        let mut ours = vec![session("", &[10])];
+        assert!(ours[0].set_solution(0, "R U // cross".to_owned()));
+        let mut theirs = [session("", &[10])];
+        with_comment(&mut theirs[0], 0, "from cube-tui");
+
+        let summary = merge(&base, &mut ours, &theirs);
+        assert_eq!(summary.updated, 1);
+        let merged = &ours[0].solves()[0];
+        assert_eq!(merged.comment(), "from cube-tui");
+        assert_eq!(merged.solution(), "R U // cross");
     }
 
     #[test]
