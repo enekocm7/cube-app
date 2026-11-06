@@ -423,6 +423,11 @@ pub struct Strings {
     pub setting_font_desc: &'static str,
     pub setting_text_size_desc: &'static str,
     pub setting_timer_size_desc: &'static str,
+    /// `{event}`: the event the size is for.
+    pub setting_timer_size_event: &'static str,
+    pub setting_timer_size_event_desc: &'static str,
+    /// `{event}`: the event the size is for.
+    pub setting_timer_custom_event: &'static str,
     pub setting_scramble_size_desc: &'static str,
     /// `{event}`: the event the size is for.
     pub setting_scramble_size_event: &'static str,

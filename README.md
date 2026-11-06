@@ -181,7 +181,8 @@ Details worth knowing:
 - **Text size.** **Appearance → Text size** picks Small, Normal (default), Large, Largest or Custom, which takes an exact
   size in points (8 to 24). It changes the interface text without changing the panels and dialogs around it.
 - **Timer size.** **Appearance → Timer size** picks Small, Normal (default), Large, Largest or Custom, which takes an
-  exact size in points (24 to 240) for the timer's digits.
+  exact size in points (24 to 240) for the timer's digits. Each event can have its own timer size under the same
+  heading.
 - **Scramble size.** **Appearance → Scramble size** picks Small, Normal (default), Large, Largest or Custom, which takes
   an exact size in points (6 to 120). Long scrambles still scroll. Each event can have its own scramble size under the
   same heading.

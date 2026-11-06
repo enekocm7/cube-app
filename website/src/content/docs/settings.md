@@ -53,6 +53,7 @@ Light, dark, or system — plus your theme files. See [Themes](/cube-app/docs/th
 | Font | All times | Cube Mono for the timer only, every time, or the whole interface, or the system fonts |
 | Text size | Normal | Small / Normal / Large / Largest / Custom (8–24 pt) for the interface text |
 | Timer size | Normal | Small / Normal / Large / Largest / Custom (24–240 pt) for the timer's digits |
+| Timer size, per event | The general size | The same sizes for one event, with its own Custom points. Saved in `cube-app.toml` under `[timer_sizes]` for events that differ from the general size |
 | Scramble size | Normal | Small / Normal / Large / Largest / Custom (6–120 pt) |
 | Scramble size, per event | The general size | The same sizes for one event, with its own Custom points. Saved in `cube-app.toml` under `[scramble_sizes]` for events that differ from the general size |
 
