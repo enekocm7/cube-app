@@ -46,7 +46,7 @@ for valid bindings.
 | `Space` | Start inspection, hold and release to start the solve, press to stop |
 | Any other key | Stop a running solve |
 | Left mouse button or touch on the digits | Same as the timer key when **Timer → Touch the digits** is on (off by default) |
-| `Esc` | Cancel the current attempt without recording it, or leave the stats, charts or goals screen |
+| `Esc` | Cancel the current attempt without recording it, or leave the stats, charts, goals or trainer screen |
 | `N` | New scramble (hold to keep generating) |
 | `I` | Turn WCA inspection on or off |
 | `P` | Show or hide the scramble preview |
@@ -76,6 +76,17 @@ for valid bindings.
 | `B` | Connect or disconnect a Bluetooth timer |
 | `Shift + G` | Show goals, or return to the timer |
 | `Shift + N` | New goal, on the goals screen |
+| `Shift + P` | Show the trainer, or return to the timer |
+| `Y` | Next algorithm set, in the trainer |
+| `J` | Select or clear the highlighted case, in the trainer |
+| `Shift + J` | Select or clear the highlighted case's group, in the trainer |
+| `Shift + A` | Select or clear every case, in the trainer |
+| `Q` | Start training the selected cases |
+| `H` | Show or hide the current case, in the trainer |
+| `Shift + H` | Edit the highlighted case's algorithm, in the trainer |
+| `Shift + Y` | Sort cases by slowest, in the trainer |
+| `Shift + Q` | See the highlighted case's attempts, in the trainer |
+| `/` | Search the cases, in the trainer |
 | `V` | Show the next charts view |
 | `F` | Filter charts by the next event |
 | `R` / `Shift + R` | Filter charts by the next range, or by custom dates |
@@ -118,6 +129,14 @@ Around the shortcuts:
 
 - Official WCA random-state scrambles for 12 events, generated with `tnoodle-rs`.
 - A picture of the scrambled puzzle on the timer and in the solve details. Turn it off with `P`.
+
+**Trainer**
+
+- PLL and OLL trainer: pick whole sets or single cases and drill them in random order, with every case coming up once per round.
+- Past attempts of each case, which can be reviewed and deleted.
+- Search for cases by name or group.
+- A history that names the case of each attempt, and per-case stats sorted by slowest.
+- Your own algorithm for any case, checked against it.
 
 **Sharing**
 

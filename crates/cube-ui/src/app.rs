@@ -18,6 +18,7 @@ use cube_core::persistence::{self, HistoryStore};
 use cube_core::scramble::{self, ScrambleQueue};
 use cube_core::stats::{self, Average, SessionStats};
 use cube_core::tags::{self, TagUsage};
+use cube_core::trainer::TrainerData;
 use cube_core::window_state::WindowState;
 use cube_core::{
     Action, BindingError, Goal, GoalProgress, History, KeyBinding, KeyPress, Keybinds, ManualEntry,
@@ -43,6 +44,7 @@ use crate::panel_resize::{PanelSide, render_grab};
 use crate::preview::PreviewCache;
 use crate::scoped_rem::ScopedRem;
 use crate::stats_screen::StatsView;
+use crate::trainer_screen::{TrainerState, new_trainer_search};
 
 /// The most sessions cube-tui can display.
 pub const MAX_SESSIONS: usize = 99;
@@ -62,6 +64,7 @@ pub enum Screen {
     Stats,
     Charts,
     Goals,
+    Trainer,
 }
 
 /// Everything read from disk at startup.
@@ -79,6 +82,10 @@ pub struct Loaded {
     goals_path: Option<PathBuf>,
     /// Whether changes to tags can be saved.
     tags_available: bool,
+    trainer: TrainerData,
+    /// `None` when the trainer's data could not be loaded, which keeps saving
+    /// off so a file this version cannot read is never overwritten.
+    trainer_path: Option<PathBuf>,
 }
 
 /// What went wrong reading from disk at startup.
@@ -93,6 +100,8 @@ struct LoadProblems {
     goals: Option<String>,
     /// Why the tags could not be loaded.
     tags: Option<String>,
+    /// Why the trainer's data could not be loaded.
+    trainer: Option<String>,
 }
 
 impl LoadProblems {
@@ -113,6 +122,10 @@ impl LoadProblems {
         }
         if let Some(error) = self.tags {
             let message = strings.toast_tags_load_failed.replace("{error}", &error);
+            notify_when_ready(Notification::error(message), window);
+        }
+        if let Some(error) = self.trainer {
+            let message = strings.toast_trainer_load_failed.replace("{error}", &error);
             notify_when_ready(Notification::error(message), window);
         }
         if let Some(aside) = self.settings_aside {
@@ -153,6 +166,7 @@ impl Loaded {
             store.set_user_backups(settings.user_backups());
         }
         let (goals, goals_path, goals_error) = load_goals();
+        let (trainer, trainer_path, trainer_error) = load_trainer();
         let tags_available = history.as_ref().is_some_and(HistoryStore::tags_available);
         let tags_error = history
             .as_mut()
@@ -169,10 +183,13 @@ impl Loaded {
                 settings_aside,
                 goals: goals_error,
                 tags: tags_error,
+                trainer: trainer_error,
             },
             goals,
             goals_path,
             tags_available,
+            trainer,
+            trainer_path,
         }
     }
 }
@@ -186,6 +203,18 @@ fn load_goals() -> (Vec<Goal>, Option<PathBuf>, Option<String>) {
     match persistence::load_goals(&path) {
         Ok(goals) => (goals, Some(path), None),
         Err(error) => (Vec::new(), None, Some(format!("{error:#}"))),
+    }
+}
+
+/// Loads the trainer's data. A file that cannot be read stays where it is and
+/// saving turns off, as for the goals.
+fn load_trainer() -> (TrainerData, Option<PathBuf>, Option<String>) {
+    let Ok(path) = persistence::trainer_file() else {
+        return (TrainerData::default(), None, None);
+    };
+    match persistence::load_trainer(&path) {
+        Ok(data) => (data, Some(path), None),
+        Err(error) => (TrainerData::default(), None, Some(format!("{error:#}"))),
     }
 }
 
@@ -203,6 +232,13 @@ fn load_settings(path: Option<PathBuf>) -> (Settings, Option<PathBuf>, Option<Pa
             Err(_) => (Settings::default(), None, Some(path)),
         },
     }
+}
+
+/// Returns the language `settings` ask for, or else the system's.
+fn language_of(settings: &Settings) -> Language {
+    Language::from_code(&settings.language)
+        .or_else(|| sys_locale::get_locale().and_then(|code| Language::from_code(&code)))
+        .unwrap_or_default()
 }
 
 /// Shows a notification that stays until dismissed, on the next frame: the
@@ -304,6 +340,8 @@ pub struct CubeApp {
     /// The goal selected with the keyboard, as an index into `goals`.
     pub(crate) selected_goal: Option<usize>,
     pub(crate) goals_scroll: UniformListScrollHandle,
+    /// The algorithm trainer's screen and data.
+    pub(crate) trainer: TrainerState,
     /// Whether changes to tags can be saved.
     pub(crate) tags_available: bool,
     /// Every tag and how many solves have it, sorted.
@@ -378,6 +416,7 @@ impl Deleted {
 }
 
 impl CubeApp {
+    #[allow(clippy::too_many_lines, reason = "one line per field of the app")]
     pub fn new(loaded: Loaded, window: &mut Window, cx: &mut Context<Self>) -> Self {
         let Loaded {
             mut settings,
@@ -388,7 +427,11 @@ impl CubeApp {
             goals,
             goals_path,
             tags_available,
+            trainer,
+            trainer_path,
         } = loaded;
+        let strings = language_of(&settings).strings();
+        let trainer_search = new_trainer_search(strings, window, cx);
         settings.adopt_existing_history(&sessions);
         if sessions.is_empty() {
             sessions.push(History::new());
@@ -444,6 +487,7 @@ impl CubeApp {
             goals_day: now.date_naive(),
             selected_goal: None,
             goals_scroll: UniformListScrollHandle::new(),
+            trainer: TrainerState::new(trainer, trainer_path, trainer_search),
             tags_available,
             tag_usage,
             compare_tag: None,
@@ -510,9 +554,7 @@ impl CubeApp {
 
     /// Returns the active interface language.
     pub(crate) fn language(&self) -> Language {
-        Language::from_code(&self.settings.language)
-            .or_else(|| sys_locale::get_locale().and_then(|code| Language::from_code(&code)))
-            .unwrap_or_default()
+        language_of(&self.settings)
     }
 
     /// Returns the active language's strings.
@@ -641,6 +683,9 @@ impl CubeApp {
         if window.has_active_dialog(cx) {
             return;
         }
+        if self.trainer_search_key(event, window, cx) {
+            return;
+        }
         let Some(press) = key_press(&event.keystroke) else {
             return;
         };
@@ -678,12 +723,20 @@ impl CubeApp {
         };
         cx.stop_propagation();
         if action == Action::Timer {
-            // Manual mode types times in instead of timing them, and a
-            // Bluetooth timer is started and stopped by hand.
-            if self.manual.is_some() || self.hardware_timing() {
+            // With no timer on the picker, the key picks the highlighted case.
+            if self.trainer_picking() {
+                if !event.is_held {
+                    self.toggle_trainer_case(window, cx);
+                }
                 return;
             }
-            if self.key_down || self.pointer_down || event.is_held || self.screen != Screen::Timer {
+            // Manual mode types times in instead of timing them, and a
+            // Bluetooth timer is started and stopped by hand.
+            if self.manual_mode() || self.hardware_timing() {
+                return;
+            }
+            let timer_showing = self.screen == Screen::Timer || self.drilling();
+            if self.key_down || self.pointer_down || event.is_held || !timer_showing {
                 return;
             }
             self.key_down = true;
@@ -702,7 +755,11 @@ impl CubeApp {
 
     /// Runs a shortcut other than the timer's and Cancel, which depend on the
     /// key going down and up.
+    #[allow(clippy::too_many_lines, reason = "one arm per action")]
     fn run_action(&mut self, action: Action, window: &mut Window, cx: &mut Context<Self>) {
+        if self.screen == Screen::Trainer && self.trainer_action(action, window, cx) {
+            return;
+        }
         match action {
             Action::PreviousSolve | Action::NextSolve if self.screen == Screen::Goals => {
                 self.step_goal(action == Action::NextSolve, cx);
@@ -771,6 +828,7 @@ impl CubeApp {
             Action::OpenCharts => self.toggle_screen(Screen::Charts, cx),
             Action::OpenBluetooth => self.open_bluetooth(window, cx),
             Action::OpenGoals => self.toggle_screen(Screen::Goals, cx),
+            Action::OpenTrainer => self.toggle_screen(Screen::Trainer, cx),
             Action::NewGoal => self.open_goal_form(None, window, cx),
             Action::EditTags => {
                 if let Some(index) = self.target_solve() {
@@ -799,7 +857,17 @@ impl CubeApp {
             Action::CopySolveLink => self.copy_target_solve_link(window, cx),
             Action::OpenSettings => self.open_settings(window, cx),
             Action::ShowHelp => self.open_help(window, cx),
-            Action::Timer | Action::Cancel => {}
+            Action::Timer
+            | Action::Cancel
+            | Action::NextTrainerSet
+            | Action::ToggleTrainerCase
+            | Action::ToggleTrainerGroup
+            | Action::ToggleTrainerSet
+            | Action::StartTrainer
+            | Action::RevealTrainerCase
+            | Action::EditTrainerAlgorithm
+            | Action::SortTrainerCases
+            | Action::TrainerCaseAttempts => {}
         }
     }
 
@@ -839,7 +907,7 @@ impl CubeApp {
         if window.has_active_dialog(cx)
             || self.pointer_down
             || self.key_down
-            || self.manual.is_some()
+            || self.manual_mode()
             || self.hardware_timing()
         {
             return;
@@ -894,6 +962,11 @@ impl CubeApp {
             self.timer.cancel();
             self.toast(self.strings().toast_cancelled, window, cx);
             cx.notify();
+        } else if self.leave_trainer_drill(cx)
+            || self.leave_case_attempts(cx)
+            || self.clear_trainer_search(window, cx)
+        {
+            // Back on the whole picker; another press leaves the trainer.
         } else if self.screen != Screen::Timer {
             self.screen = Screen::Timer;
             cx.notify();
@@ -920,11 +993,13 @@ impl CubeApp {
 
     fn press_timer(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         // An attempt needs a scramble to record against.
-        if !self.timer.is_active() && self.scramble.is_none() {
+        if !self.timer.is_active() && self.shown_scramble().is_none() {
             return;
         }
         if !self.timer.is_active() {
             self.last_result = None;
+            // A drill times one case, which has no inspection.
+            self.timer.inspection = self.settings.timer().inspection && !self.drilling();
         }
         if let Some(outcome) = self.timer.press(Instant::now()) {
             self.finish_attempt(outcome, window, cx);
@@ -939,6 +1014,10 @@ impl CubeApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.drilling() {
+            self.finish_trainer_attempt(outcome, window, cx);
+            return;
+        }
         let TimerOutcome { time_ms, modifier } = outcome;
         let scramble = self.scramble.take().unwrap_or_default();
         let mut solve = Solve::new(time_ms, self.event, scramble, modifier);
@@ -1110,6 +1189,10 @@ impl CubeApp {
 
     /// Shows `screen`, keeping the target solve in view on the stats table.
     pub(crate) fn show_screen(&mut self, screen: Screen, cx: &mut Context<Self>) {
+        // The digits belong to one side or the other, never to both.
+        if (self.screen == Screen::Trainer) != (screen == Screen::Trainer) {
+            self.last_result = None;
+        }
         self.screen = screen;
         if screen == Screen::Stats
             && let Some(index) = self.target_solve()
@@ -1128,6 +1211,12 @@ impl CubeApp {
             screen
         };
         self.show_screen(next, cx);
+    }
+
+    /// Returns whether manual mode applies to what is on screen. It stays on
+    /// for the timer while the trainer, which only times attempts, is showing.
+    pub(crate) fn manual_mode(&self) -> bool {
+        self.manual.is_some() && self.screen != Screen::Trainer
     }
 
     /// Turns manual mode on or off. It starts only from the idle timer
@@ -1978,7 +2067,7 @@ impl CubeApp {
     }
 
     /// Shows `template`, with `{error}` filled in, as an error notification.
-    fn report_error(
+    pub(crate) fn report_error(
         &self,
         template: &'static str,
         error: &anyhow::Error,
@@ -2126,10 +2215,19 @@ impl CubeApp {
                                         strings.nav_charts,
                                         Screen::Charts,
                                         cx,
+                                    ))
+                                    .child(tab(
+                                        "nav-trainer",
+                                        strings.nav_trainer,
+                                        Screen::Trainer,
+                                        cx,
                                     )),
                             ),
                     )
-                    .child(self.render_event_picker(cx))
+                    // The trainer's sets say what is being practised instead.
+                    .children(
+                        (self.screen != Screen::Trainer).then(|| self.render_event_picker(cx)),
+                    )
                     .child(
                         h_flex()
                             .flex_grow(1.)
@@ -2220,6 +2318,7 @@ impl Render for CubeApp {
             Screen::Stats => self.render_table(cx),
             Screen::Charts => self.render_charts(cx),
             Screen::Goals => self.render_goals(cx),
+            Screen::Trainer => self.render_trainer(window, cx),
         };
         let theme = cx.theme();
         v_flex()

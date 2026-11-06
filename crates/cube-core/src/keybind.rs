@@ -38,6 +38,16 @@ pub enum Action {
     OpenBluetooth,
     OpenGoals,
     NewGoal,
+    OpenTrainer,
+    NextTrainerSet,
+    ToggleTrainerCase,
+    ToggleTrainerGroup,
+    ToggleTrainerSet,
+    StartTrainer,
+    RevealTrainerCase,
+    EditTrainerAlgorithm,
+    SortTrainerCases,
+    TrainerCaseAttempts,
     EditTags,
     ActiveTags,
     ManageTags,
@@ -65,7 +75,7 @@ pub enum Action {
 
 impl Action {
     /// Every action, in the order the help dialog lists them.
-    pub const ALL: [Self; 49] = [
+    pub const ALL: [Self; 59] = [
         Self::Timer,
         Self::Cancel,
         Self::NextScramble,
@@ -92,6 +102,16 @@ impl Action {
         Self::OpenBluetooth,
         Self::OpenGoals,
         Self::NewGoal,
+        Self::OpenTrainer,
+        Self::NextTrainerSet,
+        Self::ToggleTrainerCase,
+        Self::ToggleTrainerGroup,
+        Self::ToggleTrainerSet,
+        Self::StartTrainer,
+        Self::RevealTrainerCase,
+        Self::EditTrainerAlgorithm,
+        Self::SortTrainerCases,
+        Self::TrainerCaseAttempts,
         Self::EditTags,
         Self::ActiveTags,
         Self::ManageTags,
@@ -146,6 +166,16 @@ impl Action {
             Self::OpenBluetooth => "open_bluetooth",
             Self::OpenGoals => "open_goals",
             Self::NewGoal => "new_goal",
+            Self::OpenTrainer => "open_trainer",
+            Self::NextTrainerSet => "next_trainer_set",
+            Self::ToggleTrainerCase => "toggle_trainer_case",
+            Self::ToggleTrainerGroup => "toggle_trainer_group",
+            Self::ToggleTrainerSet => "toggle_trainer_set",
+            Self::StartTrainer => "start_trainer",
+            Self::RevealTrainerCase => "reveal_trainer_case",
+            Self::EditTrainerAlgorithm => "edit_trainer_algorithm",
+            Self::SortTrainerCases => "sort_trainer_cases",
+            Self::TrainerCaseAttempts => "trainer_case_attempts",
             Self::EditTags => "edit_tags",
             Self::ActiveTags => "active_tags",
             Self::ManageTags => "manage_tags",
@@ -363,6 +393,16 @@ impl Default for Keybinds {
             (Action::OpenBluetooth, "b"),
             (Action::OpenGoals, "Shift+G"),
             (Action::NewGoal, "Shift+N"),
+            (Action::OpenTrainer, "Shift+P"),
+            (Action::NextTrainerSet, "y"),
+            (Action::ToggleTrainerCase, "j"),
+            (Action::ToggleTrainerGroup, "Shift+J"),
+            (Action::ToggleTrainerSet, "Shift+A"),
+            (Action::StartTrainer, "q"),
+            (Action::RevealTrainerCase, "h"),
+            (Action::EditTrainerAlgorithm, "Shift+H"),
+            (Action::SortTrainerCases, "Shift+Y"),
+            (Action::TrainerCaseAttempts, "Shift+Q"),
             (Action::EditTags, "t"),
             (Action::ActiveTags, "Shift+T"),
             (Action::ManageTags, "Ctrl+T"),
@@ -758,7 +798,7 @@ mod tests {
             keybinds.validate(Action::Timer, &modified),
             Err(BindingError::TimerModified)
         );
-        let free = KeyBinding::parse("j").unwrap();
+        let free = KeyBinding::parse("F6").unwrap();
         assert_eq!(keybinds.validate(Action::Timer, &free), Ok(()));
         assert_eq!(
             keybinds.validate_removal(Action::Timer),

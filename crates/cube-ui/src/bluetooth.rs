@@ -246,7 +246,7 @@ impl CubeApp {
         if !was_running && running(self.timer.phase()) {
             self.last_result = None;
         }
-        if self.timer.is_active() && self.screen != Screen::Timer {
+        if self.timer.is_active() && self.screen != Screen::Timer && !self.drilling() {
             self.show_screen(Screen::Timer, cx);
         }
         if let Some(outcome) = outcome {

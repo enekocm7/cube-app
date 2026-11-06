@@ -28,6 +28,7 @@ use crate::settings::Settings;
 use crate::solve_extras::SolveExtras;
 use crate::tags::TagChange;
 use crate::theme::{self, ThemeColors, ThemeFile};
+use crate::trainer::TrainerData;
 
 /// Returns the shared data directory, creating it when needed.
 pub fn data_dir() -> Result<PathBuf> {
@@ -56,6 +57,12 @@ pub fn history_file() -> Result<PathBuf> {
 /// because that file is cube-tui's.
 pub fn goals_file() -> Result<PathBuf> {
     Ok(data_dir()?.join("goals.json"))
+}
+
+/// Returns the algorithm trainer's data, kept out of `times.json` so that
+/// attempts at a single case never reach sessions, averages or cube-tui.
+pub fn trainer_file() -> Result<PathBuf> {
+    Ok(data_dir()?.join("trainer.json"))
 }
 
 /// Returns the settings file of the desktop app.
@@ -524,6 +531,27 @@ pub fn save_goals(path: &Path, goals: &[Goal]) -> Result<()> {
     write_atomic(path, &text).with_context(|| format!("Could not save goals to {}", path.display()))
 }
 
+/// Loads the trainer's data; a missing file means nothing was trained yet.
+///
+/// A file that exists but can't be read is an error, never empty data, or the
+/// next save would overwrite it.
+pub fn load_trainer(path: &Path) -> Result<TrainerData> {
+    let Some(bytes) =
+        read_if_present(path).with_context(|| format!("Could not read {}", path.display()))?
+    else {
+        return Ok(TrainerData::default());
+    };
+    serde_json::from_slice(&bytes)
+        .with_context(|| format!("Invalid trainer data in {}", path.display()))
+}
+
+/// Saves the trainer's data to `path` atomically.
+pub fn save_trainer(path: &Path, data: &TrainerData) -> Result<()> {
+    let text = serde_json::to_vec(data).context("Could not serialize the trainer data")?;
+    write_atomic(path, &text)
+        .with_context(|| format!("Could not save trainer data to {}", path.display()))
+}
+
 /// Moves a file that could not be read out of the way, so saving over it
 /// destroys nothing, and returns its new path.
 pub fn set_aside(path: &Path) -> io::Result<PathBuf> {
@@ -725,6 +753,51 @@ mod tests {
         ] {
             fs::write(&path, broken).unwrap();
             assert!(load_goals(&path).is_err(), "{broken}");
+            assert_eq!(fs::read_to_string(&path).unwrap(), broken);
+        }
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn no_trainer_file_means_nothing_trained_yet() {
+        let dir = temporary_path();
+        let data = load_trainer(&dir.join("trainer.json")).unwrap();
+        assert_eq!(data, TrainerData::default());
+    }
+
+    #[test]
+    fn trainer_data_loads_as_it_was_saved() {
+        use crate::trainer::{Attempt, PLL};
+
+        let dir = temporary_path();
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("trainer.json");
+        let mut data = TrainerData::default();
+        data.toggle_selected(&PLL, &[3]);
+        data.set_custom_algorithm(&PLL, "T", Some("R U R'".to_owned()));
+        data.attempts.push(Attempt {
+            set: "pll".to_owned(),
+            case: "T".to_owned(),
+            time_ms: 1_234,
+            modifier: Modifier::PlusTwo,
+            scramble: "R U".to_owned(),
+            solved_at_unix_ms: 1_760_000_000_000,
+        });
+
+        save_trainer(&path, &data).unwrap();
+
+        assert_eq!(load_trainer(&path).unwrap(), data);
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn an_unreadable_trainer_file_is_an_error_and_stays_on_disk() {
+        let dir = temporary_path();
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("trainer.json");
+        for broken in ["not json", r#"{"attempts":[{"set":"pll"}]}"#] {
+            fs::write(&path, broken).unwrap();
+            assert!(load_trainer(&path).is_err(), "{broken}");
             assert_eq!(fs::read_to_string(&path).unwrap(), broken);
         }
         fs::remove_dir_all(dir).unwrap();

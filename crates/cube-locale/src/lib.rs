@@ -750,6 +750,33 @@ pub struct Strings {
     pub action_next_compare_tag: &'static str,
     pub action_open_goals: &'static str,
     pub goals_title: &'static str,
+    pub nav_trainer: &'static str,
+    pub trainer_toggle_all: &'static str,
+    pub trainer_toggle_case: &'static str,
+    pub trainer_toggle_group: &'static str,
+    pub trainer_selected_count: &'static str,
+    pub trainer_start: &'static str,
+    pub trainer_nothing_selected: &'static str,
+    pub trainer_sort_slowest: &'static str,
+    pub trainer_attempts: &'static str,
+    pub trainer_best: &'static str,
+    pub trainer_recent: &'static str,
+    pub trainer_back: &'static str,
+    pub trainer_progress: &'static str,
+    pub trainer_reveal: &'static str,
+    pub trainer_skip: &'static str,
+    pub trainer_no_attempts: &'static str,
+    pub trainer_case_attempts: &'static str,
+    pub trainer_edit_algorithm: &'static str,
+    pub trainer_algorithm_hint: &'static str,
+    pub trainer_algorithm_invalid: &'static str,
+    pub trainer_algorithm_wrong_case: &'static str,
+    pub trainer_delete_confirm: &'static str,
+    pub toast_trainer_load_failed: &'static str,
+    pub toast_trainer_save_failed: &'static str,
+    pub toast_trainer_scramble_failed: &'static str,
+    pub action_open_trainer: &'static str,
+    pub action_next_trainer_set: &'static str,
     pub goals_empty: &'static str,
     pub goals_unavailable: &'static str,
     pub goals_new: &'static str,
@@ -850,6 +877,23 @@ mod tests {
         let day = chrono::NaiveDate::from_ymd_opt(2026, 11, 2).unwrap();
         assert_eq!(Language::German.format_day(day), "02.11.2026");
         assert_eq!(Language::English.format_day(day), "2026-11-02");
+    }
+
+    #[test]
+    fn every_language_keeps_the_trainer_placeholders() {
+        for language in Language::ALL {
+            let strings = language.strings();
+            assert!(strings.trainer_selected_count.contains("{count}"));
+            assert!(strings.trainer_selected_count.contains("{total}"));
+            assert!(strings.trainer_progress.contains("{current}"));
+            assert!(strings.trainer_progress.contains("{total}"));
+            assert!(strings.trainer_algorithm_hint.contains("{algorithm}"));
+            assert!(strings.trainer_algorithm_invalid.contains("{move}"));
+            assert!(strings.trainer_algorithm_wrong_case.contains("{case}"));
+            assert!(strings.toast_trainer_load_failed.contains("{error}"));
+            assert!(strings.toast_trainer_save_failed.contains("{error}"));
+            assert!(strings.toast_trainer_scramble_failed.contains("{error}"));
+        }
     }
 
     #[test]

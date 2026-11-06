@@ -35,6 +35,7 @@ mod tag_dialogs;
 mod theme_editor;
 mod timer_view;
 mod times_plot;
+mod trainer_screen;
 mod update_ui;
 
 const MIN_WIDTH: f32 = 910.;
