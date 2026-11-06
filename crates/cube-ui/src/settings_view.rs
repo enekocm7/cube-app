@@ -7,11 +7,14 @@ use std::rc::Rc;
 use cube_core::dialogs::{reveal_shift, settings_nav_width};
 use cube_core::persistence;
 use cube_core::settings::{
+    DEFAULT_BEST_MIN_SOLVES, MAX_BEST_MIN_SOLVES, parse_best_min_solves, parse_scramble_pt,
+    parse_text_pt, parse_timer_pt,
+};
+use cube_core::settings::{
     FontChoice, InvalidSizePt, MAX_SCRAMBLE_PT, MAX_TEXT_PT, MAX_TIMER_PT, MIN_SCRAMBLE_PT,
     MIN_TEXT_PT, MIN_TIMER_PT, ScrambleSize, TextSize, ThemePreference, TimerSize, UpdateChannel,
     UpdateFrequency,
 };
-use cube_core::settings::{parse_scramble_pt, parse_text_pt, parse_timer_pt};
 use cube_core::theme;
 use cube_core::theme::{ThemeColor, ThemeFile};
 use cube_core::{Settings, SettingsCategory};
@@ -46,6 +49,10 @@ const LANGUAGE_MENU_HEIGHT: Pixels = px(320.);
 const REVEAL_MARGIN: f32 = 28.;
 
 /// A view of the app's settings; re-renders whenever the app changes.
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "one invalid flag per number field"
+)]
 struct SettingsView {
     app: Entity<CubeApp>,
     /// Every valid theme in the shared `themes` folder, read when the dialog
@@ -63,6 +70,10 @@ struct SettingsView {
     timer_pt: Entity<InputState>,
     /// Whether the text in `timer_pt` is not a valid size.
     timer_pt_invalid: bool,
+    /// The earlier solves a best needs, blank for the default.
+    best_min_solves: Entity<InputState>,
+    /// Whether the text in `best_min_solves` is not a valid count.
+    best_min_solves_invalid: bool,
     /// Filters the rows of every category by label and visible value.
     search: Entity<InputState>,
     /// Holds focus after a click on the dialog's surface, so `/` still reaches
@@ -731,32 +742,15 @@ impl SettingsView {
         strings: &'static Strings,
         cx: &App,
     ) -> Vec<AnyElement> {
-        let range = strings
-            .size_custom_range
-            .replace("{min}", &min.to_string())
-            .replace("{max}", &max.to_string());
-        let mut rows = vec![row(
+        number_rows(
             label,
-            range,
-            div().w(Rems(6.)).child(Input::new(input).small().w_full()),
+            strings.size_custom_range,
+            input,
+            invalid,
+            (min, max),
+            strings,
             cx,
-        )];
-        if invalid {
-            let message = strings
-                .size_custom_invalid
-                .replace("{min}", &min.to_string())
-                .replace("{max}", &max.to_string());
-            rows.push(
-                div()
-                    .px_4()
-                    .py_2()
-                    .text_sm()
-                    .text_color(gpui_kit::red())
-                    .child(message)
-                    .into_any_element(),
-            );
-        }
-        rows
+        )
     }
 
     /// The updater's preferences and its manual check.
@@ -1176,7 +1170,7 @@ impl SettingsView {
             ],
         );
 
-        let timer = tagged(
+        let mut timer = tagged(
             [
                 state(
                     strings.setting_inspection,
@@ -1221,6 +1215,71 @@ impl SettingsView {
                 ),
             ],
         );
+        timer.extend(tagged(
+            [
+                state(
+                    strings.setting_celebrate,
+                    strings.setting_celebrate_desc,
+                    settings.celebrate_bests,
+                ),
+                state(
+                    strings.setting_celebrate_sound,
+                    strings.setting_celebrate_sound_desc,
+                    settings.celebrate_sound,
+                ),
+            ],
+            [
+                self.switch(
+                    "celebrate-bests",
+                    strings.setting_celebrate,
+                    strings.setting_celebrate_desc,
+                    settings.celebrate_bests,
+                    |settings, value| settings.celebrate_bests = value,
+                    cx,
+                ),
+                self.switch(
+                    "celebrate-sound",
+                    strings.setting_celebrate_sound,
+                    strings.setting_celebrate_sound_desc,
+                    settings.celebrate_sound,
+                    |settings, value| settings.celebrate_sound = value,
+                    cx,
+                ),
+            ],
+        ));
+        let best_min_text = text(
+            strings.setting_best_min_solves,
+            strings.setting_best_min_solves_desc,
+            &settings.best_min_solves.to_string(),
+        );
+        timer.extend(
+            number_rows(
+                strings.setting_best_min_solves,
+                strings.setting_best_min_solves_desc,
+                &self.best_min_solves,
+                self.best_min_solves_invalid,
+                (0, MAX_BEST_MIN_SOLVES),
+                strings,
+                cx,
+            )
+            .into_iter()
+            .map(|row| (best_min_text.clone(), row)),
+        );
+        timer.extend(tagged(
+            [state(
+                strings.setting_reduce_motion,
+                strings.setting_reduce_motion_desc,
+                settings.reduce_motion,
+            )],
+            [self.switch(
+                "reduce-motion",
+                strings.setting_reduce_motion,
+                strings.setting_reduce_motion_desc,
+                settings.reduce_motion,
+                |settings, value| settings.reduce_motion = value,
+                cx,
+            )],
+        ));
 
         let scrambles = tagged(
             [
@@ -1512,6 +1571,44 @@ impl SettingsView {
         })
         .collect()
     }
+}
+
+/// A number field and, while its text is wrong, the message saying why.
+/// `description` shows under the label, with `{min}` and `{max}` filled in.
+fn number_rows(
+    label: &'static str,
+    description: &'static str,
+    input: &Entity<InputState>,
+    invalid: bool,
+    (min, max): (u32, u32),
+    strings: &'static Strings,
+    cx: &App,
+) -> Vec<AnyElement> {
+    let range = description
+        .replace("{min}", &min.to_string())
+        .replace("{max}", &max.to_string());
+    let mut rows = vec![row(
+        label,
+        range,
+        div().w(Rems(6.)).child(Input::new(input).small().w_full()),
+        cx,
+    )];
+    if invalid {
+        let message = strings
+            .size_custom_invalid
+            .replace("{min}", &min.to_string())
+            .replace("{max}", &max.to_string());
+        rows.push(
+            div()
+                .px_4()
+                .py_2()
+                .text_sm()
+                .text_color(gpui_kit::red())
+                .child(message)
+                .into_any_element(),
+        );
+    }
+    rows
 }
 
 /// Wires a size field to its parser and settings, flagging invalid input.
@@ -1811,6 +1908,7 @@ impl CubeApp {
         let scramble_custom = self.settings.scramble_custom_pt;
         let text_custom = self.settings.text_custom_pt;
         let timer_custom = self.settings.timer_custom_pt;
+        let min_solves = self.settings.best_min_solves;
         let strings = self.strings();
         let scramble_pt = cx.new(|cx| {
             InputState::new(window, cx)
@@ -1826,6 +1924,11 @@ impl CubeApp {
             InputState::new(window, cx)
                 .default_value(timer_custom.map_or_default(|pt| pt.to_string()))
                 .placeholder("pt")
+        });
+        let best_min_solves = cx.new(|cx| {
+            InputState::new(window, cx)
+                .default_value(min_solves.to_string())
+                .placeholder(DEFAULT_BEST_MIN_SOLVES.to_string())
         });
         let view = cx.new(|cx| {
             cx.observe(&app, |_: &mut SettingsView, _, cx| cx.notify())
@@ -1855,6 +1958,16 @@ impl CubeApp {
                 |settings, points| settings.timer_custom_pt = points,
                 |view, invalid| view.timer_pt_invalid = invalid,
             );
+            observe_size_input(
+                &best_min_solves,
+                window,
+                cx,
+                parse_best_min_solves,
+                |settings, count| {
+                    settings.best_min_solves = count.unwrap_or(DEFAULT_BEST_MIN_SOLVES);
+                },
+                |view, invalid| view.best_min_solves_invalid = invalid,
+            );
             SettingsView {
                 app: app.clone(),
                 themes,
@@ -1864,6 +1977,8 @@ impl CubeApp {
                 text_pt_invalid: false,
                 timer_pt: timer_pt.clone(),
                 timer_pt_invalid: false,
+                best_min_solves: best_min_solves.clone(),
+                best_min_solves_invalid: false,
                 search,
                 focus: cx.focus_handle(),
                 category: SettingsCategory::default(),

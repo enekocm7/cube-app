@@ -38,7 +38,7 @@ pub fn average(attempts: &[Solve]) -> Option<Average> {
 }
 
 /// The average of the effective times, where `None` is a DNF.
-fn average_of(times: impl ExactSizeIterator<Item = Option<u64>>) -> Option<Average> {
+pub(crate) fn average_of(times: impl ExactSizeIterator<Item = Option<u64>>) -> Option<Average> {
     let n = times.len();
     if n < 3 {
         return None;

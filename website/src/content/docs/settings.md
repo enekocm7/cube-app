@@ -26,6 +26,10 @@ Sixteen languages, including English, Spanish, German, French, Japanese, and Chi
 |---|---|---|
 | WCA inspection | On | Count down 15 s before the solve; overruns become `+2`/DNF |
 | Inspection audio | Off | Beeps at 8 s and 12 s of inspection |
+| Celebrate personal bests | On | Flashes the digits for a new best single or ao5 |
+| Personal best sound | Off | Plays a chime for a new best single or ao5 |
+| Solves before a best counts | 100 | Earlier solves needed before bests are celebrated or announced. From 0 to 100000; blank restores 100 |
+| Reduce motion | Off | Holds a steady color for a personal best instead of flashing |
 | Touch the digits | Off | Pressing the digits with mouse/touch works like the timer key |
 
 ### Scrambles
