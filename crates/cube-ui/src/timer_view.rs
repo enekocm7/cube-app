@@ -322,8 +322,8 @@ impl CubeApp {
     ) -> impl IntoElement + use<> {
         let strings = self.strings();
         let scramble = self.scramble.clone();
-        let font_size = px(self.settings.scramble_font_px());
-        let line = px(self.settings.scramble_line_px());
+        let font_size = px(self.settings.scramble_font_px(self.event));
+        let line = px(self.settings.scramble_line_px(self.event));
         let tallest = window.viewport_size().height * SCRAMBLE_HEIGHT_SHARE;
         let theme = cx.theme();
         let mono = theme.mono_font_family.clone();

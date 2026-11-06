@@ -183,7 +183,8 @@ Details worth knowing:
 - **Timer size.** **Appearance → Timer size** picks Small, Normal (default), Large, Largest or Custom, which takes an
   exact size in points (24 to 240) for the timer's digits.
 - **Scramble size.** **Appearance → Scramble size** picks Small, Normal (default), Large, Largest or Custom, which takes
-  an exact size in points (6 to 120). Long scrambles still scroll.
+  an exact size in points (6 to 120). Long scrambles still scroll. Each event can have its own scramble size under the
+  same heading.
 - **Scramble preview.** The preview draws the puzzle as the scramble leaves it, under the timer and in the solve
   details, where it follows the scramble you are editing. Turn it off with **Timer → Show the scramble preview**,
   or toggle it with `P`. Each event has its own preview size (Small, Normal, Big or Huge, up to what suits the puzzle)

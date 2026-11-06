@@ -424,6 +424,11 @@ pub struct Strings {
     pub setting_text_size_desc: &'static str,
     pub setting_timer_size_desc: &'static str,
     pub setting_scramble_size_desc: &'static str,
+    /// `{event}`: the event the size is for.
+    pub setting_scramble_size_event: &'static str,
+    pub setting_scramble_size_event_desc: &'static str,
+    /// `{event}`: the event the size is for.
+    pub setting_scramble_custom_event: &'static str,
     pub size_custom_range: &'static str,
     pub setting_solve_list_ao5_desc: &'static str,
     pub setting_always_show_scrollbar_desc: &'static str,
