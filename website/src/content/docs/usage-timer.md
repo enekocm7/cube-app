@@ -38,7 +38,7 @@ Touching the digits with the mouse does the same thing while **Timer → Touch t
 When a solve beats your best single or ao5, the digits flash in your theme's accent color, and a chime plays if the sound is on. The effect never delays the next attempt: the timer key works straight away.
 
 - A session best gets one flash. An all-time best for the event gets three, and the digits grow a little.
-- A best only counts once there are 100 earlier solves of that event to beat: in the session for a session best, across all sessions for an all-time best. So a new session stays quiet about its own bests, but still celebrates an all-time one. The session best notifications wait for 100 solves in the session too.
+- A best only counts once there are enough earlier solves of that event to beat, 100 by default: in the session for a session best, across all sessions for an all-time best. So a new session stays quiet about its own bests, but still celebrates an all-time one. The session best notifications wait for that many solves in the session too. Change the number with **Solves before a best counts**.
 - A solve that sets several bests celebrates once, for the biggest: all-time before session, ao5 before single.
 - Ties and DNFs never count, and neither do imports, merges or edits.
 

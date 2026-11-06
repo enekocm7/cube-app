@@ -404,6 +404,8 @@ pub struct Strings {
     pub setting_celebrate_desc: &'static str,
     pub setting_celebrate_sound: &'static str,
     pub setting_celebrate_sound_desc: &'static str,
+    pub setting_best_min_solves: &'static str,
+    pub setting_best_min_solves_desc: &'static str,
     pub setting_reduce_motion: &'static str,
     pub setting_reduce_motion_desc: &'static str,
     pub setting_touch_to_start_desc: &'static str,
@@ -894,6 +896,8 @@ mod tests {
             assert!(strings.size_custom_invalid.contains("{max}"));
             assert!(strings.size_custom_range.contains("{min}"));
             assert!(strings.size_custom_range.contains("{max}"));
+            assert!(strings.setting_best_min_solves_desc.contains("{min}"));
+            assert!(strings.setting_best_min_solves_desc.contains("{max}"));
             assert!(strings.keybind_capture_hint.contains("{action}"));
             assert!(strings.keybind_error_conflict.contains("{action}"));
             assert!(strings.setting_skipping.contains("{version}"));

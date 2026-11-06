@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 
 use chrono::{Local, NaiveDate};
 use cube_bluetooth::Client;
-use cube_core::bests::{self, BEST_MIN_SOLVES, BestScope};
+use cube_core::bests::{self, BestScope};
 use cube_core::charts::{ChartFilter, ChartView, ChartZoom};
 use cube_core::cstimer::{self, ImportReport};
 use cube_core::goals;
@@ -961,7 +961,8 @@ impl CubeApp {
         if !effect && !sound {
             return;
         }
-        let Some(best) = bests::new_best(&self.sessions, self.current) else {
+        let min_solves = self.settings.best_min_solves;
+        let Some(best) = bests::new_best(&self.sessions, self.current, min_solves) else {
             return;
         };
         if effect {
@@ -984,7 +985,7 @@ impl CubeApp {
     /// long enough for that to mean something.
     fn announce_records(&self, window: &mut Window, cx: &mut Context<Self>) {
         let solves = self.session().solves();
-        if solves.len() <= BEST_MIN_SOLVES {
+        if solves.len() <= self.settings.best_min_solves as usize {
             return;
         }
         let latest_index = solves.len() - 1;

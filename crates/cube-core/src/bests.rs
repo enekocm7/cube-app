@@ -11,9 +11,6 @@ use crate::history::History;
 use crate::solve::Solve;
 use crate::stats::average_of;
 
-/// Solves of the event a scope must already hold before a best in it counts.
-pub const BEST_MIN_SOLVES: usize = 100;
-
 /// The rolling average that can be celebrated.
 const AVERAGE_SIZE: usize = 5;
 
@@ -78,10 +75,11 @@ impl Bests {
         self.ao5 = lowest(self.ao5, ao5);
     }
 
-    /// The biggest result of `candidate` that strictly beats these, past the
-    /// minimum. There must be something to beat: a first result is not a best.
-    fn beaten_by(&self, candidate: Candidate) -> Option<(BestKind, u64)> {
-        if self.count < BEST_MIN_SOLVES {
+    /// The biggest result of `candidate` that strictly beats these, once they
+    /// hold `min_solves`. There must be something to beat: a first result is
+    /// not a best.
+    fn beaten_by(&self, candidate: Candidate, min_solves: u32) -> Option<(BestKind, u64)> {
+        if self.count < min_solves as usize {
             return None;
         }
         let beats = |new: Option<u64>, old: Option<u64>| {
@@ -129,8 +127,9 @@ fn times(solves: &[Solve], event: WcaEvent) -> Vec<Option<u64>> {
 /// Call it for a solve that was just recorded, and for nothing else: every
 /// other way into the history, like imports and merges, must not celebrate.
 /// All-time bests outrank session bests, and an ao5 outranks a single. A tie is
-/// not a best, and neither is a DNF.
-pub fn new_best(sessions: &[History], current: usize) -> Option<NewBest> {
+/// not a best, and neither is a DNF. A scope must already hold `min_solves`
+/// solves of the event before a best in it counts.
+pub fn new_best(sessions: &[History], current: usize, min_solves: u32) -> Option<NewBest> {
     let (latest, earlier) = sessions.get(current)?.solves().split_last()?;
     let single = latest.effective_ms()?;
     let event = latest.event();
@@ -159,11 +158,11 @@ pub fn new_best(sessions: &[History], current: usize) -> Option<NewBest> {
 
     let found = |scope, (kind, ms)| NewBest { scope, kind, ms };
     all_time
-        .beaten_by(candidate)
+        .beaten_by(candidate, min_solves)
         .map(|best| found(BestScope::AllTime, best))
         .or_else(|| {
             session
-                .beaten_by(candidate)
+                .beaten_by(candidate, min_solves)
                 .map(|best| found(BestScope::Session, best))
         })
 }
@@ -181,6 +180,7 @@ pub fn glow(progress: f32, flashes: u32) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::settings::DEFAULT_BEST_MIN_SOLVES as MIN;
     use crate::solve::Modifier;
 
     const CUBE: WcaEvent = WcaEvent::Cube3x3;
@@ -206,7 +206,7 @@ mod tests {
         for solve in solves {
             history.push(solve);
         }
-        new_best(&[history], 0)
+        new_best(&[history], 0, MIN)
     }
 
     fn best(scope: BestScope, kind: BestKind, ms: u64) -> NewBest {
@@ -228,13 +228,32 @@ mod tests {
     }
 
     #[test]
+    fn the_minimum_is_the_callers_choice() {
+        let mut history = session(10);
+        history.push(solve(10_000));
+        let sessions = [history];
+        assert_eq!(new_best(&sessions, 0, 11), None);
+        assert_eq!(
+            new_best(&sessions, 0, 10),
+            Some(best(BestScope::AllTime, BestKind::Single, 10_000)),
+        );
+    }
+
+    #[test]
+    fn a_minimum_of_zero_still_needs_something_to_beat() {
+        let mut history = History::new();
+        history.push(solve(10_000));
+        assert_eq!(new_best(&[history], 0, 0), None);
+    }
+
+    #[test]
     fn a_new_session_stays_quiet_about_its_own_bests() {
         let mut old = session(200);
         old.push(solve(5_000));
         let mut fresh = History::new();
         fresh.push(solve(20_000));
         fresh.push(solve(10_000));
-        assert_eq!(new_best(&[old, fresh], 1), None);
+        assert_eq!(new_best(&[old, fresh], 1, MIN), None);
     }
 
     #[test]
@@ -242,7 +261,7 @@ mod tests {
         let mut fresh = History::new();
         fresh.push(solve(4_000));
         assert_eq!(
-            new_best(&[session(200), fresh], 1),
+            new_best(&[session(200), fresh], 1, MIN),
             Some(best(BestScope::AllTime, BestKind::Single, 4_000)),
         );
     }
@@ -254,7 +273,7 @@ mod tests {
         let mut current = session(100);
         current.push(solve(10_000));
         assert_eq!(
-            new_best(&[old, current], 1),
+            new_best(&[old, current], 1, MIN),
             Some(best(BestScope::Session, BestKind::Single, 10_000)),
         );
     }
@@ -272,7 +291,7 @@ mod tests {
         // A session ao5 of 18 s, but only the single is all-time.
         current.push(solve(14_000));
         assert_eq!(
-            new_best(&[old, current], 1),
+            new_best(&[old, current], 1, MIN),
             Some(best(BestScope::AllTime, BestKind::Single, 14_000)),
         );
     }
@@ -342,13 +361,13 @@ mod tests {
         let mut current = History::new();
         current.push(solve(15_000));
         // Slower than the old session's best single, and no window of five.
-        assert_eq!(new_best(&[old, current], 1), None);
+        assert_eq!(new_best(&[old, current], 1, MIN), None);
     }
 
     #[test]
     fn nothing_to_report_without_solves() {
-        assert_eq!(new_best(&[History::new()], 0), None);
-        assert_eq!(new_best(&[], 0), None);
+        assert_eq!(new_best(&[History::new()], 0, MIN), None);
+        assert_eq!(new_best(&[], 0, MIN), None);
     }
 
     #[test]

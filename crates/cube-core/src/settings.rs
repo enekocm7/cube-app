@@ -192,6 +192,11 @@ pub const MIN_SCRAMBLE_PT: u32 = 6;
 /// Largest custom scramble size, in points.
 pub const MAX_SCRAMBLE_PT: u32 = 120;
 
+/// Earlier solves a best needs by default before it counts.
+pub const DEFAULT_BEST_MIN_SOLVES: u32 = 100;
+/// The most earlier solves a best can be set to need.
+pub const MAX_BEST_MIN_SOLVES: u32 = 100_000;
+
 /// A custom size that is not a whole number within its range.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct InvalidSizePt;
@@ -222,6 +227,12 @@ pub fn parse_timer_pt(input: &str) -> Result<Option<u32>, InvalidSizePt> {
 /// Parses a custom scramble size typed by the user.
 pub fn parse_scramble_pt(input: &str) -> Result<Option<u32>, InvalidSizePt> {
     parse_size_pt(input, MIN_SCRAMBLE_PT, MAX_SCRAMBLE_PT)
+}
+
+/// Parses the earlier solves a best needs, as typed by the user. Blank means
+/// "use the default" (`Ok(None)`).
+pub fn parse_best_min_solves(input: &str) -> Result<Option<u32>, InvalidSizePt> {
+    parse_size_pt(input, 0, MAX_BEST_MIN_SOLVES)
 }
 
 /// Updater state and preferences.
@@ -286,6 +297,9 @@ pub struct Settings {
     pub celebrate_bests: bool,
     /// Plays a sound when a solve sets a personal best.
     pub celebrate_sound: bool,
+    /// Solves of the event a session, or the whole history, must already hold
+    /// before a best in it is celebrated or announced.
+    pub best_min_solves: u32,
     /// Holds a steady color instead of flashing. GPUI does not report the
     /// system's reduced motion preference, so this stands in for it.
     pub reduce_motion: bool,
@@ -366,6 +380,7 @@ impl Default for Settings {
             inspection_audio: false,
             celebrate_bests: true,
             celebrate_sound: false,
+            best_min_solves: DEFAULT_BEST_MIN_SOLVES,
             reduce_motion: false,
             touch_to_start: false,
             inspection_limit_ms: 15_000,
@@ -533,7 +548,22 @@ mod tests {
         let settings: Settings = toml::from_str("inspection = false").unwrap();
         assert!(settings.celebrate_bests);
         assert!(!settings.celebrate_sound);
+        assert_eq!(settings.best_min_solves, DEFAULT_BEST_MIN_SOLVES);
         assert!(!settings.reduce_motion);
+    }
+
+    #[test]
+    fn the_best_minimum_takes_blank_zero_and_its_maximum_only() {
+        assert_eq!(parse_best_min_solves(" "), Ok(None));
+        assert_eq!(parse_best_min_solves("0"), Ok(Some(0)));
+        assert_eq!(parse_best_min_solves("250"), Ok(Some(250)));
+        assert_eq!(
+            parse_best_min_solves("100000"),
+            Ok(Some(MAX_BEST_MIN_SOLVES))
+        );
+        assert_eq!(parse_best_min_solves("100001"), Err(InvalidSizePt));
+        assert_eq!(parse_best_min_solves("-1"), Err(InvalidSizePt));
+        assert_eq!(parse_best_min_solves("many"), Err(InvalidSizePt));
     }
 
     #[test]
