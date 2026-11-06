@@ -251,33 +251,145 @@ impl PreviewSize {
     }
 }
 
-/// Reads the per-event preview sizes leniently: an unknown event or size is
-/// dropped instead of stopping the file from loading, a size above the event's
-/// largest is lowered and `Normal` is not kept.
+/// Reads a per-event map leniently: an unknown event or a value that does not
+/// parse is dropped instead of stopping the file from loading.
+fn lenient_event_map<'de, D, V>(deserializer: D) -> Result<BTreeMap<WcaEvent, V>, D::Error>
+where
+    D: Deserializer<'de>,
+    V: serde::de::DeserializeOwned,
+{
+    use serde::de::value::Error;
+
+    let raw = BTreeMap::<String, toml::Value>::deserialize(deserializer)?;
+    Ok(raw
+        .into_iter()
+        .filter_map(|(name, value)| {
+            let event =
+                WcaEvent::deserialize(IntoDeserializer::<Error>::into_deserializer(name.as_str()))
+                    .ok()?;
+            Some((event, value.try_into::<V>().ok()?))
+        })
+        .collect())
+}
+
+/// Reads the per-event preview sizes: a size above the event's largest is
+/// lowered and `Normal` is not kept.
 fn lenient_preview_sizes<'de, D>(
     deserializer: D,
 ) -> Result<BTreeMap<WcaEvent, PreviewSize>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    use serde::de::value::Error;
+    let mut sizes: BTreeMap<WcaEvent, PreviewSize> = lenient_event_map(deserializer)?;
+    for (event, size) in &mut sizes {
+        *size = size.for_event(*event);
+    }
+    sizes.retain(|_, size| *size != PreviewSize::Normal);
+    Ok(sizes)
+}
 
-    let raw = BTreeMap::<String, toml::Value>::deserialize(deserializer)?;
-    let mut sizes = BTreeMap::new();
-    for (name, value) in raw {
-        let event =
-            WcaEvent::deserialize(IntoDeserializer::<Error>::into_deserializer(name.as_str())).ok();
-        let size = value.as_str().and_then(|text| {
-            PreviewSize::deserialize(IntoDeserializer::<Error>::into_deserializer(text)).ok()
-        });
-        if let (Some(event), Some(size)) = (event, size) {
-            let size = size.for_event(event);
-            if size != PreviewSize::Normal {
-                sizes.insert(event, size);
-            }
+/// A preset size with a custom one, as the general settings and each event
+/// choose them.
+pub trait SizePreset: Copy + PartialEq {
+    /// The preset that takes its size from a custom point size.
+    const CUSTOM: Self;
+    /// Smallest custom size, in points.
+    const MIN_PT: u32;
+    /// Largest custom size, in points.
+    const MAX_PT: u32;
+
+    /// Size in points. `Custom` has no fixed size and reports the default.
+    fn preset_points(self) -> u32;
+}
+
+impl SizePreset for ScrambleSize {
+    const CUSTOM: Self = Self::Custom;
+    const MIN_PT: u32 = MIN_SCRAMBLE_PT;
+    const MAX_PT: u32 = MAX_SCRAMBLE_PT;
+
+    fn preset_points(self) -> u32 {
+        self.points()
+    }
+}
+
+impl SizePreset for TimerSize {
+    const CUSTOM: Self = Self::Custom;
+    const MIN_PT: u32 = MIN_TIMER_PT;
+    const MAX_PT: u32 = MAX_TIMER_PT;
+
+    fn preset_points(self) -> u32 {
+        self.points()
+    }
+}
+
+/// A size an event chooses for itself: a preset and, for `Custom`, its points.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SizeChoice<S> {
+    pub size: S,
+    /// The points used when `size` is `custom`; unset reports the default.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub custom_pt: Option<u32>,
+}
+
+impl<S: SizePreset> SizeChoice<S> {
+    /// The choice as points: the custom size when chosen, else the preset.
+    pub fn points(self) -> u32 {
+        match (self.size == S::CUSTOM, self.custom_pt) {
+            (true, Some(pt)) => pt.clamp(S::MIN_PT, S::MAX_PT),
+            _ => self.size.preset_points(),
         }
     }
-    Ok(sizes)
+
+    /// Drops the custom size of a preset that does not use it.
+    fn tidy(mut self) -> Self {
+        if self.size != S::CUSTOM {
+            self.custom_pt = None;
+        }
+        self
+    }
+}
+
+/// Reads per-event size choices, clamping custom sizes to their range.
+fn lenient_size_choices<'de, D, S>(
+    deserializer: D,
+) -> Result<BTreeMap<WcaEvent, SizeChoice<S>>, D::Error>
+where
+    D: Deserializer<'de>,
+    S: SizePreset + serde::de::DeserializeOwned,
+{
+    let mut choices: BTreeMap<WcaEvent, SizeChoice<S>> = lenient_event_map(deserializer)?;
+    for choice in choices.values_mut() {
+        *choice = choice.tidy();
+        choice.custom_pt = choice.custom_pt.map(|pt| pt.clamp(S::MIN_PT, S::MAX_PT));
+    }
+    Ok(choices)
+}
+
+/// The choice `event` has: its own, else the general one.
+fn event_choice<S: SizePreset>(
+    own: &BTreeMap<WcaEvent, SizeChoice<S>>,
+    event: WcaEvent,
+    general: SizeChoice<S>,
+) -> SizeChoice<S> {
+    own.get(&event).copied().unwrap_or(general)
+}
+
+/// Changes the choice of `event` only. A choice equal to the general one is
+/// not stored, so the event keeps following it.
+fn change_event_choice<S: SizePreset>(
+    own: &mut BTreeMap<WcaEvent, SizeChoice<S>>,
+    event: WcaEvent,
+    general: SizeChoice<S>,
+    change: impl FnOnce(&mut SizeChoice<S>),
+) {
+    let mut choice = event_choice(own, event, general);
+    change(&mut choice);
+    let choice = choice.tidy();
+    if choice == general.tidy() {
+        own.remove(&event);
+    } else {
+        own.insert(event, choice);
+    }
 }
 
 /// Smallest custom text size, in points.
@@ -453,6 +565,13 @@ pub struct Settings {
     /// The scramble size in points used when `scramble_size` is `custom`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub scramble_custom_pt: Option<u32>,
+    /// The scramble size of each event that has its own; the others use
+    /// `scramble_size`.
+    #[serde(
+        deserialize_with = "lenient_size_choices",
+        skip_serializing_if = "BTreeMap::is_empty"
+    )]
+    pub scramble_sizes: BTreeMap<WcaEvent, SizeChoice<ScrambleSize>>,
     /// Whether the start hint has been used, so it is no longer shown while idle.
     pub start_hint_seen: bool,
     /// The tags the next solves get. They stay until changed.
@@ -511,6 +630,7 @@ impl Default for Settings {
             scramble_preview: true,
             preview_sizes: BTreeMap::new(),
             scramble_custom_pt: None,
+            scramble_sizes: BTreeMap::new(),
             start_hint_seen: false,
             active_tags: Vec::new(),
             user_backup_dir: String::new(),
@@ -577,14 +697,53 @@ impl Settings {
         }
     }
 
-    /// Scramble text size in pixels (1pt = 4/3px).
-    pub fn scramble_font_px(&self) -> f32 {
-        self.scramble_pt() as f32 * 4.0 / 3.0
+    /// The general scramble size, for the events without their own.
+    pub const fn scramble_general(&self) -> SizeChoice<ScrambleSize> {
+        SizeChoice {
+            size: self.scramble_size,
+            custom_pt: self.scramble_custom_pt,
+        }
     }
 
-    /// Scramble line height in pixels, scaled with the text.
-    pub fn scramble_line_px(&self) -> f32 {
-        self.scramble_font_px() * 1.5
+    /// The scramble size `event` uses: its own, else the general one.
+    pub fn scramble_choice(&self, event: WcaEvent) -> SizeChoice<ScrambleSize> {
+        event_choice(&self.scramble_sizes, event, self.scramble_general())
+    }
+
+    /// Scramble text size in points for `event`.
+    pub fn scramble_pt_for(&self, event: WcaEvent) -> u32 {
+        self.scramble_choice(event).points()
+    }
+
+    /// Scramble text size in pixels for `event` (1pt = 4/3px).
+    pub fn scramble_font_px(&self, event: WcaEvent) -> f32 {
+        self.scramble_pt_for(event) as f32 * 4.0 / 3.0
+    }
+
+    /// Scramble line height in pixels for `event`, scaled with the text.
+    pub fn scramble_line_px(&self, event: WcaEvent) -> f32 {
+        self.scramble_font_px(event) * 1.5
+    }
+
+    /// Gives `event` its own scramble preset, starting `Custom` from the points
+    /// it shows now. Matching the general size makes it follow that again.
+    pub fn set_scramble_size(&mut self, event: WcaEvent, size: ScrambleSize) {
+        let shown = self.scramble_pt_for(event);
+        let general = self.scramble_general();
+        change_event_choice(&mut self.scramble_sizes, event, general, |choice| {
+            if size == ScrambleSize::Custom && choice.custom_pt.is_none() {
+                choice.custom_pt = Some(shown);
+            }
+            choice.size = size;
+        });
+    }
+
+    /// Sets the custom scramble points of `event`; `None` clears them.
+    pub fn set_scramble_custom_pt(&mut self, event: WcaEvent, points: Option<u32>) {
+        let general = self.scramble_general();
+        change_event_choice(&mut self.scramble_sizes, event, general, |choice| {
+            choice.custom_pt = points.map(|pt| pt.clamp(MIN_SCRAMBLE_PT, MAX_SCRAMBLE_PT));
+        });
     }
 
     /// The preview size for `event`: `Normal` unless chosen, never above what
@@ -727,6 +886,66 @@ mod tests {
     }
 
     #[test]
+    fn an_event_without_its_own_scramble_size_follows_the_general_one() {
+        let mut settings = Settings {
+            scramble_size: ScrambleSize::Large,
+            ..Settings::default()
+        };
+        for event in WcaEvent::ALL {
+            assert_eq!(settings.scramble_pt_for(event), 22);
+        }
+        assert!(
+            !toml::to_string(&settings)
+                .unwrap()
+                .contains("scramble_sizes")
+        );
+        settings.set_scramble_size(WcaEvent::Cube2x2, ScrambleSize::Largest);
+        settings.set_scramble_size(WcaEvent::Cube7x7, ScrambleSize::Small);
+        assert_eq!(settings.scramble_pt_for(WcaEvent::Cube2x2), 30);
+        assert_eq!(settings.scramble_pt_for(WcaEvent::Cube7x7), 12);
+        assert_eq!(settings.scramble_pt_for(WcaEvent::Cube3x3), 22);
+        assert_eq!(settings.scramble_pt(), 22);
+        assert!((settings.scramble_font_px(WcaEvent::Cube2x2) - 40.).abs() < 1e-4);
+        assert!((settings.scramble_line_px(WcaEvent::Cube2x2) - 60.).abs() < 1e-4);
+        // Matching the general size again follows it.
+        settings.set_scramble_size(WcaEvent::Cube2x2, ScrambleSize::Large);
+        assert_eq!(settings.scramble_sizes.len(), 1);
+    }
+
+    #[test]
+    fn each_event_keeps_its_own_custom_scramble_points() {
+        let mut settings = Settings::default();
+        settings.set_scramble_size(WcaEvent::Cube4x4, ScrambleSize::Custom);
+        // Custom starts from what the event showed.
+        assert_eq!(settings.scramble_pt_for(WcaEvent::Cube4x4), 16);
+        settings.set_scramble_custom_pt(WcaEvent::Cube4x4, Some(40));
+        settings.set_scramble_size(WcaEvent::Clock, ScrambleSize::Custom);
+        settings.set_scramble_custom_pt(WcaEvent::Clock, Some(9));
+        assert_eq!(settings.scramble_pt_for(WcaEvent::Cube4x4), 40);
+        assert_eq!(settings.scramble_pt_for(WcaEvent::Clock), 9);
+        assert_eq!(settings.scramble_pt_for(WcaEvent::Cube3x3), 16);
+        settings.set_scramble_custom_pt(WcaEvent::Clock, Some(1000));
+        assert_eq!(settings.scramble_pt_for(WcaEvent::Clock), MAX_SCRAMBLE_PT);
+        settings.set_scramble_custom_pt(WcaEvent::Clock, Some(1));
+        assert_eq!(settings.scramble_pt_for(WcaEvent::Clock), MIN_SCRAMBLE_PT);
+    }
+
+    #[test]
+    fn per_event_scramble_sizes_load_leniently_and_older_files_are_unchanged() {
+        let old: Settings = toml::from_str("scramble_size = 'large'").unwrap();
+        assert!(old.scramble_sizes.is_empty());
+        assert_eq!(old.scramble_pt_for(WcaEvent::Cube7x7), 22);
+        let text = "[scramble_sizes.Cube2x2]\nsize = 'largest'\n\n[scramble_sizes.Cube3x3]\nsize = 'custom'\ncustom_pt = 500\n\n[scramble_sizes.Cube4x4]\nsize = 'bogus'\n\n[scramble_sizes.Future]\nsize = 'small'\n";
+        let loaded: Settings = toml::from_str(text).unwrap();
+        assert_eq!(loaded.scramble_pt_for(WcaEvent::Cube2x2), 30);
+        assert_eq!(loaded.scramble_pt_for(WcaEvent::Cube3x3), MAX_SCRAMBLE_PT);
+        assert_eq!(loaded.scramble_pt_for(WcaEvent::Cube4x4), 16);
+        assert_eq!(loaded.scramble_sizes.len(), 2);
+        let again: Settings = toml::from_str(&toml::to_string(&loaded).unwrap()).unwrap();
+        assert_eq!(again.scramble_sizes, loaded.scramble_sizes);
+    }
+
+    #[test]
     fn missing_and_unknown_keys_are_tolerated() {
         let settings: Settings = toml::from_str("inspection = false\nfuture = 1").unwrap();
         assert!(!settings.inspection);
@@ -824,7 +1043,7 @@ mod tests {
         );
         settings.scramble_size = ScrambleSize::Custom;
         assert_eq!(settings.scramble_pt(), 50);
-        assert!((settings.scramble_line_px() - 100.0).abs() < 1e-3);
+        assert!((settings.scramble_line_px(WcaEvent::Cube3x3) - 100.0).abs() < 1e-3);
         settings.scramble_custom_pt = Some(1000);
         assert_eq!(settings.scramble_pt(), MAX_SCRAMBLE_PT);
     }

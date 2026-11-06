@@ -2,6 +2,7 @@
 //! selected category on the right.
 
 use std::cell::Cell;
+use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 
 use cube_core::dialogs::{reveal_shift, settings_nav_width};
@@ -48,6 +49,12 @@ const LANGUAGE_MENU_HEIGHT: Pixels = px(320.);
 /// the row is not left under an edge fade.
 const REVEAL_MARGIN: f32 = 28.;
 
+/// A size an event can set for itself.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum EventSizeKind {
+    Scramble,
+}
+
 /// A view of the app's settings; re-renders whenever the app changes.
 #[allow(
     clippy::struct_excessive_bools,
@@ -55,6 +62,10 @@ const REVEAL_MARGIN: f32 = 28.;
 )]
 struct SettingsView {
     app: Entity<CubeApp>,
+    /// The custom size field of each event that can have its own size.
+    event_pts: BTreeMap<(EventSizeKind, WcaEvent), Entity<InputState>>,
+    /// The event size fields whose text is not a valid size.
+    event_pt_invalid: BTreeSet<(EventSizeKind, WcaEvent)>,
     /// Every valid theme in the shared `themes` folder, read when the dialog
     /// opens.
     themes: Vec<ThemeFile>,
@@ -730,6 +741,85 @@ impl SettingsView {
                 }),
             cx,
         )
+    }
+
+    /// The rows of one event's own size of `kind`: a menu of the presets and,
+    /// while it is custom, the exact field. Each event's rows are laid out like
+    /// the preview size's.
+    fn event_size_rows(
+        &self,
+        kind: EventSizeKind,
+        event: WcaEvent,
+        settings: &Settings,
+        strings: &'static Strings,
+        cx: &App,
+    ) -> Vec<AnyElement> {
+        let (title, description, custom_title, range) = match kind {
+            EventSizeKind::Scramble => (
+                strings.setting_scramble_size_event,
+                strings.setting_scramble_size_event_desc,
+                strings.setting_scramble_custom_event,
+                (MIN_SCRAMBLE_PT, MAX_SCRAMBLE_PT),
+            ),
+        };
+        let title = title.replace("{event}", event.name());
+        let (current, presets): (_, &'static [ScrambleSize]) = match kind {
+            EventSizeKind::Scramble => (settings.scramble_choice(event).size, &ScrambleSize::ALL),
+        };
+        let app = self.app.clone();
+        let input = self.event_pts[&(kind, event)].clone();
+        let label = match kind {
+            EventSizeKind::Scramble => scramble_size_label(strings, current),
+        };
+        let mut rows = vec![row(
+            title,
+            description,
+            Button::new(SharedString::from(format!("event-size-{kind:?}-{event:?}")))
+                .outline()
+                .small()
+                .label(label)
+                .dropdown_caret(true)
+                .dropdown_menu(move |mut menu, _, _| {
+                    for &choice in presets {
+                        let app = app.clone();
+                        let input = input.clone();
+                        menu = menu.item(
+                            PopupMenuItem::new(scramble_size_label(strings, choice))
+                                .checked(choice == current)
+                                .on_click(move |_, window, cx| {
+                                    let mut start = None;
+                                    app.update(cx, |app, cx| {
+                                        app.update_settings(window, cx, |settings| {
+                                            settings.set_scramble_size(event, choice);
+                                            start = settings.scramble_choice(event).custom_pt;
+                                        });
+                                    });
+                                    if choice == ScrambleSize::Custom
+                                        && let Some(points) = start
+                                    {
+                                        input.update(cx, |input, cx| {
+                                            input.set_value(points.to_string(), window, cx);
+                                        });
+                                    }
+                                }),
+                        );
+                    }
+                    menu
+                }),
+            cx,
+        )];
+        if current == ScrambleSize::Custom {
+            rows.extend(number_rows(
+                custom_title.replace("{event}", event.name()),
+                strings.size_custom_range,
+                &self.event_pts[&(kind, event)],
+                self.event_pt_invalid.contains(&(kind, event)),
+                range,
+                strings,
+                cx,
+            ));
+        }
+        rows
     }
 
     /// How large the scramble preview is drawn for one event, listing only the
@@ -1474,6 +1564,14 @@ impl SettingsView {
             );
             font_size_rows.extend(custom);
         }
+        for event in WcaEvent::ALL {
+            let rows = self.event_size_rows(EventSizeKind::Scramble, event, settings, strings, cx);
+            let label = strings
+                .setting_scramble_size_event
+                .replace("{event}", event.name());
+            font_size_texts.extend(rows.iter().map(|_| label.clone()));
+            font_size_rows.extend(rows);
+        }
         let font_size = tagged(font_size_texts, font_size_rows);
 
         let solve_list = tagged(
@@ -1630,7 +1728,7 @@ impl SettingsView {
 /// A number field and, while its text is wrong, the message saying why.
 /// `description` shows under the label, with `{min}` and `{max}` filled in.
 fn number_rows(
-    label: &'static str,
+    label: impl Into<SharedString>,
     description: &'static str,
     input: &Entity<InputState>,
     invalid: bool,
@@ -1688,6 +1786,62 @@ fn observe_size_input(
                     view.change(window, cx, move |settings| set_value(settings, points));
                 }
                 Err(InvalidSizePt) => set_invalid(view, true),
+            }
+            cx.notify();
+        },
+    )
+    .detach();
+}
+
+/// The custom size fields of every event, filled from the settings.
+fn new_event_pts(
+    settings: &Settings,
+    window: &mut Window,
+    cx: &mut App,
+) -> BTreeMap<(EventSizeKind, WcaEvent), Entity<InputState>> {
+    let mut pts = BTreeMap::new();
+    for event in WcaEvent::ALL {
+        let custom = settings.scramble_choice(event).custom_pt;
+        pts.insert(
+            (EventSizeKind::Scramble, event),
+            cx.new(|cx| {
+                InputState::new(window, cx)
+                    .default_value(custom.map_or_default(|pt| pt.to_string()))
+                    .placeholder("pt")
+            }),
+        );
+    }
+    pts
+}
+
+/// Wires an event's size field to its settings, flagging invalid input.
+fn observe_event_size_input(
+    input: &Entity<InputState>,
+    window: &mut Window,
+    cx: &mut Context<SettingsView>,
+    (kind, event): (EventSizeKind, WcaEvent),
+) {
+    cx.subscribe_in(
+        input,
+        window,
+        move |view, input, event_: &InputEvent, window, cx| {
+            if !matches!(event_, InputEvent::Change) {
+                return;
+            }
+            let text = input.read(cx).value().to_string();
+            let parsed = match kind {
+                EventSizeKind::Scramble => parse_scramble_pt(&text),
+            };
+            match parsed {
+                Ok(points) => {
+                    view.event_pt_invalid.remove(&(kind, event));
+                    view.change(window, cx, move |settings| match kind {
+                        EventSizeKind::Scramble => settings.set_scramble_custom_pt(event, points),
+                    });
+                }
+                Err(InvalidSizePt) => {
+                    view.event_pt_invalid.insert((kind, event));
+                }
             }
             cx.notify();
         },
@@ -1970,6 +2124,7 @@ fn row(
 }
 
 impl CubeApp {
+    #[allow(clippy::too_many_lines, reason = "one field per size setting")]
     pub(crate) fn open_settings(&self, window: &mut Window, cx: &mut Context<Self>) {
         let app = cx.entity();
         // cube-tui creates this file too, so both apps start with a theme to
@@ -1996,6 +2151,7 @@ impl CubeApp {
                 .default_value(timer_custom.map_or_default(|pt| pt.to_string()))
                 .placeholder("pt")
         });
+        let event_pts = new_event_pts(&self.settings, window, cx);
         let best_min_solves = cx.new(|cx| {
             InputState::new(window, cx)
                 .default_value(min_solves.to_string())
@@ -2029,6 +2185,9 @@ impl CubeApp {
                 |settings, points| settings.timer_custom_pt = points,
                 |view, invalid| view.timer_pt_invalid = invalid,
             );
+            for (&key, input) in &event_pts {
+                observe_event_size_input(input, window, cx, key);
+            }
             observe_size_input(
                 &best_min_solves,
                 window,
@@ -2041,6 +2200,8 @@ impl CubeApp {
             );
             SettingsView {
                 app: app.clone(),
+                event_pts: event_pts.clone(),
+                event_pt_invalid: BTreeSet::new(),
                 themes,
                 scramble_pt: scramble_pt.clone(),
                 scramble_pt_invalid: false,
