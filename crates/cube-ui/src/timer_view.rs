@@ -166,7 +166,7 @@ impl CubeApp {
         attempt: bool,
         window: &Window,
     ) -> Pixels {
-        let chosen = self.settings.timer_digits_px();
+        let chosen = self.settings.timer_digits_px(self.event);
         let viewport = window.viewport_size();
         let padding = PANEL_PADDING.to_pixels(window.rem_size()) * 2.;
         let panels = if attempt {

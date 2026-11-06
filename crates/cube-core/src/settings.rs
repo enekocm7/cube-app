@@ -551,6 +551,13 @@ pub struct Settings {
     /// The timer size in points used when `timer_size` is `custom`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timer_custom_pt: Option<u32>,
+    /// The timer size of each event that has its own; the others use
+    /// `timer_size`.
+    #[serde(
+        deserialize_with = "lenient_size_choices",
+        skip_serializing_if = "BTreeMap::is_empty"
+    )]
+    pub timer_sizes: BTreeMap<WcaEvent, SizeChoice<TimerSize>>,
     /// How large the scramble is drawn.
     pub scramble_size: ScrambleSize,
     /// Draws the puzzle as the scramble leaves it, on the timer and in the
@@ -626,6 +633,7 @@ impl Default for Settings {
             text_custom_pt: None,
             timer_size: TimerSize::default(),
             timer_custom_pt: None,
+            timer_sizes: BTreeMap::new(),
             scramble_size: ScrambleSize::default(),
             scramble_preview: true,
             preview_sizes: BTreeMap::new(),
@@ -684,9 +692,48 @@ impl Settings {
         }
     }
 
-    /// The timer digits' font size in pixels (1pt = 4/3px).
-    pub fn timer_digits_px(&self) -> f32 {
-        self.timer_pt() as f32 * 4.0 / 3.0
+    /// The general timer size, for the events without their own.
+    pub const fn timer_general(&self) -> SizeChoice<TimerSize> {
+        SizeChoice {
+            size: self.timer_size,
+            custom_pt: self.timer_custom_pt,
+        }
+    }
+
+    /// The timer size `event` uses: its own, else the general one.
+    pub fn timer_choice(&self, event: WcaEvent) -> SizeChoice<TimerSize> {
+        event_choice(&self.timer_sizes, event, self.timer_general())
+    }
+
+    /// Timer size in points for `event`.
+    pub fn timer_pt_for(&self, event: WcaEvent) -> u32 {
+        self.timer_choice(event).points()
+    }
+
+    /// The timer digits' font size in pixels for `event` (1pt = 4/3px).
+    pub fn timer_digits_px(&self, event: WcaEvent) -> f32 {
+        self.timer_pt_for(event) as f32 * 4.0 / 3.0
+    }
+
+    /// Gives `event` its own timer preset, starting `Custom` from the points
+    /// it shows now. Matching the general size makes it follow that again.
+    pub fn set_timer_size(&mut self, event: WcaEvent, size: TimerSize) {
+        let shown = self.timer_pt_for(event);
+        let general = self.timer_general();
+        change_event_choice(&mut self.timer_sizes, event, general, |choice| {
+            if size == TimerSize::Custom && choice.custom_pt.is_none() {
+                choice.custom_pt = Some(shown);
+            }
+            choice.size = size;
+        });
+    }
+
+    /// Sets the custom timer points of `event`; `None` clears them.
+    pub fn set_timer_custom_pt(&mut self, event: WcaEvent, points: Option<u32>) {
+        let general = self.timer_general();
+        change_event_choice(&mut self.timer_sizes, event, general, |choice| {
+            choice.custom_pt = points.map(|pt| pt.clamp(MIN_TIMER_PT, MAX_TIMER_PT));
+        });
     }
 
     /// Scramble text size in points: the custom size when chosen, else the preset.
@@ -946,6 +993,61 @@ mod tests {
     }
 
     #[test]
+    fn an_event_without_its_own_timer_size_follows_the_general_one() {
+        let mut settings = Settings {
+            timer_size: TimerSize::Large,
+            ..Settings::default()
+        };
+        for event in WcaEvent::ALL {
+            assert_eq!(settings.timer_pt_for(event), 105);
+        }
+        assert!(!toml::to_string(&settings).unwrap().contains("timer_sizes"));
+        settings.set_timer_size(WcaEvent::Cube2x2, TimerSize::Largest);
+        settings.set_timer_size(WcaEvent::Cube7x7, TimerSize::Small);
+        assert_eq!(settings.timer_pt_for(WcaEvent::Cube2x2), 126);
+        assert_eq!(settings.timer_pt_for(WcaEvent::Cube7x7), 63);
+        assert_eq!(settings.timer_pt_for(WcaEvent::Cube3x3), 105);
+        assert_eq!(settings.timer_pt(), 105);
+        assert!((settings.timer_digits_px(WcaEvent::Cube2x2) - 168.).abs() < 1e-4);
+        // Matching the general size again follows it.
+        settings.set_timer_size(WcaEvent::Cube2x2, TimerSize::Large);
+        assert_eq!(settings.timer_sizes.len(), 1);
+    }
+
+    #[test]
+    fn each_event_keeps_its_own_custom_timer_points() {
+        let mut settings = Settings::default();
+        settings.set_timer_size(WcaEvent::Cube4x4, TimerSize::Custom);
+        // Custom starts from what the event showed.
+        assert_eq!(settings.timer_pt_for(WcaEvent::Cube4x4), 84);
+        settings.set_timer_custom_pt(WcaEvent::Cube4x4, Some(150));
+        settings.set_timer_size(WcaEvent::Clock, TimerSize::Custom);
+        settings.set_timer_custom_pt(WcaEvent::Clock, Some(30));
+        assert_eq!(settings.timer_pt_for(WcaEvent::Cube4x4), 150);
+        assert_eq!(settings.timer_pt_for(WcaEvent::Clock), 30);
+        assert_eq!(settings.timer_pt_for(WcaEvent::Cube3x3), 84);
+        settings.set_timer_custom_pt(WcaEvent::Clock, Some(1000));
+        assert_eq!(settings.timer_pt_for(WcaEvent::Clock), MAX_TIMER_PT);
+        settings.set_timer_custom_pt(WcaEvent::Clock, Some(1));
+        assert_eq!(settings.timer_pt_for(WcaEvent::Clock), MIN_TIMER_PT);
+    }
+
+    #[test]
+    fn per_event_timer_sizes_load_leniently_and_older_files_are_unchanged() {
+        let old: Settings = toml::from_str("timer_size = 'large'").unwrap();
+        assert!(old.timer_sizes.is_empty());
+        assert_eq!(old.timer_pt_for(WcaEvent::Cube7x7), 105);
+        let text = "[timer_sizes.Cube2x2]\nsize = 'largest'\n\n[timer_sizes.Cube3x3]\nsize = 'custom'\ncustom_pt = 5000\n\n[timer_sizes.Cube4x4]\nsize = 'bogus'\n\n[timer_sizes.Future]\nsize = 'small'\n";
+        let loaded: Settings = toml::from_str(text).unwrap();
+        assert_eq!(loaded.timer_pt_for(WcaEvent::Cube2x2), 126);
+        assert_eq!(loaded.timer_pt_for(WcaEvent::Cube3x3), MAX_TIMER_PT);
+        assert_eq!(loaded.timer_pt_for(WcaEvent::Cube4x4), 84);
+        assert_eq!(loaded.timer_sizes.len(), 2);
+        let again: Settings = toml::from_str(&toml::to_string(&loaded).unwrap()).unwrap();
+        assert_eq!(again.timer_sizes, loaded.timer_sizes);
+    }
+
+    #[test]
     fn missing_and_unknown_keys_are_tolerated() {
         let settings: Settings = toml::from_str("inspection = false\nfuture = 1").unwrap();
         assert!(!settings.inspection);
@@ -1100,7 +1202,7 @@ mod tests {
     fn timer_size_defaults_to_its_original_digits() {
         let mut settings = Settings::default();
         assert_eq!(settings.timer_size, TimerSize::Normal);
-        assert!((settings.timer_digits_px() - 112.).abs() < f32::EPSILON);
+        assert!((settings.timer_digits_px(WcaEvent::Cube3x3) - 112.).abs() < f32::EPSILON);
 
         let sizes: Vec<u32> = TimerSize::ALL[..4]
             .iter()
@@ -1115,7 +1217,7 @@ mod tests {
         assert_eq!(settings.timer_pt(), 84, "ignored unless custom is chosen");
         settings.timer_size = TimerSize::Custom;
         assert_eq!(settings.timer_pt(), 90);
-        assert!((settings.timer_digits_px() - 120.).abs() < f32::EPSILON);
+        assert!((settings.timer_digits_px(WcaEvent::Cube3x3) - 120.).abs() < f32::EPSILON);
     }
 
     #[test]

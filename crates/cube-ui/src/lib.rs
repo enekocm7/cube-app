@@ -16,6 +16,7 @@ mod charts_screen;
 mod details;
 mod dialog_size;
 mod dialog_submit;
+mod event_sizes;
 mod fonts;
 mod goals_screen;
 mod help;
