@@ -401,8 +401,9 @@ impl CubeApp {
         self.open_confirm(strings.tag_delete, message, on_confirm, window, cx);
     }
 
-    /// The line on the timer screen that shows and opens the next solves' tags.
-    pub(crate) fn render_active_tags(&self, cx: &mut Context<Self>) -> Option<Div> {
+    /// The button beside the event picker that shows the next solves' tags in
+    /// its tooltip and opens them.
+    pub(crate) fn render_active_tags(&self, cx: &mut Context<Self>) -> Option<Button> {
         if !self.tags_available {
             return None;
         }
@@ -416,16 +417,18 @@ impl CubeApp {
                 .replace("{tags}", &active.join(", "))
         };
         Some(
-            div().flex_none().max_w_full().pt_2().child(
-                Button::new("active-tags")
-                    .ghost()
-                    .xsmall()
-                    .tab_stop(false)
-                    .child(div().min_w_0().truncate().child(label))
-                    .on_click(cx.listener(|app, _, window, cx| {
-                        app.open_active_tags(window, cx);
-                    })),
-            ),
+            Button::new("active-tags")
+                .ghost()
+                .small()
+                .flex_none()
+                .icon(IconName::Tag)
+                .selected(!active.is_empty())
+                .tooltip(label.clone())
+                .accessibility_label(label)
+                .tab_stop(false)
+                .on_click(cx.listener(|app, _, window, cx| {
+                    app.open_active_tags(window, cx);
+                })),
         )
     }
 }

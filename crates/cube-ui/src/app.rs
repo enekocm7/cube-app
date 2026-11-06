@@ -1997,14 +1997,11 @@ impl CubeApp {
                 div().occlude().flex_none().child(
                     Button::new("event")
                         .text()
-                        // An equal spacer balances the arrow, so the label itself is what
-                        // sits in the middle.
                         .child(
                             h_flex()
                                 .gap_1()
                                 .items_center()
                                 .text_base()
-                                .child(div().w(px(14.)))
                                 .child(event.name())
                                 .child(Icon::new(IconName::ChevronDown).size(px(14.))),
                         )
@@ -2026,6 +2023,15 @@ impl CubeApp {
                         }),
                 ),
             )
+            .children(self.render_active_tags(cx).map(|button| {
+                div()
+                    .absolute()
+                    .right_full()
+                    .top_0()
+                    .bottom_0()
+                    .mr_1()
+                    .child(h_flex().occlude().h_full().items_center().child(button))
+            }))
             .child(
                 div()
                     .absolute()
