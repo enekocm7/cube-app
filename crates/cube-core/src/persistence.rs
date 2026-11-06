@@ -25,6 +25,8 @@ use crate::goals::Goal;
 use crate::history::History;
 use crate::merge::{self, MergeSummary};
 use crate::settings::Settings;
+use crate::solve_extras::SolveExtras;
+use crate::tags::TagChange;
 use crate::theme::{self, ThemeColors, ThemeFile};
 
 /// Returns the shared data directory, creating it when needed.
@@ -147,6 +149,11 @@ pub struct HistoryStore {
     /// The sessions as handed to the latest merge, before it. For a caller who
     /// has not taken that merge in, they are the last version both sides share.
     merge_base: Option<Vec<u8>>,
+    /// `None` when `solve-extras.json` could not be read, which leaves it
+    /// alone: a file this version cannot read is never overwritten.
+    extras: Option<SolveExtras>,
+    /// A problem with the extras the user has not been told about.
+    extras_error: Option<anyhow::Error>,
 }
 
 impl HistoryStore {
@@ -159,7 +166,7 @@ impl HistoryStore {
         remove_stale_temporaries(path);
         let synced =
             read_if_present(path).with_context(|| format!("Could not read {}", path.display()))?;
-        let sessions = synced
+        let mut sessions: Vec<History> = synced
             .as_deref()
             .map(|bytes| parse_history(bytes, path))
             .transpose()?
@@ -169,6 +176,11 @@ impl HistoryStore {
             // problems with the folder.
             let _ = back_up_if_due(&backups_dir(path), bytes, Utc::now());
         }
+        // Extras that cannot be read cost the tags, not the solves.
+        let (extras, extras_error) = match SolveExtras::open(path, &mut sessions) {
+            Ok(extras) => (Some(extras), None),
+            Err(error) => (None, Some(error)),
+        };
         let store = Self {
             path: path.to_owned(),
             synced,
@@ -177,6 +189,8 @@ impl HistoryStore {
             backup_error: None,
             merges: 0,
             merge_base: None,
+            extras,
+            extras_error,
         };
         Ok((store, sessions))
     }
@@ -185,6 +199,24 @@ impl HistoryStore {
     /// has taken in.
     pub const fn merges(&self) -> u64 {
         self.merges
+    }
+
+    /// Returns whether changes to tags can be saved.
+    pub const fn tags_available(&self) -> bool {
+        self.extras.is_some()
+    }
+
+    /// Returns a problem with the extras the user has not been told about yet.
+    pub const fn take_extras_error(&mut self) -> Option<anyhow::Error> {
+        self.extras_error.take()
+    }
+
+    /// Applies a change to the tags of the solves the history does not have.
+    /// Those in the history are up to the caller, who saves them next.
+    pub fn change_tags(&mut self, change: &TagChange) {
+        if let Some(extras) = &mut self.extras {
+            extras.change_tags(change);
+        }
     }
 
     /// Saves `sessions`, first merging in anything another app wrote.
@@ -211,6 +243,9 @@ impl HistoryStore {
             None if behind => Some(self.parse_known(self.synced.as_deref())?),
             theirs => theirs,
         };
+        if let Some(extras) = &mut self.extras {
+            extras.release_present(sessions);
+        }
         let summary = match theirs {
             Some(theirs) => {
                 let base = if behind {
@@ -222,7 +257,11 @@ impl HistoryStore {
                 let line = serde_json::to_vec(sessions).context("Could not serialize solves")?;
                 self.merge_base = Some(line);
                 self.merges += 1;
-                Some(merge::merge(&base, sessions, &theirs))
+                let summary = merge::merge(&base, sessions, &theirs);
+                if let Some(extras) = &self.extras {
+                    extras.hand_over(sessions);
+                }
+                Some(summary)
             }
             None => None,
         };
@@ -236,6 +275,12 @@ impl HistoryStore {
                 .with_context(|| format!("Could not save solves to {}", self.path.display()))?;
         }
         self.synced = Some(json);
+        // The solves are safe by now, and a merge must still reach the caller.
+        if let Some(extras) = &mut self.extras
+            && let Err(error) = extras.save(sessions)
+        {
+            self.extras_error = Some(error);
+        }
         Ok(summary)
     }
 
@@ -350,7 +395,7 @@ fn parse_history(bytes: &[u8], path: &Path) -> Result<Vec<History>> {
 }
 
 /// Reads `path`; `None` when it does not exist.
-fn read_if_present(path: &Path) -> io::Result<Option<Vec<u8>>> {
+pub(crate) fn read_if_present(path: &Path) -> io::Result<Option<Vec<u8>>> {
     match fs::read(path) {
         Ok(bytes) => Ok(Some(bytes)),
         Err(error) if error.kind() == ErrorKind::NotFound => Ok(None),
@@ -724,6 +769,14 @@ mod tests {
         assert!(solve.was_single_record());
         assert_eq!(sessions[1].solves()[0].event(), WcaEvent::Square1);
         assert_eq!(sessions[1].solves()[0].solved_at_unix_ms(), 0);
+    }
+
+    #[test]
+    fn tags_never_reach_the_history_file() {
+        let mut sessions: Vec<History> = serde_json::from_str(CUBE_TUI_SAVE).unwrap();
+        let untagged = serde_json::to_string(&sessions).unwrap();
+        assert!(sessions[0].set_tags(0, vec!["GAN".to_owned()]));
+        assert_eq!(serde_json::to_string(&sessions).unwrap(), untagged);
     }
 
     #[test]

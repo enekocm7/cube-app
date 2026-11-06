@@ -325,6 +325,9 @@ pub struct Settings {
     pub scramble_custom_pt: Option<u32>,
     /// Whether the start hint has been used, so it is no longer shown while idle.
     pub start_hint_seen: bool,
+    /// The tags the next solves get. They stay until changed.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub active_tags: Vec<String>,
     /// A folder for backups of the user's own, on top of the app's; empty for
     /// none.
     pub user_backup_dir: String,
@@ -374,6 +377,7 @@ impl Default for Settings {
             scramble_preview: true,
             scramble_custom_pt: None,
             start_hint_seen: false,
+            active_tags: Vec::new(),
             user_backup_dir: String::new(),
             keybindings: BTreeMap::new(),
             sidebar_width: DEFAULT_SIDEBAR_WIDTH,
@@ -467,6 +471,18 @@ mod tests {
     use super::*;
     use crate::event::WcaEvent;
     use crate::solve::{Modifier, Solve};
+
+    #[test]
+    fn the_active_tags_survive_a_round_trip_and_default_to_none() {
+        assert_eq!(Settings::default().active_tags, Vec::<String>::new());
+        let settings = Settings {
+            active_tags: vec!["GAN".to_owned(), "warm-up".to_owned()],
+            ..Settings::default()
+        };
+        let text = toml::to_string(&settings).unwrap();
+        let loaded: Settings = toml::from_str(&text).unwrap();
+        assert_eq!(loaded.active_tags, settings.active_tags);
+    }
 
     #[test]
     fn missing_and_unknown_keys_are_tolerated() {

@@ -33,6 +33,9 @@ nothing is selected.
 | Delete the selected solve | `D` | Asks for confirmation (can be turned off in settings) and shows an Undo toast. Each entry in the session dropdown also has a trash button, reachable with `Tab` and pressed with `Enter` or `Space` |
 | Toggle `+2` on the selected solve | `2` | |
 | Toggle DNF on the selected solve | `Shift + D` | |
+| Tag the selected solve | `T` | Works on the timer and stats screens. See [Tags](#tags) |
+| Choose tags for the next solves | `Shift + T` | They stay on until changed. See [Tags](#tags) |
+| Rename or delete tags | `Ctrl + T` | See [Tags](#tags) |
 | Next event | `E` | |
 | Previous event | `Shift + E` | |
 | Next session | `]` | |
@@ -52,10 +55,12 @@ nothing is selected.
 | Connect a Bluetooth timer | `B` | Also the Bluetooth icon in the title bar. See [Bluetooth timers](#bluetooth-timers) |
 | Show goals or the timer | `Shift + G` | Also the tick icon in the title bar. See [Goals](#goals) |
 | New goal | `Shift + N` | Works on the goals screen. See [Goals](#goals) |
-| Show the next charts view | `V` | Cycles Trends, Calendar, Compare and All-time bests |
+| Show the next charts view | `V` | Cycles Trends, Calendar, Compare, Tags and All-time bests |
 | Filter charts by the next event | `F` | Cycles all events and every event with solves |
 | Filter charts by the next range | `R` | Cycles all solves, the last 50, 100 or 500 solves and the last 7, 30, 90 or 365 days |
 | Filter charts by custom dates | `Shift + R` | Asks for a first and last day as `YYYY-MM-DD` |
+| Filter by the next tag | `L` | Cycles all tags and every tag. Works on the stats and charts screens, except All-time bests |
+| Compare with the next tag | `Shift + L` | Works on the Tags chart. See [Tags](#tags) |
 | Chart one session or all of them | `W` | With all of them, solves merge by date and averages stay inside each session. `[` and `]` go back to one session |
 | Zoom in on the times chart | `Z` | Hold to keep zooming. See [Charts](#charts) |
 | Zoom out of the times chart | `Shift + Z` | Hold to keep zooming |
@@ -80,6 +85,22 @@ and deleting a solve, so rebinding those moves these too.
 
 In the goal dialog, `Tab` moves between the controls, `Enter` or `Space` presses
 the focused one and `Enter` anywhere else saves.
+
+## Tags
+
+`T` and `Shift + T` open the same dialog, on the selected solve or on the next
+solves. The field starts focused: type a tag and press `Enter` to add it, then
+`Enter` again to save. `Shift + Tab` and `Tab` reach the tags already known, and
+`Enter` or `Space` turns the focused one on or off. Solve details have the same
+controls, which save along with the rest of the solve.
+
+`Ctrl + T` lists every tag with the solves using it. Each row has a pencil and a
+trash can, reachable with `Tab` and pressed with `Enter` or `Space`. Deleting a
+tag that solves use asks first.
+
+`L` filters the stats table and the charts together. On the Tags chart it picks
+the left side of the comparison and `Shift + L` the right one. Either side can be
+all tags, which compares a tag with every solve.
 
 ## Charts
 

@@ -28,6 +28,9 @@ export const KEY_GROUPS: readonly { name: string; keys: readonly Key[] }[] = [
       ['KeyD', 'D', 'Delete the selected solve'],
       ['KeyD', 'Shift + D', 'Toggle DNF on the selected solve'],
       ['Digit2', '2', 'Toggle +2 on the selected solve'],
+      ['KeyT', 'T', 'Tag the selected solve'],
+      ['KeyT', 'Shift + T', 'Choose tags for the next solves'],
+      ['KeyT', 'Ctrl + T', 'Rename or delete tags'],
     ],
   },
   {
@@ -63,6 +66,8 @@ export const KEY_GROUPS: readonly { name: string; keys: readonly Key[] }[] = [
       ['KeyF', 'F', 'Filter charts by the next event'],
       ['KeyR', 'R', 'Filter charts by the next range'],
       ['KeyR', 'Shift + R', 'Filter charts by custom dates'],
+      ['KeyL', 'L', 'Filter stats and charts by the next tag'],
+      ['KeyL', 'Shift + L', 'Compare with the next tag, on the Tags chart'],
       ['KeyW', 'W', 'Chart one session or all of them'],
       ['KeyZ', 'Z', 'Zoom the times chart in'],
       ['KeyZ', 'Shift + Z', 'Zoom the times chart out'],

@@ -104,7 +104,11 @@ impl CubeApp {
                         column.child(div().text_sm().text_color(muted).child(hint))
                     }),
             )
-            .when(!attempt, |panel| panel.children(preview))
+            .when(!attempt, |panel| {
+                panel
+                    .children(self.render_active_tags(cx))
+                    .children(preview)
+            })
     }
 
     /// The size of the digits: the chosen one, unless `text` would not fit the

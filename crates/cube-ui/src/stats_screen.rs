@@ -2,7 +2,9 @@
 
 use std::ops::Range;
 
-use cube_core::stats::{AVERAGE_SIZES, Average, DEFAULT_AVERAGE};
+use cube_core::Solve;
+use cube_core::stats::{AVERAGE_SIZES, Average, AverageTable, DEFAULT_AVERAGE, SessionStats};
+use cube_core::tags;
 use gpui_kit::component::scroll::Scrollbar;
 use gpui_kit::component::{ActiveTheme as _, StyledExt, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
@@ -23,14 +25,54 @@ const SCROLLBAR_GUTTER: Pixels = px(16.);
 /// How strongly the fastest and slowest tiles of a column are tinted.
 const MAX_TINT: f32 = 0.42;
 
+/// What the stats table shows: the session, or the solves a tag keeps.
+pub struct StatsView {
+    /// The solve of each table row, as an index into the session, oldest first.
+    positions: Vec<usize>,
+    table: AverageTable,
+    /// The summary of the solves kept; `None` when that is the whole session.
+    stats: Option<SessionStats>,
+}
+
+impl StatsView {
+    pub fn new(solves: &[Solve], tag: Option<&str>) -> Self {
+        let kept = tags::filtered(solves, tag);
+        Self {
+            positions: tags::positions(solves, tag),
+            table: AverageTable::new(&kept),
+            stats: tag.map(|_| SessionStats::compute(&kept)),
+        }
+    }
+}
+
 impl CubeApp {
-    pub(crate) fn render_table(&self, cx: &mut Context<Self>) -> AnyElement {
+    pub(crate) fn render_table(&mut self, cx: &mut Context<Self>) -> AnyElement {
         let strings = self.strings();
-        let count = self.session().len();
+        let view = self.stats_table();
+        let count = view.positions.len();
+        let filtered = self.chart_filter.tag.is_some();
+        let bar = (filtered || !self.tag_usage.is_empty()).then(|| {
+            h_flex()
+                .flex_none()
+                .justify_end()
+                .child(self.render_tag_filter(cx))
+        });
         let theme = cx.theme();
         let (background, muted) = (theme.background, theme.muted_foreground);
         if count == 0 {
-            return empty_message(strings.table_empty, muted);
+            let message = if filtered {
+                strings.chart_no_match
+            } else {
+                strings.table_empty
+            };
+            return v_flex()
+                .flex_1()
+                .min_h_0()
+                .px_6()
+                .py_4()
+                .children(bar)
+                .child(empty_message(message, muted))
+                .into_any_element();
         }
 
         v_flex()
@@ -39,7 +81,8 @@ impl CubeApp {
             .px_6()
             .py_4()
             .gap_2()
-            .child(self.render_table_header(cx))
+            .children(bar)
+            .child(self.render_table_header(&view, cx))
             .child(
                 div()
                     .relative()
@@ -67,10 +110,17 @@ impl CubeApp {
     }
 
     /// Every column's name over its best value, which opens that result.
-    fn render_table_header(&self, cx: &Context<Self>) -> impl IntoElement + use<> {
+    fn render_table_header(
+        &self,
+        view: &StatsView,
+        cx: &Context<Self>,
+    ) -> impl IntoElement + use<> {
         let strings = self.strings();
         let selected_column = self.selected_average.unwrap_or(DEFAULT_AVERAGE);
-        let single = self.stats.best;
+        let stats = view.stats.as_ref().unwrap_or(&self.stats);
+        let single = stats
+            .best
+            .map(|(ms, place)| (ms, view.positions.get(place).copied().unwrap_or(place)));
         let single_label = header_cell(
             strings.table_time.to_owned(),
             single.map(|(ms, _)| Average::Time(ms)),
@@ -89,7 +139,7 @@ impl CubeApp {
             .into_iter()
             .enumerate()
             .map(|(column, size)| {
-                let best = self.stats.windows.get(column).and_then(|stats| stats.best);
+                let best = stats.windows.get(column).and_then(|stats| stats.best);
                 header_cell(
                     average_label(size),
                     best.map(|(average, _)| average),
@@ -122,7 +172,8 @@ impl CubeApp {
         _: &mut Window,
         cx: &mut Context<Self>,
     ) -> Vec<AnyElement> {
-        let table = self.stats_table();
+        let view = self.stats_table();
+        let table = &view.table;
         let colors = Palette::of(cx);
         let theme = cx.theme();
         let (muted, band) = (theme.muted_foreground, theme.accent);
@@ -134,11 +185,12 @@ impl CubeApp {
 
         range
             .filter_map(|row| {
-                let index = solves.len().checked_sub(row + 1)?;
+                let place = view.positions.len().checked_sub(row + 1)?;
+                let index = *view.positions.get(place)?;
                 let solve = solves.get(index)?;
                 let selected_row = target == Some(index);
                 let tiles: Vec<_> = table
-                    .row(index)?
+                    .row(place)?
                     .iter()
                     .enumerate()
                     .map(|(column, &average)| {
@@ -170,7 +222,7 @@ impl CubeApp {
                                 .on_click(cx.listener(move |app, _, window, cx| {
                                     app.selected_solve = Some(index);
                                     app.selected_average = Some(column);
-                                    app.open_average(index, size, window, cx);
+                                    app.open_average(place, size, window, cx);
                                     cx.notify();
                                 }))
                                 .child(format_average(Some(average)))

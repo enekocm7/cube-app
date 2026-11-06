@@ -1,5 +1,6 @@
 //! Application state and the operations on it. Views live in sibling modules.
 
+use std::borrow::Cow;
 use std::cell::Cell;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -14,12 +15,13 @@ use cube_core::goals;
 use cube_core::history_writer::{HistoryWriter, Merge, WriterEvent};
 use cube_core::persistence::{self, HistoryStore};
 use cube_core::scramble::{self, ScrambleQueue};
-use cube_core::stats::{self, Average, AverageTable, SessionStats};
+use cube_core::stats::{self, Average, SessionStats};
+use cube_core::tags::{self, TagUsage};
 use cube_core::window_state::WindowState;
 use cube_core::{
     Action, BindingError, Goal, GoalProgress, History, KeyBinding, KeyPress, Keybinds, ManualEntry,
-    MergeSummary, Modifier, Settings, Solve, SolveSnapshot, Timer, TimerOutcome, TimerPhase,
-    WcaEvent, format::format_ms,
+    MergeSummary, Modifier, Settings, Solve, SolveSnapshot, TagChange, Timer, TimerOutcome,
+    TimerPhase, WcaEvent, format::format_ms,
 };
 use cube_locale::{Language, Strings};
 use cube_updater::Release;
@@ -39,6 +41,7 @@ use crate::palette;
 use crate::panel_resize::{PanelSide, render_grab};
 use crate::preview::PreviewCache;
 use crate::scoped_rem::ScopedRem;
+use crate::stats_screen::StatsView;
 
 /// The most sessions cube-tui can display.
 pub const MAX_SESSIONS: usize = 99;
@@ -73,6 +76,8 @@ pub struct Loaded {
     /// `None` when the goals could not be loaded, which keeps saving off so a
     /// file this version cannot read is never overwritten.
     goals_path: Option<PathBuf>,
+    /// Whether changes to tags can be saved.
+    tags_available: bool,
 }
 
 /// What went wrong reading from disk at startup.
@@ -85,6 +90,8 @@ struct LoadProblems {
     settings_aside: Option<PathBuf>,
     /// Why the goals could not be loaded.
     goals: Option<String>,
+    /// Why the tags could not be loaded.
+    tags: Option<String>,
 }
 
 impl LoadProblems {
@@ -101,6 +108,10 @@ impl LoadProblems {
         }
         if let Some(error) = self.goals {
             let message = strings.toast_goals_load_failed.replace("{error}", &error);
+            notify_when_ready(Notification::error(message), window);
+        }
+        if let Some(error) = self.tags {
+            let message = strings.toast_tags_load_failed.replace("{error}", &error);
             notify_when_ready(Notification::error(message), window);
         }
         if let Some(aside) = self.settings_aside {
@@ -141,6 +152,11 @@ impl Loaded {
             store.set_user_backups(settings.user_backups());
         }
         let (goals, goals_path, goals_error) = load_goals();
+        let tags_available = history.as_ref().is_some_and(HistoryStore::tags_available);
+        let tags_error = history
+            .as_mut()
+            .and_then(HistoryStore::take_extras_error)
+            .map(|error| format!("{error:#}"));
         Self {
             settings,
             sessions,
@@ -151,9 +167,11 @@ impl Loaded {
                 backup,
                 settings_aside,
                 goals: goals_error,
+                tags: tags_error,
             },
             goals,
             goals_path,
+            tags_available,
         }
     }
 }
@@ -251,7 +269,7 @@ pub struct CubeApp {
     pub(crate) chart_zoom: Option<ChartZoom>,
     /// Where the times chart was last painted, to place the wheel's cursor.
     pub(crate) chart_plot_bounds: Rc<Cell<Option<Bounds<Pixels>>>>,
-    stats_table: Option<Rc<AverageTable>>,
+    stats_table: Option<Rc<StatsView>>,
     pub(crate) stats_table_scroll: UniformListScrollHandle,
     pub(crate) solves_scroll: UniformListScrollHandle,
     /// The solve selected with the keyboard, as an index into the session.
@@ -271,6 +289,13 @@ pub struct CubeApp {
     /// The goal selected with the keyboard, as an index into `goals`.
     pub(crate) selected_goal: Option<usize>,
     pub(crate) goals_scroll: UniformListScrollHandle,
+    /// Whether changes to tags can be saved.
+    pub(crate) tags_available: bool,
+    /// Every tag and how many solves have it, sorted.
+    pub(crate) tag_usage: Vec<TagUsage>,
+    /// What the tag comparison sets against `chart_filter.tag`; `None` is
+    /// every solve.
+    pub(crate) compare_tag: Option<String>,
     keybinds: Keybinds,
     /// Deletions Undo can restore, oldest first.
     undo_stack: Vec<Deleted>,
@@ -327,6 +352,16 @@ enum Deleted {
     },
 }
 
+impl Deleted {
+    /// Applies a change to a tag, so undoing brings back what is current.
+    fn change_tags(&mut self, change: &TagChange) {
+        match self {
+            Self::Solve { solve, .. } => solve.change_tags(change),
+            Self::Session { history, .. } => history.change_tags(change),
+        }
+    }
+}
+
 impl CubeApp {
     pub fn new(loaded: Loaded, window: &mut Window, cx: &mut Context<Self>) -> Self {
         let Loaded {
@@ -337,6 +372,7 @@ impl CubeApp {
             problems,
             goals,
             goals_path,
+            tags_available,
         } = loaded;
         settings.adopt_existing_history(&sessions);
         if sessions.is_empty() {
@@ -346,6 +382,7 @@ impl CubeApp {
         let keybinds = settings.keybinds();
         let now = Local::now();
         let goal_progress = goals::progress_of(&goals, &sessions, &now);
+        let tag_usage = tags::usage(&sessions, &settings.active_tags);
 
         let event = session_event(&sessions[0]);
         let focus = cx.focus_handle();
@@ -390,6 +427,9 @@ impl CubeApp {
             goals_day: now.date_naive(),
             selected_goal: None,
             goals_scroll: UniformListScrollHandle::new(),
+            tags_available,
+            tag_usage,
+            compare_tag: None,
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
             keybinds,
@@ -657,6 +697,10 @@ impl CubeApp {
                 self.delete_target_goal(window, cx);
             }
             Action::NewGoal if self.screen != Screen::Goals => {}
+            Action::EditTags if matches!(self.screen, Screen::Charts | Screen::Goals) => {}
+            Action::NextTagFilter if !self.tag_filter_shown() => {}
+            Action::NextCompareTag
+                if self.screen != Screen::Charts || self.chart_view != ChartView::Tags => {}
             Action::DeleteSolve | Action::PenaltyPlusTwo | Action::PenaltyDnf
                 if self.screen != Screen::Timer => {}
             Action::NextChartView
@@ -709,6 +753,15 @@ impl CubeApp {
             Action::OpenBluetooth => self.open_bluetooth(window, cx),
             Action::OpenGoals => self.toggle_screen(Screen::Goals, cx),
             Action::NewGoal => self.open_goal_form(None, window, cx),
+            Action::EditTags => {
+                if let Some(index) = self.target_solve() {
+                    self.open_solve_tags(index, window, cx);
+                }
+            }
+            Action::ActiveTags => self.open_active_tags(window, cx),
+            Action::ManageTags => self.open_manage_tags(window, cx),
+            Action::NextTagFilter => self.next_tag_filter(cx),
+            Action::NextCompareTag => self.next_compare_tag(cx),
             Action::NextChartView => self.next_chart_view(cx),
             Action::NextChartEvent => self.next_chart_event(cx),
             Action::NextChartRange => self.next_chart_range(cx),
@@ -866,7 +919,10 @@ impl CubeApp {
     ) {
         let TimerOutcome { time_ms, modifier } = outcome;
         let scramble = self.scramble.take().unwrap_or_default();
-        let solve = Solve::new(time_ms, self.event, scramble, modifier);
+        let mut solve = Solve::new(time_ms, self.event, scramble, modifier);
+        if self.tags_available {
+            solve.set_tags(self.settings.active_tags.clone());
+        }
         self.sessions[self.current].push(solve);
         self.next_scramble(cx);
         self.last_result = Some(LastResult { time_ms, modifier });
@@ -1005,7 +1061,7 @@ impl CubeApp {
             && let Some(index) = self.target_solve()
         {
             self.stats_table_scroll
-                .scroll_to_item(self.session().len() - 1 - index, ScrollStrategy::Nearest);
+                .scroll_to_item(self.table_row(index), ScrollStrategy::Nearest);
         }
         cx.notify();
     }
@@ -1105,6 +1161,16 @@ impl CubeApp {
 
     /// Moves the solve selection one step newer (`newer`) or older.
     pub(crate) fn select_solve(&mut self, newer: bool, cx: &mut Context<Self>) {
+        if let Some(tag) = self.stats_tag() {
+            let kept = tags::positions(self.session().solves(), Some(tag));
+            if let Some(index) = tags::step(&kept, self.selected_solve, newer) {
+                self.selected_solve = Some(index);
+                self.stats_table_scroll
+                    .scroll_to_item(self.table_row(index), ScrollStrategy::Nearest);
+                cx.notify();
+            }
+            return;
+        }
         let count = self.session().len();
         if count == 0 {
             return;
@@ -1124,8 +1190,60 @@ impl CubeApp {
 
     /// Returns the solve an action applies to: the selection, or the latest.
     pub(crate) fn target_solve(&self) -> Option<usize> {
-        let count = self.session().len();
-        (count > 0).then(|| self.selected_solve.unwrap_or(count - 1).min(count - 1))
+        let last = self.session().len().checked_sub(1)?;
+        let target = self.selected_solve.unwrap_or(last).min(last);
+        match self.stats_tag() {
+            Some(tag) => {
+                let kept = tags::positions(self.session().solves(), Some(tag));
+                tags::nearest(&kept, target)
+            }
+            None => Some(target),
+        }
+    }
+
+    /// Returns the tag the stats table is filtered by, while it is showing.
+    pub(crate) fn stats_tag(&self) -> Option<&str> {
+        let tag = self.chart_filter.tag.as_deref();
+        tag.filter(|_| self.screen == Screen::Stats)
+    }
+
+    /// Returns which row of the stats table shows the solve at `index`.
+    fn table_row(&self, index: usize) -> usize {
+        let kept = tags::positions(self.session().solves(), self.stats_tag());
+        let place = kept.partition_point(|&position| position < index);
+        kept.len().saturating_sub(place + 1)
+    }
+
+    /// Returns the solves the averages work on: the session's, or on the stats
+    /// table those its filter keeps.
+    pub(crate) fn average_solves(&self) -> Cow<'_, [Solve]> {
+        let solves = self.session().solves();
+        match self.stats_tag() {
+            Some(tag) => Cow::Owned(tags::filtered(solves, Some(tag))),
+            None => Cow::Borrowed(solves),
+        }
+    }
+
+    /// Returns the place in `average_solves` of the solve at `index`.
+    pub(crate) fn average_place(&self, index: usize) -> usize {
+        self.stats_tag().map_or(index, |tag| {
+            let kept = tags::positions(self.session().solves(), Some(tag));
+            kept.partition_point(|&position| position < index)
+        })
+    }
+
+    /// Returns which solve of the session is at `place` of `average_solves`.
+    pub(crate) fn session_index(&self, place: usize) -> usize {
+        self.stats_tag().map_or(place, |tag| {
+            let kept = tags::positions(self.session().solves(), Some(tag));
+            kept.get(place).copied().unwrap_or(place)
+        })
+    }
+
+    /// Returns every tag, sorted.
+    pub(crate) fn known_tags(&self) -> Vec<String> {
+        let usage = self.tag_usage.iter();
+        usage.map(|usage| usage.tag.clone()).collect()
     }
 
     pub(crate) fn select_session(&mut self, index: usize, cx: &mut Context<Self>) {
@@ -1234,19 +1352,75 @@ impl CubeApp {
         }
     }
 
-    /// Applies an edit to a solve of the current session.
+    /// Applies an edit to a solve of the current session, and new tags when
+    /// there are any.
     pub(crate) fn edit_solve(
         &mut self,
         index: usize,
         after: SolveSnapshot,
+        tags: Option<Vec<String>>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.sessions[self.current].edit(index, after) {
+        let session = &mut self.sessions[self.current];
+        let edited = session.edit(index, after);
+        let tagged = tags.is_some_and(|tags| session.set_tags(index, tags));
+        if edited || tagged {
             self.solves_changed(window, cx);
             self.sync_last_result();
             cx.notify();
         }
+    }
+
+    /// Replaces the tags of a solve of the current session.
+    pub(crate) fn set_solve_tags(
+        &mut self,
+        index: usize,
+        tags: Vec<String>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.sessions[self.current].set_tags(index, tags) {
+            self.solves_changed(window, cx);
+            cx.notify();
+        }
+    }
+
+    /// Sets the tags the next solves get, saving the setting.
+    pub(crate) fn set_active_tags(
+        &mut self,
+        tags: Vec<String>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.update_settings(window, cx, |settings| settings.active_tags = tags);
+        self.tag_usage = tags::usage(&self.sessions, &self.settings.active_tags);
+    }
+
+    /// Renames or deletes a tag everywhere: on every solve, what undo can
+    /// bring back, the next solves and the filters.
+    pub(crate) fn apply_tag_change(
+        &mut self,
+        change: TagChange,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        for session in &mut self.sessions {
+            session.change_tags(&change);
+        }
+        for deleted in self.undo_stack.iter_mut().chain(&mut self.redo_stack) {
+            deleted.change_tags(&change);
+        }
+        self.chart_filter.tag = change.follow(self.chart_filter.tag.take());
+        self.compare_tag = change.follow(self.compare_tag.take());
+        self.update_settings(window, cx, |settings| {
+            change.apply(&mut settings.active_tags);
+        });
+        self.refresh_stats();
+        if let Some(writer) = &self.history_writer {
+            writer.change_tags(change, self.sessions.clone());
+        }
+        cx.notify();
     }
 
     pub(crate) fn delete_solve(
@@ -1596,7 +1770,13 @@ impl CubeApp {
         let stats = &mut self.stats;
         stats.update(self.sessions[self.current].solves());
         self.goals_stale = true;
+        self.tag_usage = tags::usage(&self.sessions, &self.settings.active_tags);
         self.clear_chart_data();
+        self.stats_table = None;
+    }
+
+    /// Drops the stats table, so the next use builds it again.
+    pub(crate) fn clear_stats_table(&mut self) {
         self.stats_table = None;
     }
 
@@ -1609,20 +1789,23 @@ impl CubeApp {
 
     /// Returns the data behind the charts, building it on first use.
     pub(crate) fn chart_data(&mut self) -> Rc<ChartData> {
-        let (sessions, current, filter) = (&self.sessions, self.current, self.chart_filter);
+        let (sessions, current) = (&self.sessions, self.current);
+        let (filter, compare_tag) = (&self.chart_filter, self.compare_tag.as_deref());
         Rc::clone(
-            self.chart_data
-                .get_or_insert_with(|| Rc::new(ChartData::new(sessions, current, filter))),
+            self.chart_data.get_or_insert_with(|| {
+                Rc::new(ChartData::new(sessions, current, filter, compare_tag))
+            }),
         )
     }
 
     /// Returns the current session's table of averages, building it on first
     /// use.
-    pub(crate) fn stats_table(&mut self) -> Rc<AverageTable> {
+    pub(crate) fn stats_table(&mut self) -> Rc<StatsView> {
         let solves = self.sessions[self.current].solves();
+        let tag = self.chart_filter.tag.as_deref();
         Rc::clone(
             self.stats_table
-                .get_or_insert_with(|| Rc::new(AverageTable::new(solves))),
+                .get_or_insert_with(|| Rc::new(StatsView::new(solves, tag))),
         )
     }
 

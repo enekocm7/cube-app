@@ -56,6 +56,9 @@ for valid bindings.
 | `D` | Delete the selected solve |
 | `2` | Toggle `+2` on the selected solve |
 | `Shift + D` | Toggle DNF on the selected solve |
+| `T` | Tag the selected solve |
+| `Shift + T` | Choose tags for the next solves |
+| `Ctrl + T` | Rename or delete tags |
 | `E` / `Shift + E` | Next / previous event |
 | `]` / `[` | Next / previous session |
 | `S` | New session |
@@ -74,6 +77,8 @@ for valid bindings.
 | `V` | Show the next charts view |
 | `F` | Filter charts by the next event |
 | `R` / `Shift + R` | Filter charts by the next range, or by custom dates |
+| `L` | Filter stats and charts by the next tag |
+| `Shift + L` | Compare with the next tag, on the Tags chart |
 | `W` | Chart one session or all of them |
 | `Z` / `Shift + Z` | Zoom the times chart in or out |
 | `X` | Reset the times chart zoom |
@@ -118,6 +123,7 @@ Around the shortcuts:
 - A solve history whose details you can edit: time, event, scramble, penalty, date and comment. Every change is kept
   in an audit trail.
 - Undo and redo for deleted solves and sessions.
+- Tags on solves, such as the cube or method used, to filter stats and charts and compare two side by side.
 
 **Statistics**
 
