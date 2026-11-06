@@ -24,9 +24,6 @@ const SCRAMBLE_MIN_LINES: f32 = 2.;
 /// the big events leave room for the digits in a small window.
 const SCRAMBLE_MAX_LINES: f32 = 8.;
 
-/// The share of the window's height the scramble preview may take.
-const PREVIEW_HEIGHT_SHARE: f32 = 0.28;
-
 /// The share of the window's height the scramble may take, however large its
 /// text, so the digits stay on screen.
 const SCRAMBLE_HEIGHT_SHARE: f32 = 0.3;
@@ -207,12 +204,13 @@ impl CubeApp {
         }
         let scramble = self.scramble.as_ref()?;
         let image = self.preview.get(self.event, scramble)?;
+        let size = self.settings.preview_size(self.event);
         Some(
             div()
                 .flex_none()
                 .max_w_full()
                 .pt_3()
-                .child(image.element(window_height * PREVIEW_HEIGHT_SHARE)),
+                .child(image.element(window_height * size.height_share(), size.max_scale())),
         )
     }
 

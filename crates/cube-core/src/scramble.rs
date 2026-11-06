@@ -73,7 +73,7 @@ pub struct Preview {
 }
 
 /// How many times larger than its natural size the SVG is rasterized.
-pub const PREVIEW_SCALE: u32 = 2;
+pub const PREVIEW_SCALE: u32 = 4;
 
 /// Draws the puzzle in the state `scramble` reaches, or `None` when the
 /// scramble is not valid for `event`.

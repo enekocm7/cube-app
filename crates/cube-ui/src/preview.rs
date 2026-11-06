@@ -30,10 +30,13 @@ impl PreviewImage {
         })
     }
 
-    /// The drawing as tall as `max_height` allows, never beyond the size it is
-    /// rasterized at and never wider than the space it is placed in.
-    pub(crate) fn element(&self, max_height: Pixels) -> impl IntoElement + use<> {
-        let scale = (max_height / px(self.height)).min(scramble::PREVIEW_SCALE as f32);
+    /// The drawing as tall as `max_height` allows, never scaled past
+    /// `max_scale` or the size it is rasterized at, and never wider than the
+    /// space it is placed in.
+    pub(crate) fn element(&self, max_height: Pixels, max_scale: f32) -> impl IntoElement + use<> {
+        let scale = (max_height / px(self.height))
+            .min(max_scale)
+            .min(scramble::PREVIEW_SCALE as f32);
         img(self.image.clone())
             .w(px(self.width * scale))
             .h(px(self.height * scale))

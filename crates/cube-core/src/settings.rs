@@ -7,8 +7,10 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use serde::{Deserialize, Serialize};
+use serde::de::IntoDeserializer;
+use serde::{Deserialize, Deserializer, Serialize};
 
+use crate::event::WcaEvent;
 use crate::history::History;
 use crate::keybind::Keybinds;
 use crate::panels::{DEFAULT_SIDEBAR_WIDTH, DEFAULT_STATS_WIDTH};
@@ -177,6 +179,107 @@ impl ScrambleSize {
     }
 }
 
+/// How large the scramble preview under the timer is drawn for an event.
+///
+/// Each event has its own size. A size above [`PreviewSize::largest_for`] the
+/// event is not offered, and a stored one is lowered to it.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PreviewSize {
+    /// Smaller than the original.
+    Small,
+    /// The original size.
+    #[default]
+    Normal,
+    Big,
+    Huge,
+}
+
+impl PreviewSize {
+    /// Every size, smallest first.
+    pub const ALL: [Self; 4] = [Self::Small, Self::Normal, Self::Big, Self::Huge];
+
+    /// The largest size offered for `event`: bigger drawings only help the
+    /// small puzzles.
+    pub const fn largest_for(event: WcaEvent) -> Self {
+        match event {
+            WcaEvent::Cube2x2 | WcaEvent::Cube3x3 | WcaEvent::Cube4x4 | WcaEvent::Square1 => {
+                Self::Huge
+            }
+            WcaEvent::Fto => Self::Big,
+            WcaEvent::Cube5x5
+            | WcaEvent::Cube6x6
+            | WcaEvent::Cube7x7
+            | WcaEvent::Megaminx
+            | WcaEvent::Pyraminx
+            | WcaEvent::Skewb
+            | WcaEvent::Clock => Self::Normal,
+        }
+    }
+
+    /// The sizes offered for `event`, smallest first.
+    pub fn offered_for(event: WcaEvent) -> impl Iterator<Item = Self> {
+        let largest = Self::largest_for(event);
+        Self::ALL.into_iter().filter(move |size| *size <= largest)
+    }
+
+    /// This size, lowered to the largest `event` offers.
+    #[must_use]
+    pub fn for_event(self, event: WcaEvent) -> Self {
+        self.min(Self::largest_for(event))
+    }
+
+    /// The share of the window's height the preview may take.
+    pub const fn height_share(self) -> f32 {
+        match self {
+            Self::Small => 0.18,
+            Self::Normal => 0.28,
+            Self::Big => 0.36,
+            Self::Huge => 0.44,
+        }
+    }
+
+    /// How many times its natural size the drawing may be scaled up. Never
+    /// beyond [`crate::scramble::PREVIEW_SCALE`], the scale it is rasterized at.
+    pub const fn max_scale(self) -> f32 {
+        match self {
+            Self::Small => 1.25,
+            Self::Normal => 2.,
+            Self::Big => 3.,
+            Self::Huge => 4.,
+        }
+    }
+}
+
+/// Reads the per-event preview sizes leniently: an unknown event or size is
+/// dropped instead of stopping the file from loading, a size above the event's
+/// largest is lowered and `Normal` is not kept.
+fn lenient_preview_sizes<'de, D>(
+    deserializer: D,
+) -> Result<BTreeMap<WcaEvent, PreviewSize>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    use serde::de::value::Error;
+
+    let raw = BTreeMap::<String, toml::Value>::deserialize(deserializer)?;
+    let mut sizes = BTreeMap::new();
+    for (name, value) in raw {
+        let event =
+            WcaEvent::deserialize(IntoDeserializer::<Error>::into_deserializer(name.as_str())).ok();
+        let size = value.as_str().and_then(|text| {
+            PreviewSize::deserialize(IntoDeserializer::<Error>::into_deserializer(text)).ok()
+        });
+        if let (Some(event), Some(size)) = (event, size) {
+            let size = size.for_event(event);
+            if size != PreviewSize::Normal {
+                sizes.insert(event, size);
+            }
+        }
+    }
+    Ok(sizes)
+}
+
 /// Smallest custom text size, in points.
 pub const MIN_TEXT_PT: u32 = 8;
 /// Largest custom text size, in points.
@@ -341,6 +444,12 @@ pub struct Settings {
     /// Draws the puzzle as the scramble leaves it, on the timer and in the
     /// solve details.
     pub scramble_preview: bool,
+    /// The preview size of each event that differs from `Normal`.
+    #[serde(
+        deserialize_with = "lenient_preview_sizes",
+        skip_serializing_if = "BTreeMap::is_empty"
+    )]
+    pub preview_sizes: BTreeMap<WcaEvent, PreviewSize>,
     /// The scramble size in points used when `scramble_size` is `custom`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub scramble_custom_pt: Option<u32>,
@@ -400,6 +509,7 @@ impl Default for Settings {
             timer_custom_pt: None,
             scramble_size: ScrambleSize::default(),
             scramble_preview: true,
+            preview_sizes: BTreeMap::new(),
             scramble_custom_pt: None,
             start_hint_seen: false,
             active_tags: Vec::new(),
@@ -477,6 +587,26 @@ impl Settings {
         self.scramble_font_px() * 1.5
     }
 
+    /// The preview size for `event`: `Normal` unless chosen, never above what
+    /// the event offers.
+    pub fn preview_size(&self, event: WcaEvent) -> PreviewSize {
+        self.preview_sizes
+            .get(&event)
+            .copied()
+            .unwrap_or_default()
+            .for_event(event)
+    }
+
+    /// Sets the preview size for `event` only, keeping `Normal` implicit.
+    pub fn set_preview_size(&mut self, event: WcaEvent, size: PreviewSize) {
+        let size = size.for_event(event);
+        if size == PreviewSize::Normal {
+            self.preview_sizes.remove(&event);
+        } else {
+            self.preview_sizes.insert(event, size);
+        }
+    }
+
     /// Builds the effective key bindings, defaults plus configured overrides.
     pub fn keybinds(&self) -> Keybinds {
         Keybinds::from_overrides(&self.keybindings)
@@ -507,6 +637,93 @@ mod tests {
         let text = toml::to_string(&settings).unwrap();
         let loaded: Settings = toml::from_str(&text).unwrap();
         assert_eq!(loaded.active_tags, settings.active_tags);
+    }
+
+    #[test]
+    fn preview_sizes_default_to_normal_and_stay_minimal() {
+        let settings = Settings::default();
+        for event in WcaEvent::ALL {
+            assert_eq!(settings.preview_size(event), PreviewSize::Normal);
+        }
+        assert!(
+            !toml::to_string(&settings)
+                .unwrap()
+                .contains("preview_sizes")
+        );
+    }
+
+    #[test]
+    fn each_event_offers_sizes_up_to_its_largest() {
+        use WcaEvent::*;
+        for event in [Cube2x2, Cube3x3, Cube4x4, Square1] {
+            let offered: Vec<_> = PreviewSize::offered_for(event).collect();
+            assert_eq!(offered, PreviewSize::ALL, "{event:?}");
+        }
+        let fto: Vec<_> = PreviewSize::offered_for(Fto).collect();
+        assert_eq!(
+            fto,
+            [PreviewSize::Small, PreviewSize::Normal, PreviewSize::Big]
+        );
+        for event in [Cube5x5, Cube6x6, Cube7x7, Megaminx, Pyraminx, Skewb, Clock] {
+            let offered: Vec<_> = PreviewSize::offered_for(event).collect();
+            assert_eq!(
+                offered,
+                [PreviewSize::Small, PreviewSize::Normal],
+                "{event:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn sizes_grow_and_stay_within_the_raster_scale() {
+        for pair in PreviewSize::ALL.windows(2) {
+            assert!(pair[0].height_share() < pair[1].height_share());
+            assert!(pair[0].max_scale() < pair[1].max_scale());
+        }
+        let scale = crate::scramble::PREVIEW_SCALE as f32;
+        assert!(PreviewSize::Huge.max_scale() <= scale);
+        assert!((PreviewSize::Normal.height_share() - 0.28).abs() < f32::EPSILON);
+        assert!((PreviewSize::Normal.max_scale() - 2.).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn changing_one_events_preview_size_leaves_the_others() {
+        let mut settings = Settings::default();
+        settings.set_preview_size(WcaEvent::Cube2x2, PreviewSize::Huge);
+        settings.set_preview_size(WcaEvent::Cube7x7, PreviewSize::Small);
+        assert_eq!(settings.preview_size(WcaEvent::Cube2x2), PreviewSize::Huge);
+        assert_eq!(settings.preview_size(WcaEvent::Cube7x7), PreviewSize::Small);
+        assert_eq!(
+            settings.preview_size(WcaEvent::Cube3x3),
+            PreviewSize::Normal
+        );
+        settings.set_preview_size(WcaEvent::Cube2x2, PreviewSize::Normal);
+        assert_eq!(settings.preview_sizes.len(), 1);
+        // A size the event does not offer is lowered.
+        settings.set_preview_size(WcaEvent::Fto, PreviewSize::Huge);
+        assert_eq!(settings.preview_size(WcaEvent::Fto), PreviewSize::Big);
+    }
+
+    #[test]
+    fn preview_sizes_round_trip_and_older_files_load() {
+        let old: Settings = toml::from_str("inspection = false").unwrap();
+        assert!(old.preview_sizes.is_empty());
+        let mut settings = Settings::default();
+        settings.set_preview_size(WcaEvent::Cube4x4, PreviewSize::Big);
+        let text = toml::to_string(&settings).unwrap();
+        let loaded: Settings = toml::from_str(&text).unwrap();
+        assert_eq!(loaded.preview_sizes, settings.preview_sizes);
+    }
+
+    #[test]
+    fn stored_preview_sizes_are_lowered_and_bad_ones_ignored() {
+        let text = "[preview_sizes]\nCube7x7 = 'huge'\nCube2x2 = 'big'\nCube3x3 = 'normal'\nCube4x4 = 'gigantic'\nFuture = 'small'\nSkewb = 3\nFto = 'huge'\n";
+        let loaded: Settings = toml::from_str(text).unwrap();
+        assert_eq!(loaded.preview_size(WcaEvent::Cube7x7), PreviewSize::Normal);
+        assert_eq!(loaded.preview_size(WcaEvent::Cube2x2), PreviewSize::Big);
+        assert_eq!(loaded.preview_size(WcaEvent::Fto), PreviewSize::Big);
+        assert_eq!(loaded.preview_size(WcaEvent::Cube4x4), PreviewSize::Normal);
+        assert_eq!(loaded.preview_sizes.len(), 2);
     }
 
     #[test]

@@ -12,12 +12,12 @@ use cube_core::settings::{
 };
 use cube_core::settings::{
     FontChoice, InvalidSizePt, MAX_SCRAMBLE_PT, MAX_TEXT_PT, MAX_TIMER_PT, MIN_SCRAMBLE_PT,
-    MIN_TEXT_PT, MIN_TIMER_PT, ScrambleSize, TextSize, ThemePreference, TimerSize, UpdateChannel,
-    UpdateFrequency,
+    MIN_TEXT_PT, MIN_TIMER_PT, PreviewSize, ScrambleSize, TextSize, ThemePreference, TimerSize,
+    UpdateChannel, UpdateFrequency,
 };
 use cube_core::theme;
 use cube_core::theme::{ThemeColor, ThemeFile};
-use cube_core::{Settings, SettingsCategory};
+use cube_core::{Settings, SettingsCategory, WcaEvent};
 use cube_locale::{Language, Strings};
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{Disableable as _, ElementExt as _};
@@ -732,6 +732,46 @@ impl SettingsView {
         )
     }
 
+    /// How large the scramble preview is drawn for one event, listing only the
+    /// sizes the event offers.
+    fn preview_size_row(
+        &self,
+        event: WcaEvent,
+        settings: &Settings,
+        strings: &'static Strings,
+        cx: &App,
+    ) -> AnyElement {
+        let current = settings.preview_size(event);
+        let app = self.app.clone();
+        row(
+            preview_size_title(strings, event),
+            strings.setting_preview_size_desc,
+            Button::new(SharedString::from(format!("preview-size-{event:?}")))
+                .outline()
+                .small()
+                .label(preview_size_label(strings, current))
+                .dropdown_caret(true)
+                .dropdown_menu(move |mut menu, _, _| {
+                    for choice in PreviewSize::offered_for(event) {
+                        let app = app.clone();
+                        menu = menu.item(
+                            PopupMenuItem::new(preview_size_label(strings, choice))
+                                .checked(choice == current)
+                                .on_click(move |_, window, cx| {
+                                    app.update(cx, |app, cx| {
+                                        app.update_settings(window, cx, |settings| {
+                                            settings.set_preview_size(event, choice);
+                                        });
+                                    });
+                                }),
+                        );
+                    }
+                    menu
+                }),
+            cx,
+        )
+    }
+
     /// A size's exact field, shown while that size is custom.
     fn custom_size_rows(
         &self,
@@ -1293,7 +1333,15 @@ impl SettingsView {
                     strings.setting_scramble_preview_desc,
                     settings.scramble_preview,
                 ),
-            ],
+            ]
+            .into_iter()
+            .chain(WcaEvent::ALL.into_iter().map(|event| {
+                text(
+                    &preview_size_title(strings, event),
+                    strings.setting_preview_size_desc,
+                    preview_size_label(strings, settings.preview_size(event)),
+                )
+            })),
             [
                 self.switch(
                     "accurate",
@@ -1311,7 +1359,13 @@ impl SettingsView {
                     |settings, value| settings.scramble_preview = value,
                     cx,
                 ),
-            ],
+            ]
+            .into_iter()
+            .chain(
+                WcaEvent::ALL
+                    .into_iter()
+                    .map(|event| self.preview_size_row(event, settings, strings, cx)),
+            ),
         );
 
         let mut theme_texts = vec![
@@ -1853,6 +1907,23 @@ fn scramble_size_label(strings: &'static Strings, size: ScrambleSize) -> &'stati
         ScrambleSize::Largest => strings.scramble_size_largest,
         ScrambleSize::Custom => strings.scramble_size_custom,
     }
+}
+
+/// The menu label for a preview size.
+fn preview_size_label(strings: &'static Strings, size: PreviewSize) -> &'static str {
+    match size {
+        PreviewSize::Small => strings.preview_size_small,
+        PreviewSize::Normal => strings.preview_size_normal,
+        PreviewSize::Big => strings.preview_size_big,
+        PreviewSize::Huge => strings.preview_size_huge,
+    }
+}
+
+/// The title of an event's preview size row.
+fn preview_size_title(strings: &'static Strings, event: WcaEvent) -> String {
+    strings
+        .setting_preview_size
+        .replace("{event}", event.name())
 }
 
 /// The menu label for a font choice.
