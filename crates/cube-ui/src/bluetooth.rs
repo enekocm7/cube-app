@@ -29,6 +29,10 @@ const ROW_HEIGHT: Rems = Rems(2.25);
 const ICON_SIZE: Pixels = px(16.);
 /// Room for the status line above the device list.
 const STATUS_HEIGHT: Rems = Rems(2.);
+/// How far the title bar's button leans towards its neighbour. Its symbol is
+/// much narrower than the other icons there, so at the same spacing it looks
+/// set apart from them. This stays inside the gap, so the buttons never overlap.
+const TITLE_BAR_NUDGE: Rems = Rems(-0.15);
 
 /// How far along the connection to a timer is.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -73,6 +77,7 @@ impl CubeApp {
         Button::new("open-bluetooth")
             .ghost()
             .small()
+            .mr(TITLE_BAR_NUDGE)
             .icon(match status {
                 LinkStatus::None => IconName::Bluetooth,
                 LinkStatus::Connecting => IconName::BluetoothSearching,

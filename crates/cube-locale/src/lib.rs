@@ -680,6 +680,45 @@ pub struct Strings {
     pub toast_import_failed: &'static str,
     /// `{error}`: the cause.
     pub toast_export_failed: &'static str,
+    pub action_open_goals: &'static str,
+    pub goals_title: &'static str,
+    pub goals_empty: &'static str,
+    pub goals_unavailable: &'static str,
+    pub goals_new: &'static str,
+    pub goals_edit: &'static str,
+    pub goals_delete: &'static str,
+    pub goals_delete_confirm: &'static str,
+    pub goal_field_type: &'static str,
+    pub goal_type_volume: &'static str,
+    pub goal_type_time: &'static str,
+    pub goal_type_streak: &'static str,
+    pub goal_field_session: &'static str,
+    pub goal_all_sessions: &'static str,
+    pub goal_field_solves: &'static str,
+    pub goal_field_period: &'static str,
+    pub goal_period_day: &'static str,
+    pub goal_period_week: &'static str,
+    pub goal_field_result: &'static str,
+    pub goal_field_days: &'static str,
+    pub goal_field_solves_per_day: &'static str,
+    /// `{count}`: the solves a day.
+    pub goal_summary_day: &'static str,
+    /// `{count}`: the solves a week.
+    pub goal_summary_week: &'static str,
+    /// `{result}`: a single or an average; `{time}`: the time to beat.
+    pub goal_summary_time: &'static str,
+    /// `{count}`: the solves a day; `{days}`: the days in a row.
+    pub goal_summary_streak: &'static str,
+    pub goal_reached: &'static str,
+    pub goal_paused: &'static str,
+    /// `{max}`: the largest number allowed.
+    pub goal_error_count: &'static str,
+    /// `{goal}`: the goal, as its summary describes it.
+    pub toast_goal_reached: &'static str,
+    /// `{error}`: the cause.
+    pub toast_goals_load_failed: &'static str,
+    /// `{error}`: the cause.
+    pub toast_goals_save_failed: &'static str,
 }
 
 #[cfg(test)]
@@ -777,6 +816,16 @@ mod tests {
             assert!(strings.history_revision.contains("{number}"));
             assert!(strings.history_revision.contains("{date}"));
             assert!(strings.toast_save_failed.contains("{error}"));
+            assert!(strings.goal_summary_day.contains("{count}"));
+            assert!(strings.goal_summary_week.contains("{count}"));
+            assert!(strings.goal_summary_time.contains("{result}"));
+            assert!(strings.goal_summary_time.contains("{time}"));
+            assert!(strings.goal_summary_streak.contains("{count}"));
+            assert!(strings.goal_summary_streak.contains("{days}"));
+            assert!(strings.goal_error_count.contains("{max}"));
+            assert!(strings.toast_goal_reached.contains("{goal}"));
+            assert!(strings.toast_goals_load_failed.contains("{error}"));
+            assert!(strings.toast_goals_save_failed.contains("{error}"));
             assert!(strings.toast_load_failed.contains("{error}"));
             assert!(strings.toast_backup_available.contains("{path}"));
             assert!(strings.toast_backup_done.contains("{path}"));

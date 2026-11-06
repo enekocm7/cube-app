@@ -22,7 +22,7 @@ nothing is selected.
 | Action | Default | Notes |
 |---|---|---|
 | Start or stop the timer | `Space` | Hold and release to start the solve. Pressing and releasing the digits with the left mouse button or a touch does the same while **Timer → Touch the digits to start or stop the timer** is on (off by default) |
-| Cancel the current attempt | `Esc` | Does not record the solve; on the stats or charts screen it returns to the timer |
+| Cancel the current attempt | `Esc` | Does not record the solve; on the stats, charts or goals screen it returns to the timer |
 | New scramble | `N` | |
 | Turn inspection on or off | `I` | |
 | Show or hide the scramble preview | `P` | The same switch as the setting |
@@ -50,6 +50,8 @@ nothing is selected.
 | Show stats or the timer | `A` | Toggles the table of every solve's averages |
 | Show charts or the timer | `G` | |
 | Connect a Bluetooth timer | `B` | Also the Bluetooth icon in the title bar. See [Bluetooth timers](#bluetooth-timers) |
+| Show goals or the timer | `Shift + G` | Also the tick icon in the title bar. See [Goals](#goals) |
+| New goal | `Shift + N` | Works on the goals screen. See [Goals](#goals) |
 | Show the next charts view | `V` | Cycles Trends, Calendar, Compare and All-time bests |
 | Filter charts by the next event | `F` | Cycles all events and every event with solves |
 | Filter charts by the next range | `R` | Cycles all solves, the last 50, 100 or 500 solves and the last 7, 30, 90 or 365 days |
@@ -69,6 +71,15 @@ actions fire once per press.
 
 The solves listed in an average's dialog are buttons: reach them with `Tab` and
 press `Enter` or `Space` to open that solve.
+
+## Goals
+
+On the goals screen, `Up` and `Down` select a goal, `Enter` edits it, `D` deletes
+it and `Shift + N` adds a new one. They follow the bindings of selecting, opening
+and deleting a solve, so rebinding those moves these too.
+
+In the goal dialog, `Tab` moves between the controls, `Enter` or `Space` presses
+the focused one and `Enter` anywhere else saves.
 
 ## Charts
 

@@ -101,6 +101,8 @@ impl CubeApp {
             })
             .collect();
 
+        let goals = self.render_active_goals(cx);
+
         v_flex()
             .w(width)
             .flex_shrink_0()
@@ -126,7 +128,8 @@ impl CubeApp {
                             stats.best.map(|(_, index)| Target::Solve(index)),
                         ),
                     ))
-                    .children(windows),
+                    .children(windows)
+                    .children(goals),
             )
             .child(session_summary(strings, stats, &mono, border, muted))
     }

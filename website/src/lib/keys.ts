@@ -11,7 +11,7 @@ export const KEY_GROUPS: readonly { name: string; keys: readonly Key[] }[] = [
     name: 'Timer',
     keys: [
       ['Space', 'Space', 'Start inspection, hold and release to start the solve, press to stop'],
-      ['Escape', 'Esc', 'Cancel the attempt, or leave the stats or charts screen'],
+      ['Escape', 'Esc', 'Cancel the attempt, or leave the stats, charts or goals screen'],
       ['KeyN', 'N', 'New scramble'],
       ['KeyI', 'I', 'Turn WCA inspection on or off'],
       ['KeyP', 'P', 'Show or hide the scramble preview'],
@@ -57,6 +57,8 @@ export const KEY_GROUPS: readonly { name: string; keys: readonly Key[] }[] = [
     keys: [
       ['KeyA', 'A', 'Show stats, or return to the timer'],
       ['KeyG', 'G', 'Show charts, or return to the timer'],
+      ['KeyG', 'Shift + G', 'Show goals, or return to the timer'],
+      ['KeyN', 'Shift + N', 'New goal, on the goals screen'],
       ['KeyV', 'V', 'Show the next charts view'],
       ['KeyF', 'F', 'Filter charts by the next event'],
       ['KeyR', 'R', 'Filter charts by the next range'],

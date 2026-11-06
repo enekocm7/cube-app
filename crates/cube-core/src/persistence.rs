@@ -17,9 +17,11 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
 use std::time::{Duration, SystemTime};
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
 use chrono::{DateTime, NaiveDateTime, TimeDelta, Utc};
+use serde::{Deserialize, Serialize};
 
+use crate::goals::Goal;
 use crate::history::History;
 use crate::merge::{self, MergeSummary};
 use crate::settings::Settings;
@@ -46,6 +48,12 @@ pub fn data_dir() -> Result<PathBuf> {
 /// Returns the solve history shared with cube-tui.
 pub fn history_file() -> Result<PathBuf> {
     Ok(data_dir()?.join("times.json"))
+}
+
+/// Returns the practice goals of the desktop app, kept out of `times.json`
+/// because that file is cube-tui's.
+pub fn goals_file() -> Result<PathBuf> {
+    Ok(data_dir()?.join("goals.json"))
 }
 
 /// Returns the settings file of the desktop app.
@@ -436,6 +444,41 @@ pub fn save_settings(path: &Path, settings: &Settings) -> Result<()> {
         .with_context(|| format!("Could not save settings to {}", path.display()))
 }
 
+/// The contents of the goals file.
+#[derive(Serialize, Deserialize)]
+struct GoalsFile {
+    goals: Vec<Goal>,
+}
+
+/// Loads the goals; a missing file means there are none yet.
+///
+/// A file that exists but can't be read is an error, never an empty list, or
+/// the next save would overwrite it.
+pub fn load_goals(path: &Path) -> Result<Vec<Goal>> {
+    let Some(bytes) =
+        read_if_present(path).with_context(|| format!("Could not read {}", path.display()))?
+    else {
+        return Ok(Vec::new());
+    };
+    let file: GoalsFile = serde_json::from_slice(&bytes)
+        .with_context(|| format!("Invalid goals in {}", path.display()))?;
+    for goal in &file.goals {
+        goal.kind
+            .validate()
+            .map_err(|error| anyhow!("Invalid goal in {}: {error:?}", path.display()))?;
+    }
+    Ok(file.goals)
+}
+
+/// Saves the goals to `path` atomically.
+pub fn save_goals(path: &Path, goals: &[Goal]) -> Result<()> {
+    let file = GoalsFile {
+        goals: goals.to_vec(),
+    };
+    let text = serde_json::to_vec_pretty(&file).context("Could not serialize the goals")?;
+    write_atomic(path, &text).with_context(|| format!("Could not save goals to {}", path.display()))
+}
+
 /// Moves a file that could not be read out of the way, so saving over it
 /// destroys nothing, and returns its new path.
 pub fn set_aside(path: &Path) -> io::Result<PathBuf> {
@@ -537,6 +580,7 @@ fn remove_stale_temporaries(path: &Path) {
 mod tests {
     use super::*;
     use crate::event::WcaEvent;
+    use crate::goals::{GoalKind, Period, SessionAnchor};
     use crate::solve::{Modifier, Solve};
 
     static NEXT_ID: AtomicU64 = AtomicU64::new(0);
@@ -579,6 +623,66 @@ mod tests {
             std::process::id(),
             NEXT_ID.fetch_add(1, Ordering::Relaxed)
         ))
+    }
+
+    fn a_goal() -> Goal {
+        Goal {
+            event: WcaEvent::Cube3x3,
+            kind: GoalKind::Volume {
+                solves: 50,
+                period: Period::Day,
+            },
+            session: None,
+        }
+    }
+
+    #[test]
+    fn no_goals_file_means_no_goals_yet() {
+        let dir = temporary_path();
+        assert!(load_goals(&dir.join("goals.json")).unwrap().is_empty());
+    }
+
+    #[test]
+    fn goals_load_as_they_were_saved() {
+        let dir = temporary_path();
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("goals.json");
+        let mut session = History::new();
+        session.set_name("OH".to_owned());
+        let sessions = [session];
+        let limited = Goal {
+            kind: GoalKind::TargetTime {
+                target_ms: 20_000,
+                size: 12,
+            },
+            session: SessionAnchor::new(&sessions, 0),
+            ..a_goal()
+        };
+        save_goals(&path, &[a_goal(), limited]).unwrap();
+
+        let loaded = load_goals(&path).unwrap();
+        assert_eq!(loaded.len(), 2);
+        assert_eq!(loaded[0].kind, a_goal().kind);
+        assert!(loaded[0].session.is_none());
+        assert_eq!(loaded[1].session.as_ref().unwrap().name(), "OH");
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn an_unreadable_goals_file_is_an_error_and_stays_on_disk() {
+        let dir = temporary_path();
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("goals.json");
+        for broken in [
+            "not json",
+            r#"{"goals":[{"event":"Cube3x3","kind":{"type":"unknown"}}]}"#,
+            r#"{"goals":[{"event":"Cube3x3","kind":{"type":"volume","solves":0,"period":"day"}}]}"#,
+        ] {
+            fs::write(&path, broken).unwrap();
+            assert!(load_goals(&path).is_err(), "{broken}");
+            assert_eq!(fs::read_to_string(&path).unwrap(), broken);
+        }
+        fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]

@@ -9,6 +9,21 @@ order: 2
 
 The timer screen's right panel compares **Current** and **Best** for the single and every rolling average: mo3, ao5, ao12, ao50, ao100. Click (or `Tab` + `Enter` on) any value to open the solves behind it.
 
+## Goals (`Shift + G`)
+
+The tick icon in the title bar, beside the Bluetooth one, opens your goals. Each goal is for one event and counts every session unless you limit it to one.
+
+| Goal | Reached when |
+|---|---|
+| **Volume** | You do that many solves in a day or a week. DNFs count: it measures practice |
+| **Target time** | Your best single or average beats the time. Equal is not enough, and averages stay inside a session |
+| **Streak** | You do that many solves a day for that many days in a row. Today only adds to a streak: it ends when a whole day is missed |
+
+- Days and weeks follow your computer's local time, and weeks start on Monday. Solves with no date count towards target times but not towards days.
+- Progress always comes from your solves, so it stays right after editing, deleting or restoring one, or after a merge from cube-tui.
+- The timer screen's right panel shows the goals for the current event and session, and a toast tells you when you reach one.
+- A goal limited to a session stays with it when the session is renamed. If you delete the session the goal is paused, and undoing the deletion brings it back.
+
 ## Stats screen (`A`)
 
 A table of every solve's rolling averages:
