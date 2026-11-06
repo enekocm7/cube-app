@@ -5,6 +5,7 @@
 //! so both applications read and write the same solve history.
 
 pub mod bests;
+pub mod blind_stats;
 pub mod charts;
 pub mod cstimer;
 pub mod dialog_keys;
@@ -17,6 +18,7 @@ pub mod history_writer;
 pub mod keybind;
 pub mod manual_entry;
 pub mod merge;
+pub mod multi_blind;
 pub mod panels;
 pub mod persistence;
 pub mod scramble;

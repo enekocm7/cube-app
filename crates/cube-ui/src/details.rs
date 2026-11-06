@@ -51,6 +51,9 @@ struct SolveForm {
     changes: Vec<SolveChange>,
     event: WcaEvent,
     modifier: Modifier,
+    /// The memo and the execution a blindfolded solve was timed in, which the
+    /// form shows but does not edit.
+    parts: Option<(u64, u64)>,
     /// The solve's seconds and milliseconds, kept while the date field only
     /// edits down to the minute: milliseconds don't matter for a date.
     date_subminute_ms: u64,
@@ -269,7 +272,8 @@ impl Render for SolveForm {
                         .gap_1()
                         .child(field_label(strings.field_time, muted))
                         .child(keep_focus("field-time", Input::new(&self.time)))
-                        .children(field_error(self.time_error.as_ref(), colors.red)),
+                        .children(field_error(self.time_error.as_ref(), colors.red))
+                        .children(self.render_parts(muted, cx)),
                 )
                 .child(self.render_penalty_row(cx))
                 .child(
@@ -362,6 +366,26 @@ impl SolveForm {
                     .child(keep_focus("field-date", Input::new(&self.date)))
                     .children(field_error(self.date_error.as_ref(), red)),
             )
+    }
+
+    /// The memo and execution of a blindfolded solve.
+    fn render_parts(&self, muted: Hsla, cx: &App) -> Option<Div> {
+        let (memo, execution) = self.parts?;
+        let strings = self.strings;
+        let mono = cx.theme().mono_font_family.clone();
+        Some(
+            h_flex()
+                .gap_4()
+                .text_sm()
+                .text_color(muted)
+                .font_family(mono)
+                .child(format!("{}: {}", strings.label_memo, format_ms(memo)))
+                .child(format!(
+                    "{}: {}",
+                    strings.label_execution,
+                    format_ms(execution)
+                )),
+        )
     }
 
     /// The penalty choices.
@@ -713,6 +737,7 @@ fn new_form(
     let date_subminute_ms = solve.solved_at_unix_ms() % 60_000;
     let event = solve.event();
     let modifier = solve.modifier();
+    let parts = solve.memo_ms().zip(solve.execution_ms());
     cx.new(|cx| {
         // Typing in the scramble field redraws the preview.
         cx.observe(&scramble, |_, _, cx| cx.notify()).detach();
@@ -723,6 +748,7 @@ fn new_form(
             changes,
             event,
             modifier,
+            parts,
             date_subminute_ms,
             history_expanded: false,
             time,

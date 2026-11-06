@@ -24,6 +24,7 @@ use serde::{Deserialize, Serialize};
 use crate::goals::Goal;
 use crate::history::History;
 use crate::merge::{self, MergeSummary};
+use crate::multi_blind::MultiBlindData;
 use crate::settings::Settings;
 use crate::solve_extras::SolveExtras;
 use crate::tags::TagChange;
@@ -63,6 +64,13 @@ pub fn goals_file() -> Result<PathBuf> {
 /// attempts at a single case never reach sessions, averages or cube-tui.
 pub fn trainer_file() -> Result<PathBuf> {
     Ok(data_dir()?.join("trainer.json"))
+}
+
+/// Returns the Multi-Blind attempts, kept out of `times.json` because one
+/// attempt has many scrambles and scores points, which cube-tui's solves
+/// cannot hold.
+pub fn multi_blind_file() -> Result<PathBuf> {
+    Ok(data_dir()?.join("multi-blind.json"))
 }
 
 /// Returns the settings file of the desktop app.
@@ -552,6 +560,35 @@ pub fn save_trainer(path: &Path, data: &TrainerData) -> Result<()> {
         .with_context(|| format!("Could not save trainer data to {}", path.display()))
 }
 
+/// Loads the Multi-Blind attempts; a missing file means there are none yet.
+///
+/// A file that exists but can't be read is an error, never an empty history,
+/// or the next save would overwrite it.
+pub fn load_multi_blind(path: &Path) -> Result<MultiBlindData> {
+    let Some(bytes) =
+        read_if_present(path).with_context(|| format!("Could not read {}", path.display()))?
+    else {
+        return Ok(MultiBlindData::default());
+    };
+    let data: MultiBlindData = serde_json::from_slice(&bytes)
+        .with_context(|| format!("Invalid Multi-Blind attempts in {}", path.display()))?;
+    if let Err(index) = data.validate() {
+        return Err(anyhow!(
+            "Invalid Multi-Blind attempt {} in {}",
+            index + 1,
+            path.display()
+        ));
+    }
+    Ok(data)
+}
+
+/// Saves the Multi-Blind attempts to `path` atomically.
+pub fn save_multi_blind(path: &Path, data: &MultiBlindData) -> Result<()> {
+    let text = serde_json::to_vec_pretty(data).context("Could not serialize Multi-Blind")?;
+    write_atomic(path, &text)
+        .with_context(|| format!("Could not save Multi-Blind attempts to {}", path.display()))
+}
+
 /// Moves a file that could not be read out of the way, so saving over it
 /// destroys nothing, and returns its new path.
 pub fn set_aside(path: &Path) -> io::Result<PathBuf> {
@@ -804,6 +841,54 @@ mod tests {
     }
 
     #[test]
+    fn no_multi_blind_file_means_no_attempts_yet() {
+        let dir = temporary_path();
+        let data = load_multi_blind(&dir.join("multi-blind.json")).unwrap();
+        assert_eq!(data, MultiBlindData::default());
+    }
+
+    #[test]
+    fn multi_blind_attempts_load_as_they_were_saved() {
+        use crate::multi_blind::MultiBlindAttempt;
+
+        let dir = temporary_path();
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("multi-blind.json");
+        let mut data = MultiBlindData::default();
+        data.attempts.push(MultiBlindAttempt {
+            attempted: 3,
+            solved: 2,
+            time_ms: 1_234_567,
+            solved_at_unix_ms: 1_760_000_000_000,
+            scrambles: vec!["R U Rw".to_owned(), "F D".to_owned(), "L2".to_owned()],
+        });
+
+        save_multi_blind(&path, &data).unwrap();
+
+        assert_eq!(load_multi_blind(&path).unwrap(), data);
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn an_unreadable_multi_blind_file_is_an_error_and_stays_on_disk() {
+        let dir = temporary_path();
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("multi-blind.json");
+        for broken in [
+            "not json",
+            r#"{"attempts":[{"attempted":3}]}"#,
+            r#"{"attempts":[{"attempted":3,"solved":4,"time_ms":1}]}"#,
+            r#"{"attempts":[{"attempted":1,"solved":1,"time_ms":1}]}"#,
+            r#"{"attempts":[],"new_field":1}"#,
+        ] {
+            fs::write(&path, broken).unwrap();
+            assert!(load_multi_blind(&path).is_err(), "{broken}");
+            assert_eq!(fs::read_to_string(&path).unwrap(), broken);
+        }
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
     fn settings_move_from_the_old_file_name() {
         let dir = temporary_path();
         fs::create_dir_all(&dir).unwrap();
@@ -857,6 +942,42 @@ mod tests {
         let written = serde_json::to_value(&sessions).unwrap();
         assert_eq!(written[0]["times"][0]["event"], "Cube3x3OneHanded");
         assert_eq!(written[0]["times"][1]["event"], "Cube3x3");
+    }
+
+    #[test]
+    fn blindfolded_events_keep_their_own_names_in_the_save() {
+        let names = ["Cube3x3Blind", "Cube4x4Blind", "Cube5x5Blind"];
+        let solves: Vec<String> = names
+            .iter()
+            .map(|name| {
+                format!(
+                    r#"{{ "timestamp_in_millis": 90000, "event": "{name}", "scramble": "R U Rw" }}"#
+                )
+            })
+            .collect();
+        let text = format!(r#"[{{ "times": [{}] }}]"#, solves.join(","));
+        let sessions: Vec<History> = serde_json::from_str(&text).unwrap();
+        let events: Vec<_> = sessions[0].solves().iter().map(Solve::event).collect();
+        assert_eq!(
+            events,
+            [
+                WcaEvent::Cube3x3Blind,
+                WcaEvent::Cube4x4Blind,
+                WcaEvent::Cube5x5Blind
+            ]
+        );
+        let written = serde_json::to_value(&sessions).unwrap();
+        for (index, name) in names.iter().enumerate() {
+            assert_eq!(written[0]["times"][index]["event"], *name);
+        }
+    }
+
+    #[test]
+    fn a_memo_never_reaches_the_history_file() {
+        let mut sessions: Vec<History> = serde_json::from_str(CUBE_TUI_SAVE).unwrap();
+        let before = serde_json::to_string(&sessions).unwrap();
+        sessions[0].solves_mut()[0].set_memo_ms(Some(1_000));
+        assert_eq!(serde_json::to_string(&sessions).unwrap(), before);
     }
 
     #[test]

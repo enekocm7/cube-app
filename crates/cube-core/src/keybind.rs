@@ -48,6 +48,9 @@ pub enum Action {
     EditTrainerAlgorithm,
     SortTrainerCases,
     TrainerCaseAttempts,
+    OpenMultiBlind,
+    CopyMultiBlindScrambles,
+    SaveMultiBlindScrambles,
     EditTags,
     ActiveTags,
     ManageTags,
@@ -78,7 +81,7 @@ pub enum Action {
 
 impl Action {
     /// Every action, in the order the help dialog lists them.
-    pub const ALL: [Self; 60] = [
+    pub const ALL: [Self; 63] = [
         Self::Timer,
         Self::Cancel,
         Self::NextScramble,
@@ -115,6 +118,9 @@ impl Action {
         Self::EditTrainerAlgorithm,
         Self::SortTrainerCases,
         Self::TrainerCaseAttempts,
+        Self::OpenMultiBlind,
+        Self::CopyMultiBlindScrambles,
+        Self::SaveMultiBlindScrambles,
         Self::EditTags,
         Self::ActiveTags,
         Self::ManageTags,
@@ -180,6 +186,9 @@ impl Action {
             Self::EditTrainerAlgorithm => "edit_trainer_algorithm",
             Self::SortTrainerCases => "sort_trainer_cases",
             Self::TrainerCaseAttempts => "trainer_case_attempts",
+            Self::OpenMultiBlind => "open_multi_blind",
+            Self::CopyMultiBlindScrambles => "copy_multi_blind_scrambles",
+            Self::SaveMultiBlindScrambles => "save_multi_blind_scrambles",
             Self::EditTags => "edit_tags",
             Self::ActiveTags => "active_tags",
             Self::ManageTags => "manage_tags",
@@ -408,6 +417,9 @@ impl Default for Keybinds {
             (Action::EditTrainerAlgorithm, "Shift+H"),
             (Action::SortTrainerCases, "Shift+Y"),
             (Action::TrainerCaseAttempts, "Shift+Q"),
+            (Action::OpenMultiBlind, "Shift+M"),
+            (Action::CopyMultiBlindScrambles, "Shift+C"),
+            (Action::SaveMultiBlindScrambles, "Shift+V"),
             (Action::EditTags, "t"),
             (Action::ActiveTags, "Shift+T"),
             (Action::ManageTags, "Ctrl+T"),

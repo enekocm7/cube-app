@@ -43,6 +43,8 @@ struct Extras {
     tags: Vec<String>,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     solution: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    memo_ms: Option<u64>,
 }
 
 impl Extras {
@@ -50,11 +52,12 @@ impl Extras {
         Self {
             tags: solve.tags().to_vec(),
             solution: solve.solution().to_owned(),
+            memo_ms: solve.memo_ms(),
         }
     }
 
     fn is_empty(&self) -> bool {
-        self.tags.is_empty() && self.solution.is_empty()
+        self.tags.is_empty() && self.solution.is_empty() && self.memo_ms.is_none()
     }
 }
 
@@ -148,6 +151,7 @@ impl SolveExtras {
             if let Some(extras) = self.missing.get(id) {
                 solve.set_tags(extras.tags.clone());
                 solve.set_solution(extras.solution.clone());
+                solve.set_memo_ms(extras.memo_ms);
             }
         }
     }
@@ -296,6 +300,50 @@ mod tests {
         assert_eq!(tags_of(&loaded), [vec!["GAN".to_owned()], vec![]]);
         assert_eq!(loaded[0].solves()[0].solution(), "");
         assert_eq!(loaded[0].solves()[1].solution(), "R U // cross");
+        remove_folder_of(&path);
+    }
+
+    #[test]
+    fn a_memo_comes_back_and_never_reaches_times_json() {
+        let path = temporary_history();
+        let mut sessions = session(&[10, 20]);
+        sessions[0].solves_mut()[1].set_memo_ms(Some(7));
+        saved(&path, &sessions);
+
+        let json = serde_json::to_string(&sessions).unwrap();
+        assert!(!json.contains("memo"));
+
+        let mut loaded = session(&[10, 20]);
+        SolveExtras::open(&path, &mut loaded).unwrap();
+        let memos: Vec<_> = loaded[0].solves().iter().map(Solve::memo_ms).collect();
+        assert_eq!(memos, [None, Some(7)]);
+        assert_eq!(loaded[0].solves()[1].execution_ms(), Some(13));
+        remove_folder_of(&path);
+    }
+
+    #[test]
+    fn a_memo_survives_a_solve_going_missing_and_an_edit() {
+        let path = temporary_history();
+        let mut sessions = session(&[10, 20]);
+        sessions[0].solves_mut()[1].set_memo_ms(Some(7));
+        saved(&path, &sessions);
+
+        // Missing from the history, the entry stays and comes back.
+        let mut without = session(&[10]);
+        let mut extras = SolveExtras::open(&path, &mut without).unwrap();
+        extras.save(&without).unwrap();
+        let mut back = session(&[10, 20]);
+        extras.hand_over(&mut back);
+        assert_eq!(back[0].solves()[1].memo_ms(), Some(7));
+
+        // An edit keeps the memo and shortens it with the time.
+        let after = SolveSnapshot {
+            time_ms: 5,
+            ..sessions[0].solves()[1].snapshot()
+        };
+        assert!(sessions[0].edit(1, after));
+        assert_eq!(sessions[0].solves()[1].memo_ms(), Some(5));
+        assert_eq!(sessions[0].solves()[1].execution_ms(), Some(0));
         remove_folder_of(&path);
     }
 

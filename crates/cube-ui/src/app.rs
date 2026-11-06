@@ -10,10 +10,12 @@ use std::time::{Duration, Instant};
 use chrono::{Local, NaiveDate};
 use cube_bluetooth::Client;
 use cube_core::bests::{self, BestScope};
+use cube_core::blind_stats::BlindStats;
 use cube_core::charts::{ChartFilter, ChartView, ChartZoom};
 use cube_core::cstimer::{self, ImportReport};
 use cube_core::goals;
 use cube_core::history_writer::{HistoryWriter, Merge, WriterEvent};
+use cube_core::multi_blind::MultiBlindData;
 use cube_core::persistence::{self, HistoryStore};
 use cube_core::scramble::{self, ScrambleQueue};
 use cube_core::stats::{self, Average, SessionStats};
@@ -39,6 +41,7 @@ use gpui_kit::*;
 
 use crate::bluetooth::TimerLink;
 use crate::charts_screen::{ChartData, KEY_ZOOM};
+use crate::multi_blind_screen::MultiBlindState;
 use crate::palette;
 use crate::panel_resize::{PanelSide, render_grab};
 use crate::preview::PreviewCache;
@@ -65,6 +68,7 @@ pub enum Screen {
     Charts,
     Goals,
     Trainer,
+    MultiBlind,
 }
 
 /// Everything read from disk at startup.
@@ -86,6 +90,10 @@ pub struct Loaded {
     /// `None` when the trainer's data could not be loaded, which keeps saving
     /// off so a file this version cannot read is never overwritten.
     trainer_path: Option<PathBuf>,
+    multi_blind: MultiBlindData,
+    /// `None` when the Multi-Blind attempts could not be loaded, which keeps
+    /// saving off so a file this version cannot read is never overwritten.
+    multi_blind_path: Option<PathBuf>,
 }
 
 /// What went wrong reading from disk at startup.
@@ -102,6 +110,8 @@ struct LoadProblems {
     tags: Option<String>,
     /// Why the trainer's data could not be loaded.
     trainer: Option<String>,
+    /// Why the Multi-Blind attempts could not be loaded.
+    multi_blind: Option<String>,
 }
 
 impl LoadProblems {
@@ -126,6 +136,12 @@ impl LoadProblems {
         }
         if let Some(error) = self.trainer {
             let message = strings.toast_trainer_load_failed.replace("{error}", &error);
+            notify_when_ready(Notification::error(message), window);
+        }
+        if let Some(error) = self.multi_blind {
+            let message = strings
+                .toast_multi_blind_load_failed
+                .replace("{error}", &error);
             notify_when_ready(Notification::error(message), window);
         }
         if let Some(aside) = self.settings_aside {
@@ -167,6 +183,7 @@ impl Loaded {
         }
         let (goals, goals_path, goals_error) = load_goals();
         let (trainer, trainer_path, trainer_error) = load_trainer();
+        let (multi_blind, multi_blind_path, multi_blind_error) = load_multi_blind();
         let tags_available = history.as_ref().is_some_and(HistoryStore::tags_available);
         let tags_error = history
             .as_mut()
@@ -184,12 +201,15 @@ impl Loaded {
                 goals: goals_error,
                 tags: tags_error,
                 trainer: trainer_error,
+                multi_blind: multi_blind_error,
             },
             goals,
             goals_path,
             tags_available,
             trainer,
             trainer_path,
+            multi_blind,
+            multi_blind_path,
         }
     }
 }
@@ -215,6 +235,18 @@ fn load_trainer() -> (TrainerData, Option<PathBuf>, Option<String>) {
     match persistence::load_trainer(&path) {
         Ok(data) => (data, Some(path), None),
         Err(error) => (TrainerData::default(), None, Some(format!("{error:#}"))),
+    }
+}
+
+/// Loads the Multi-Blind attempts. A file that cannot be read stays where it
+/// is and saving turns off, as for the goals.
+fn load_multi_blind() -> (MultiBlindData, Option<PathBuf>, Option<String>) {
+    let Ok(path) = persistence::multi_blind_file() else {
+        return (MultiBlindData::default(), None, None);
+    };
+    match persistence::load_multi_blind(&path) {
+        Ok(data) => (data, Some(path), None),
+        Err(error) => (MultiBlindData::default(), None, Some(format!("{error:#}"))),
     }
 }
 
@@ -265,6 +297,8 @@ pub struct Celebration {
 pub struct LastResult {
     pub time_ms: u64,
     pub modifier: Modifier,
+    /// How much of `time_ms` was the memo, for a blindfolded attempt.
+    pub memo_ms: Option<u64>,
 }
 
 /// The application window's root view.
@@ -296,7 +330,7 @@ pub struct CubeApp {
     /// The Bluetooth timer doing the timing, once one is chosen.
     pub(crate) timer_link: Option<TimerLink>,
     /// Whether the timer key is physically down, to ignore key repeat.
-    key_down: bool,
+    pub(crate) key_down: bool,
     /// Whether the mouse or a touch is holding the digits, the pointer twin of
     /// `key_down`.
     pointer_down: bool,
@@ -307,6 +341,9 @@ pub struct CubeApp {
     /// The effect on the digits for the latest solve, if it set a best.
     pub(crate) celebration: Option<Celebration>,
     pub(crate) stats: SessionStats,
+    /// The summary of the current event within the session, while it is a
+    /// blindfolded one.
+    pub(crate) blind_stats: Option<BlindStats>,
     chart_data: Option<Rc<ChartData>>,
     pub(crate) chart_view: ChartView,
     /// What the charts keep of each session. It lasts until the app closes.
@@ -342,6 +379,8 @@ pub struct CubeApp {
     pub(crate) goals_scroll: UniformListScrollHandle,
     /// The algorithm trainer's screen and data.
     pub(crate) trainer: TrainerState,
+    /// The Multi-Blind screen and its attempts.
+    pub(crate) multi_blind: MultiBlindState,
     /// Whether changes to tags can be saved.
     pub(crate) tags_available: bool,
     /// Every tag and how many solves have it, sorted.
@@ -429,6 +468,8 @@ impl CubeApp {
             tags_available,
             trainer,
             trainer_path,
+            multi_blind,
+            multi_blind_path,
         } = loaded;
         let strings = language_of(&settings).strings();
         let trainer_search = new_trainer_search(strings, window, cx);
@@ -452,6 +493,7 @@ impl CubeApp {
             bluetooth: Client::default(),
             timer_link: None,
             stats: SessionStats::compute(sessions[0].solves()),
+            blind_stats: None,
             settings,
             sessions,
             current: 0,
@@ -488,6 +530,7 @@ impl CubeApp {
             selected_goal: None,
             goals_scroll: UniformListScrollHandle::new(),
             trainer: TrainerState::new(trainer, trainer_path, trainer_search),
+            multi_blind: MultiBlindState::new(multi_blind, multi_blind_path),
             tags_available,
             tag_usage,
             compare_tag: None,
@@ -505,6 +548,7 @@ impl CubeApp {
             window_save: None,
         };
         problems.report(app.strings(), window);
+        app.refresh_blind_stats();
         app.next_scramble(cx);
         app.listen_for_scrambles(cx);
         app.start_ticking(window, cx);
@@ -730,6 +774,13 @@ impl CubeApp {
                 }
                 return;
             }
+            // Multi-Blind starts an attempt with the key, then times it.
+            if self.screen == Screen::MultiBlind {
+                if !event.is_held && !self.key_down && !self.pointer_down {
+                    self.multi_blind_timer_key(window, cx);
+                }
+                return;
+            }
             // Manual mode types times in instead of timing them, and a
             // Bluetooth timer is started and stopped by hand.
             if self.manual_mode() || self.hardware_timing() {
@@ -758,6 +809,9 @@ impl CubeApp {
     #[allow(clippy::too_many_lines, reason = "one arm per action")]
     fn run_action(&mut self, action: Action, window: &mut Window, cx: &mut Context<Self>) {
         if self.screen == Screen::Trainer && self.trainer_action(action, window, cx) {
+            return;
+        }
+        if self.screen == Screen::MultiBlind && self.multi_blind_action(action, window, cx) {
             return;
         }
         match action {
@@ -829,6 +883,9 @@ impl CubeApp {
             Action::OpenBluetooth => self.open_bluetooth(window, cx),
             Action::OpenGoals => self.toggle_screen(Screen::Goals, cx),
             Action::OpenTrainer => self.toggle_screen(Screen::Trainer, cx),
+            Action::OpenMultiBlind => self.toggle_screen(Screen::MultiBlind, cx),
+            Action::CopyMultiBlindScrambles => self.copy_multi_blind_scrambles(window, cx),
+            Action::SaveMultiBlindScrambles => self.save_multi_blind_scrambles(window, cx),
             Action::NewGoal => self.open_goal_form(None, window, cx),
             Action::EditTags => {
                 if let Some(index) = self.target_solve() {
@@ -963,7 +1020,8 @@ impl CubeApp {
             self.timer.cancel();
             self.toast(self.strings().toast_cancelled, window, cx);
             cx.notify();
-        } else if self.leave_trainer_drill(cx)
+        } else if self.leave_multi_blind_attempt(cx)
+            || self.leave_trainer_drill(cx)
             || self.leave_case_attempts(cx)
             || self.clear_trainer_search(window, cx)
         {
@@ -992,15 +1050,22 @@ impl CubeApp {
         }
     }
 
-    fn press_timer(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        // An attempt needs a scramble to record against.
-        if !self.timer.is_active() && self.shown_scramble().is_none() {
+    pub(crate) fn press_timer(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        // An attempt needs a scramble to record against. Multi-Blind keeps its
+        // own, a whole list of them.
+        if !self.timer.is_active()
+            && self.screen != Screen::MultiBlind
+            && self.shown_scramble().is_none()
+        {
             return;
         }
         if !self.timer.is_active() {
             self.last_result = None;
-            // A drill times one case, which has no inspection.
-            self.timer.inspection = self.settings.timer().inspection && !self.drilling();
+            // A drill times one case, and Multi-Blind one long attempt; neither
+            // has an inspection, nor a memo of its own to mark.
+            let separate = self.drilling() || self.screen == Screen::MultiBlind;
+            self.timer.inspection = self.settings.timer().inspection && !separate;
+            self.timer.blindfolded = self.shown_event().is_blindfolded() && !separate;
         }
         if let Some(outcome) = self.timer.press(Instant::now()) {
             self.finish_attempt(outcome, window, cx);
@@ -1019,15 +1084,28 @@ impl CubeApp {
             self.finish_trainer_attempt(outcome, window, cx);
             return;
         }
-        let TimerOutcome { time_ms, modifier } = outcome;
+        if self.screen == Screen::MultiBlind {
+            self.finish_multi_blind_attempt(outcome, window, cx);
+            return;
+        }
+        let TimerOutcome {
+            time_ms,
+            modifier,
+            memo_ms,
+        } = outcome;
         let scramble = self.scramble.take().unwrap_or_default();
         let mut solve = Solve::new(time_ms, self.event, scramble, modifier);
+        solve.set_memo_ms(memo_ms);
         if self.tags_available {
             solve.set_tags(self.settings.active_tags.clone());
         }
         self.sessions[self.current].push(solve);
         self.next_scramble(cx);
-        self.last_result = Some(LastResult { time_ms, modifier });
+        self.last_result = Some(LastResult {
+            time_ms,
+            modifier,
+            memo_ms,
+        });
         self.selected_solve = None;
         self.solves_changed(window, cx);
         self.solves_scroll.scroll_to_item(0, ScrollStrategy::Top);
@@ -1128,6 +1206,7 @@ impl CubeApp {
     pub(crate) fn set_event(&mut self, event: WcaEvent, cx: &mut Context<Self>) {
         if event != self.event && !self.timer.is_active() {
             self.event = event;
+            self.refresh_blind_stats();
             self.queue.switch_event(event, self.scramble.take());
             self.next_scramble(cx);
             cx.notify();
@@ -1217,7 +1296,7 @@ impl CubeApp {
     /// Returns whether manual mode applies to what is on screen. It stays on
     /// for the timer while the trainer, which only times attempts, is showing.
     pub(crate) fn manual_mode(&self) -> bool {
-        self.manual.is_some() && self.screen != Screen::Trainer
+        self.manual.is_some() && !matches!(self.screen, Screen::Trainer | Screen::MultiBlind)
     }
 
     /// Turns manual mode on or off. It starts only from the idle timer
@@ -1294,6 +1373,7 @@ impl CubeApp {
             TimerOutcome {
                 time_ms,
                 modifier: Modifier::None,
+                memo_ms: None,
             },
             window,
             cx,
@@ -1830,6 +1910,7 @@ impl CubeApp {
             self.last_result = Some(LastResult {
                 time_ms: solve.raw_ms(),
                 modifier: solve.modifier(),
+                memo_ms: solve.memo_ms(),
             });
         }
     }
@@ -1909,6 +1990,15 @@ impl CubeApp {
         }
     }
 
+    /// Summarizes the current event if it is blindfolded, which gets its own
+    /// figures in place of the trimmed averages.
+    pub(crate) fn refresh_blind_stats(&mut self) {
+        let event = self.event;
+        self.blind_stats = event
+            .is_blindfolded()
+            .then(|| BlindStats::compute(self.sessions[self.current].solves(), event));
+    }
+
     fn solves_changed(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.refresh_stats();
         self.save_history(window, cx);
@@ -1917,6 +2007,7 @@ impl CubeApp {
     fn refresh_stats(&mut self) {
         let stats = &mut self.stats;
         stats.update(self.sessions[self.current].solves());
+        self.refresh_blind_stats();
         self.goals_stale = true;
         self.tag_usage = tags::usage(&self.sessions, &self.settings.active_tags);
         self.clear_chart_data();
@@ -2223,12 +2314,20 @@ impl CubeApp {
                                         strings.nav_trainer,
                                         Screen::Trainer,
                                         cx,
+                                    ))
+                                    .child(tab(
+                                        "nav-multi-blind",
+                                        strings.nav_multi_blind,
+                                        Screen::MultiBlind,
+                                        cx,
                                     )),
                             ),
                     )
-                    // The trainer's sets say what is being practised instead.
+                    // The trainer's sets say what is being practised instead, and
+                    // Multi-Blind has only one event.
                     .children(
-                        (self.screen != Screen::Trainer).then(|| self.render_event_picker(cx)),
+                        (!matches!(self.screen, Screen::Trainer | Screen::MultiBlind))
+                            .then(|| self.render_event_picker(cx)),
                     )
                     .child(
                         h_flex()
@@ -2321,6 +2420,7 @@ impl Render for CubeApp {
             Screen::Charts => self.render_charts(cx),
             Screen::Goals => self.render_goals(cx),
             Screen::Trainer => self.render_trainer(window, cx),
+            Screen::MultiBlind => self.render_multi_blind(window, cx),
         };
         let theme = cx.theme();
         v_flex()

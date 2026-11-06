@@ -23,7 +23,7 @@ nothing is selected.
 | Action | Default | Notes |
 |---|---|---|
 | Start or stop the timer | `Space` | Hold and release to start the solve. Pressing and releasing the digits with the left mouse button or a touch does the same while **Timer → Touch the digits to start or stop the timer** is on (off by default) |
-| Cancel the current attempt | `Esc` | Does not record the solve; on the stats, charts or goals screen it returns to the timer. In the trainer it goes from the drill back to the cases, then to the timer |
+| Cancel the current attempt | `Esc` | Does not record the solve; on the stats, charts, goals or Multi-Blind screen it returns to the timer. In the trainer it goes from the drill back to the cases, then to the timer. In Multi-Blind it abandons scrambles you have not started on |
 | New scramble | `N` | |
 | Turn inspection on or off | `I` | |
 | Show or hide the scramble preview | `P` | The same switch as the setting |
@@ -69,6 +69,9 @@ nothing is selected.
 | Edit the algorithm | `Shift + H` | Works on the trainer's cases, for the highlighted one |
 | Sort by slowest | `Shift + Y` | Works on the trainer's cases |
 | See the case's attempts | `Shift + Q` | Works on the trainer's cases |
+| Show Multi-Blind or the timer | `Shift + M` | Also the Multi-Blind tab in the title bar. See [Multi-Blind](#multi-blind) |
+| Copy the Multi-Blind scrambles | `Shift + C` | Works on the Multi-Blind screen, once an attempt has its scrambles |
+| Save the Multi-Blind scrambles | `Shift + V` | Writes them to a text file, one per cube, to print |
 | Show the next charts view | `V` | Cycles Trends, Calendar, Compare, Tags and All-time bests |
 | Filter charts by the next event | `F` | Cycles all events and every event with solves |
 | Filter charts by the next range | `R` | Cycles all solves, the last 50, 100 or 500 solves and the last 7, 30, 90 or 365 days |
@@ -109,6 +112,10 @@ drill, new scramble skips the case, and selecting, opening, deleting and the
 penalties work on its attempts. Selecting, deleting and the penalties work the
 same on a case's attempts. `Esc` goes back to the cases. See
 [Algorithm trainer](/cube-app/docs/trainer/).
+
+## Multi-Blind
+
+On the Multi-Blind screen, `Up` and `Down` select an attempt, `Enter` opens it to edit (the newest when none is selected) and `D` deletes it. They follow the bindings of selecting, opening and deleting a solve. The timer key starts a new attempt, then starts and stops the timer once the scrambles are ready; when the timer has stopped, `Enter` enters how many cubes you solved. In the dialogs, `Tab` moves between the fields and `Enter` saves. See [Blindfolded events](/cube-app/docs/blindfolded/).
 
 ## Tags
 

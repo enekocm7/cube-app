@@ -13,6 +13,7 @@ order: 2
 | This app's settings | `cube-app.toml` | No (cube-tui uses `config.toml`) |
 | Practice goals | `goals.json` | No |
 | Algorithm trainer | `trainer.json` | No |
+| Multi-Blind attempts | `multi-blind.json` | No |
 | Tags and solutions of solves | `solve-extras.json` | No |
 | Themes | `themes/` | Yes |
 | Automatic backups | `backups/` | No |
@@ -45,9 +46,15 @@ cube is the graphical sibling of [cube-tui](https://github.com/enekocm7/cube-tui
 
 If `times.json` exists but can't be read, cube says so and turns saving **off** — the file is never overwritten with an empty history.
 
+## Multi-Blind and memo times
+
+Multi-Blind attempts have a result in points and several scrambles, which `times.json` has no place for, so they live in `multi-blind.json`. If that file exists but can't be read, cube says so, turns Multi-Blind saving off and leaves it alone.
+
+The memo time of a blindfolded solve is kept in `solve-extras.json` with the tags. The solve itself, with its total time, is in `times.json` as usual and cube-tui reads it (the blindfolded events are the same ones cube-tui has).
+
 ## Tags
 
-Tags and typed solutions live in `solve-extras.json` because cube-tui would drop them from `times.json` when it saves. Each entry is tied to a solve as it was first recorded, so they survive edits and merges from cube-tui, and a solve restored from a backup gets them back. A solve that goes missing from `times.json` keeps its entry in case it returns; an entry only goes when you delete the solve in cube.
+Tags, memo times and typed solutions live in `solve-extras.json` because cube-tui would drop them from `times.json` when it saves. Each entry is tied to a solve as it was first recorded, so they survive edits and merges from cube-tui, and a solve restored from a backup gets them back. A solve that goes missing from `times.json` keeps its entry in case it returns; an entry only goes when you delete the solve in cube.
 
 Backups and csTimer exports hold `times.json`'s data only, so copy `solve-extras.json` yourself if you want a copy of your tags and solutions.
 

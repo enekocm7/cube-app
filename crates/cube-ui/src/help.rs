@@ -62,7 +62,7 @@ const AVERAGE_ACTIONS: [Action; 6] = [
     Action::CopyAverage,
     Action::ShareAverage,
 ];
-const SCREEN_ACTIONS: [Action; 9] = [
+const SCREEN_ACTIONS: [Action; 10] = [
     Action::FocusSearch,
     Action::OpenStats,
     Action::OpenCharts,
@@ -70,8 +70,13 @@ const SCREEN_ACTIONS: [Action; 9] = [
     Action::OpenGoals,
     Action::NewGoal,
     Action::OpenTrainer,
+    Action::OpenMultiBlind,
     Action::OpenSettings,
     Action::ShowHelp,
+];
+const MULTI_BLIND_ACTIONS: [Action; 2] = [
+    Action::CopyMultiBlindScrambles,
+    Action::SaveMultiBlindScrambles,
 ];
 const TRAINER_ACTIONS: [Action; 9] = [
     Action::NextTrainerSet,
@@ -357,6 +362,7 @@ impl Render for KeybindsView {
             (strings.help_section_screens, &SCREEN_ACTIONS[..]),
             (strings.help_section_charts, &CHART_ACTIONS[..]),
             (strings.nav_trainer, &TRAINER_ACTIONS[..]),
+            (strings.nav_multi_blind, &MULTI_BLIND_ACTIONS[..]),
         ];
         let capture_hint = self.capturing.map(|action| {
             strings
@@ -492,6 +498,9 @@ fn action_label(strings: &'static Strings, action: Action) -> &'static str {
         Action::EditTrainerAlgorithm => strings.trainer_edit_algorithm,
         Action::SortTrainerCases => strings.trainer_sort_slowest,
         Action::TrainerCaseAttempts => strings.trainer_case_attempts,
+        Action::OpenMultiBlind => strings.action_open_multi_blind,
+        Action::CopyMultiBlindScrambles => strings.action_copy_multi_blind_scrambles,
+        Action::SaveMultiBlindScrambles => strings.action_save_multi_blind_scrambles,
         Action::EditTags => strings.action_edit_tags,
         Action::ActiveTags => strings.action_active_tags,
         Action::ManageTags => strings.tags_manage,

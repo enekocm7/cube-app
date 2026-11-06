@@ -20,6 +20,7 @@ mod event_sizes;
 mod fonts;
 mod goals_screen;
 mod help;
+mod multi_blind_screen;
 mod palette;
 mod panel_resize;
 mod preview;

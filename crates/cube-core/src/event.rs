@@ -9,8 +9,15 @@ pub enum WcaEvent {
     Cube3x3,
     /// 3x3x3 solved one-handed. Uses ordinary 3x3x3 scrambles.
     Cube3x3OneHanded,
+    /// 3x3x3 blindfolded: no inspection, and the memo is timed apart from the
+    /// execution. Uses scrambles that add a random orientation.
+    Cube3x3Blind,
     Cube4x4,
+    /// 4x4x4 blindfolded, timed like [`Self::Cube3x3Blind`].
+    Cube4x4Blind,
     Cube5x5,
+    /// 5x5x5 blindfolded, timed like [`Self::Cube3x3Blind`].
+    Cube5x5Blind,
     Cube6x6,
     Cube7x7,
     Megaminx,
@@ -23,12 +30,15 @@ pub enum WcaEvent {
 
 impl WcaEvent {
     /// Every event, in navigation order.
-    pub const ALL: [Self; 13] = [
+    pub const ALL: [Self; 16] = [
         Self::Cube2x2,
         Self::Cube3x3,
         Self::Cube3x3OneHanded,
+        Self::Cube3x3Blind,
         Self::Cube4x4,
+        Self::Cube4x4Blind,
         Self::Cube5x5,
+        Self::Cube5x5Blind,
         Self::Cube6x6,
         Self::Cube7x7,
         Self::Megaminx,
@@ -45,8 +55,11 @@ impl WcaEvent {
             Self::Cube2x2 => "2x2x2",
             Self::Cube3x3 => "3x3x3",
             Self::Cube3x3OneHanded => "3x3x3 OH",
+            Self::Cube3x3Blind => "3x3x3 BLD",
             Self::Cube4x4 => "4x4x4",
+            Self::Cube4x4Blind => "4x4x4 BLD",
             Self::Cube5x5 => "5x5x5",
+            Self::Cube5x5Blind => "5x5x5 BLD",
             Self::Cube6x6 => "6x6x6",
             Self::Cube7x7 => "7x7x7",
             Self::Megaminx => "Megaminx",
@@ -56,6 +69,15 @@ impl WcaEvent {
             Self::Square1 => "Square-1",
             Self::Clock => "Clock",
         }
+    }
+
+    /// Returns whether the event is solved blindfolded, which is timed in two
+    /// parts, memo and execution, and has no inspection.
+    pub const fn is_blindfolded(self) -> bool {
+        matches!(
+            self,
+            Self::Cube3x3Blind | Self::Cube4x4Blind | Self::Cube5x5Blind
+        )
     }
 }
 
@@ -210,6 +232,22 @@ mod tests {
         assert_eq!(
             classify_event("UR3+ DR4- DL1+ UL2- U5+ R6- D0+ L1- ALL2+ y2 UR1+"),
             WcaEvent::Clock
+        );
+    }
+
+    #[test]
+    fn only_the_blindfolded_events_are_blindfolded() {
+        let blind: Vec<_> = WcaEvent::ALL
+            .into_iter()
+            .filter(|event| event.is_blindfolded())
+            .collect();
+        assert_eq!(
+            blind,
+            [
+                WcaEvent::Cube3x3Blind,
+                WcaEvent::Cube4x4Blind,
+                WcaEvent::Cube5x5Blind
+            ]
         );
     }
 

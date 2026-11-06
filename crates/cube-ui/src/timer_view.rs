@@ -6,6 +6,7 @@ use cube_core::bests::{self, BestScope};
 use cube_core::format::format_ms;
 use cube_core::panels::fit_font_px;
 use cube_core::{Action, ManualEntry, ManualError, Modifier, Readiness, TimerPhase};
+use cube_locale::Strings;
 use gpui_kit::component::tooltip::Tooltip;
 use gpui_kit::component::{ActiveTheme as _, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
@@ -305,7 +306,12 @@ impl CubeApp {
                 if let Some(entry) = self.manual.as_ref().filter(|_| self.manual_mode()) {
                     return self.manual_display(entry, text, color, [foreground, colors.red]);
                 }
-                let hint = if self.hardware_timing() {
+                let split = self
+                    .last_result
+                    .and_then(|result| memo_split_hint(strings, result));
+                let hint = if split.is_some() {
+                    split
+                } else if self.hardware_timing() {
                     None
                 } else {
                     self.settings
@@ -343,12 +349,25 @@ impl CubeApp {
                     hint: Some(hint.replace("{key}", &timer_key)),
                 }
             }
-            TimerPhase::Running { .. } => Display {
-                text: format_ms(self.timer.elapsed(now).as_millis() as u64),
-                color: foreground,
-                hint: (!self.hardware_timing())
-                    .then(|| strings.hint_stop.replace("{key}", &timer_key)),
-            },
+            TimerPhase::Running { memo, .. } => {
+                // A blindfolded attempt is stopped in two presses: the first
+                // ends the memo, and the memo stays on screen after it.
+                let hint = match memo {
+                    Some(memo) if self.timer.blindfolded => strings
+                        .hint_memo_stop
+                        .replace("{memo}", &format_ms(memo.as_millis() as u64))
+                        .replace("{key}", &timer_key),
+                    None if self.timer.blindfolded => {
+                        strings.hint_memo.replace("{key}", &timer_key)
+                    }
+                    _ => strings.hint_stop.replace("{key}", &timer_key),
+                };
+                Display {
+                    text: format_ms(self.timer.elapsed(now).as_millis() as u64),
+                    color: foreground,
+                    hint: (!self.hardware_timing()).then_some(hint),
+                }
+            }
         }
     }
 
@@ -437,6 +456,17 @@ impl CubeApp {
                     .child(text),
             )
     }
+}
+
+/// The memo and execution of a finished blindfolded attempt, if it had a memo.
+pub(crate) fn memo_split_hint(strings: &'static Strings, result: LastResult) -> Option<String> {
+    let memo = result.memo_ms?.min(result.time_ms);
+    Some(
+        strings
+            .result_memo_split
+            .replace("{memo}", &format_ms(memo))
+            .replace("{execution}", &format_ms(result.time_ms - memo)),
+    )
 }
 
 /// Formats a finished attempt the way it will be recorded.

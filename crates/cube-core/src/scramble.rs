@@ -112,8 +112,11 @@ fn scrambler(event: WcaEvent) -> &'static Scrambler {
     let puzzle = match event {
         WcaEvent::Cube2x2 => PuzzleRegistry::Two,
         WcaEvent::Cube3x3 | WcaEvent::Cube3x3OneHanded => PuzzleRegistry::Three,
+        WcaEvent::Cube3x3Blind => PuzzleRegistry::ThreeNi,
         WcaEvent::Cube4x4 => PuzzleRegistry::Four,
+        WcaEvent::Cube4x4Blind => PuzzleRegistry::FourNi,
         WcaEvent::Cube5x5 => PuzzleRegistry::Five,
+        WcaEvent::Cube5x5Blind => PuzzleRegistry::FiveNi,
         WcaEvent::Cube6x6 => PuzzleRegistry::Six,
         WcaEvent::Cube7x7 => PuzzleRegistry::Seven,
         WcaEvent::Megaminx => PuzzleRegistry::Mega,

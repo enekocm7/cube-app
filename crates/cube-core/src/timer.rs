@@ -44,6 +44,9 @@ pub enum TimerPhase {
     Running {
         started: Instant,
         modifier: Modifier,
+        /// How long into the attempt a blindfolded solver marked the end of
+        /// the memo, once they have.
+        memo: Option<Duration>,
     },
 }
 
@@ -71,6 +74,8 @@ pub enum HardwareState {
 pub struct TimerOutcome {
     pub time_ms: u64,
     pub modifier: Modifier,
+    /// The part of `time_ms` spent on the memo, when the attempt marked one.
+    pub memo_ms: Option<u64>,
 }
 
 /// Whether the held key would start the solve if released now.
@@ -99,6 +104,10 @@ pub struct Timer {
     pub inspection: bool,
     pub inspection_limit: Duration,
     pub hold: Duration,
+    /// Whether the attempt is blindfolded: there is no inspection whatever
+    /// `inspection` says, and the first press of a running attempt marks the
+    /// end of the memo instead of stopping it.
+    pub blindfolded: bool,
 }
 
 impl Timer {
@@ -108,7 +117,13 @@ impl Timer {
             inspection,
             inspection_limit,
             hold,
+            blindfolded: false,
         }
+    }
+
+    /// Returns whether the next attempt starts with an inspection.
+    pub const fn inspects(&self) -> bool {
+        self.inspection && !self.blindfolded
     }
 
     pub const fn phase(&self) -> TimerPhase {
@@ -123,7 +138,7 @@ impl Timer {
     /// Handles the timer key going down. A running timer stops and reports its time.
     pub fn press(&mut self, now: Instant) -> Option<TimerOutcome> {
         match self.phase {
-            TimerPhase::Idle if self.inspection => {
+            TimerPhase::Idle if self.inspects() => {
                 self.phase = TimerPhase::Inspecting {
                     started: now,
                     held_since: None,
@@ -151,11 +166,29 @@ impl Timer {
                 };
                 None
             }
-            TimerPhase::Running { started, modifier } => {
-                self.phase = TimerPhase::Idle;
-                Some(TimerOutcome {
-                    time_ms: now.duration_since(started).as_millis() as u64,
+            TimerPhase::Running {
+                started,
+                modifier,
+                memo: None,
+            } if self.blindfolded => {
+                self.phase = TimerPhase::Running {
+                    started,
                     modifier,
+                    memo: Some(now.duration_since(started)),
+                };
+                None
+            }
+            TimerPhase::Running {
+                started,
+                modifier,
+                memo,
+            } => {
+                self.phase = TimerPhase::Idle;
+                let time_ms = now.duration_since(started).as_millis() as u64;
+                Some(TimerOutcome {
+                    time_ms,
+                    modifier,
+                    memo_ms: memo.map(|memo| (memo.as_millis() as u64).min(time_ms)),
                 })
             }
         }
@@ -172,6 +205,7 @@ impl Timer {
                     TimerPhase::Running {
                         started: now,
                         modifier: Modifier::None,
+                        memo: None,
                     }
                 } else {
                     TimerPhase::Idle
@@ -199,6 +233,7 @@ impl Timer {
                         self.phase = TimerPhase::Running {
                             started: now,
                             modifier,
+                            memo: None,
                         };
                         None
                     }
@@ -234,9 +269,11 @@ impl Timer {
         match state {
             HardwareState::Finished(time_ms) => {
                 let outcome = match self.phase {
-                    TimerPhase::Running { modifier, .. } => {
-                        Some(TimerOutcome { time_ms, modifier })
-                    }
+                    TimerPhase::Running { modifier, .. } => Some(TimerOutcome {
+                        time_ms,
+                        modifier,
+                        memo_ms: None,
+                    }),
                     _ => None,
                 };
                 self.phase = TimerPhase::Idle;
@@ -252,6 +289,7 @@ impl Timer {
                 self.phase = TimerPhase::Running {
                     started: now,
                     modifier: Modifier::None,
+                    memo: None,
                 };
             }
         }
@@ -272,6 +310,15 @@ impl Timer {
             TimerPhase::Idle | TimerPhase::Holding { .. } | TimerPhase::Armed { .. } => {
                 Duration::ZERO
             }
+        }
+    }
+
+    /// Returns how long the memo took, once a blindfolded attempt marked its
+    /// end.
+    pub const fn memo(&self) -> Option<Duration> {
+        match self.phase {
+            TimerPhase::Running { memo, .. } => memo,
+            _ => None,
         }
     }
 
@@ -344,6 +391,7 @@ impl Timer {
         TimerOutcome {
             time_ms: 0,
             modifier: Modifier::DNF,
+            memo_ms: None,
         }
     }
 }
@@ -388,7 +436,8 @@ mod tests {
             outcome,
             Some(TimerOutcome {
                 time_ms: 8_980,
-                modifier: Modifier::None
+                modifier: Modifier::None,
+                memo_ms: None
             })
         );
         assert_eq!(timer.phase(), TimerPhase::Idle);
@@ -512,7 +561,8 @@ mod tests {
             outcome,
             Some(TimerOutcome {
                 time_ms: 9_000,
-                modifier: Modifier::None
+                modifier: Modifier::None,
+                memo_ms: None
             })
         );
         assert_eq!(timer.phase(), TimerPhase::Idle);
@@ -559,10 +609,89 @@ mod tests {
             timer.tick(start + ms(17_000)),
             Some(TimerOutcome {
                 time_ms: 0,
-                modifier: Modifier::DNF
+                modifier: Modifier::DNF,
+                memo_ms: None
             })
         );
         assert_eq!(timer.phase(), TimerPhase::Idle);
+    }
+
+    fn blindfolded_timer() -> Timer {
+        let mut timer = Timer::new(true, LIMIT, HOLD);
+        timer.blindfolded = true;
+        timer
+    }
+
+    /// Starts a blindfolded attempt at `start`.
+    fn start_blindfolded(timer: &mut Timer, start: Instant) {
+        timer.press(start);
+        timer.release(start + HOLD);
+    }
+
+    #[test]
+    fn a_blindfolded_attempt_skips_inspection_whatever_the_setting() {
+        let mut timer = blindfolded_timer();
+        assert!(timer.inspection);
+        assert!(!timer.inspects());
+        let start = Instant::now();
+        timer.press(start);
+        assert!(matches!(timer.phase(), TimerPhase::Holding { .. }));
+        assert_eq!(timer.readiness(start + HOLD), Readiness::Ready);
+        timer.release(start + HOLD);
+        assert!(matches!(timer.phase(), TimerPhase::Running { .. }));
+        assert_eq!(timer.tick(start + ms(60_000)), None);
+    }
+
+    #[test]
+    fn the_first_press_marks_the_memo_and_the_second_stops() {
+        let mut timer = blindfolded_timer();
+        let start = Instant::now();
+        start_blindfolded(&mut timer, start);
+        let began = start + HOLD;
+
+        assert_eq!(timer.press(began + ms(12_340)), None);
+        assert!(matches!(timer.phase(), TimerPhase::Running { .. }));
+        assert_eq!(timer.memo(), Some(ms(12_340)));
+
+        let outcome = timer.press(began + ms(40_000)).unwrap();
+        assert_eq!(outcome.time_ms, 40_000);
+        assert_eq!(outcome.memo_ms, Some(12_340));
+        assert_eq!(outcome.modifier, Modifier::None);
+        assert_eq!(timer.phase(), TimerPhase::Idle);
+        assert_eq!(timer.memo(), None);
+    }
+
+    #[test]
+    fn the_memo_is_never_longer_than_the_attempt() {
+        let mut timer = blindfolded_timer();
+        let start = Instant::now();
+        start_blindfolded(&mut timer, start);
+        let began = start + HOLD;
+        timer.press(began + ms(5_000));
+        // The clock cannot run backwards, but the rule does not rely on it.
+        let outcome = timer.press(began + ms(5_000)).unwrap();
+        assert_eq!(outcome.memo_ms, Some(5_000));
+        assert_eq!(outcome.time_ms, 5_000);
+    }
+
+    #[test]
+    fn an_ordinary_attempt_has_no_memo() {
+        let mut timer = Timer::new(false, LIMIT, HOLD);
+        let start = Instant::now();
+        start_blindfolded(&mut timer, start);
+        let outcome = timer.press(start + HOLD + ms(9_000)).unwrap();
+        assert_eq!(outcome.memo_ms, None);
+    }
+
+    #[test]
+    fn cancelling_a_blindfolded_attempt_records_nothing() {
+        let mut timer = blindfolded_timer();
+        let start = Instant::now();
+        start_blindfolded(&mut timer, start);
+        timer.press(start + HOLD + ms(3_000));
+        timer.cancel();
+        assert!(!timer.is_active());
+        assert_eq!(timer.memo(), None);
     }
 
     #[test]

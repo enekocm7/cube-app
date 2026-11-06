@@ -1,5 +1,6 @@
 //! The right panel: current and best statistics of the session.
 
+use cube_core::blind_stats::BlindStats;
 use cube_core::format::format_ms;
 use cube_core::stats::{Average, SessionStats};
 use cube_locale::Strings;
@@ -15,6 +16,9 @@ const ROW_HEIGHT: Rems = Rems(1.75);
 /// Width of the column naming each row.
 pub(crate) const LABEL_WIDTH: Rems = Rems(3.25);
 
+/// The attempts the mean of a blindfolded event covers.
+const BLIND_MEAN: usize = 3;
+
 /// What clicking a value of the panel opens.
 #[derive(Clone, Copy)]
 enum Target {
@@ -23,6 +27,7 @@ enum Target {
 }
 
 impl CubeApp {
+    #[allow(clippy::too_many_lines, reason = "one row per figure of the panel")]
     pub(crate) fn render_stats_panel(
         &self,
         width: Pixels,
@@ -73,10 +78,26 @@ impl CubeApp {
             .last()
             .map_or_else(|| "–".to_owned(), ToString::to_string);
         let last_solve = stats.count.checked_sub(1);
+        // A blindfolded event is summarized by its mean of 3 and its success
+        // rate, so the longer trimmed averages leave the panel.
+        let blind = self.blind_stats.as_ref();
+        let blind_mean = blind.map(|blind| {
+            let mean = |average: Option<Average>| format_average(average);
+            row(
+                average_label(BLIND_MEAN),
+                value("stats-blind-current".into(), mean(blind.current_mean), None),
+                value(
+                    "stats-blind-best".into(),
+                    mean(blind.best_mean.map(|(average, _)| average)),
+                    None,
+                ),
+            )
+        });
         let windows: Vec<_> = stats
             .windows
             .iter()
             .enumerate()
+            .filter(|_| blind.is_none())
             .map(|(index, window)| {
                 let size = window.size;
                 row(
@@ -127,10 +148,14 @@ impl CubeApp {
                             stats.best.map(|(_, index)| Target::Solve(index)),
                         ),
                     ))
+                    .children(blind_mean)
                     .children(windows)
                     .children(goals),
             )
-            .child(session_summary(strings, stats, &mono, border, muted))
+            .child(match blind {
+                Some(blind) => blind_summary(strings, blind, &mono, border, muted),
+                None => session_summary(strings, stats, &mono, border, muted),
+            })
     }
 }
 
@@ -149,6 +174,43 @@ fn session_summary(
         (strings.stat_std_dev, ms(stats.std_dev)),
         (strings.stat_dnfs, stats.dnf_count.to_string()),
     ];
+    summary_rows(rows, mono, border, muted)
+}
+
+/// The figures of a blindfolded event pinned below the mean of 3: how often it
+/// succeeds, and where the time goes.
+fn blind_summary(
+    strings: &'static Strings,
+    stats: &BlindStats,
+    mono: &SharedString,
+    border: Hsla,
+    muted: Hsla,
+) -> Div {
+    let ms = |ms: Option<u64>| ms.map_or_else(|| "–".to_owned(), format_ms);
+    let success = stats.success_percent().map_or_else(
+        || "–".to_owned(),
+        |percent| format!("{}/{} · {percent}%", stats.successes, stats.attempts),
+    );
+    let rows = [
+        (strings.stat_solves, stats.attempts.to_string()),
+        (strings.stat_success, success),
+        (strings.label_memo, ms(stats.memo_mean)),
+        (strings.label_execution, ms(stats.execution_mean)),
+        (
+            strings.stat_dnfs,
+            (stats.attempts - stats.successes).to_string(),
+        ),
+    ];
+    summary_rows(rows, mono, border, muted)
+}
+
+/// Lays out labelled figures, each beside its label.
+fn summary_rows<const N: usize>(
+    rows: [(&'static str, String); N],
+    mono: &SharedString,
+    border: Hsla,
+    muted: Hsla,
+) -> Div {
     v_flex()
         .flex_none()
         .pt_1()
