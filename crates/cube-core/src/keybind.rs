@@ -71,11 +71,14 @@ pub enum Action {
     CopySolveLink,
     OpenSettings,
     ShowHelp,
+    /// Jumps to the search field of the shortcuts and settings dialogs and
+    /// the trainer.
+    FocusSearch,
 }
 
 impl Action {
     /// Every action, in the order the help dialog lists them.
-    pub const ALL: [Self; 59] = [
+    pub const ALL: [Self; 60] = [
         Self::Timer,
         Self::Cancel,
         Self::NextScramble,
@@ -135,6 +138,7 @@ impl Action {
         Self::CopySolveLink,
         Self::OpenSettings,
         Self::ShowHelp,
+        Self::FocusSearch,
     ];
 
     /// Returns the name used as the key of a `[keybindings]` entry.
@@ -199,6 +203,7 @@ impl Action {
             Self::CopySolveLink => "copy_solve_link",
             Self::OpenSettings => "open_settings",
             Self::ShowHelp => "show_help",
+            Self::FocusSearch => "focus_search",
         }
     }
 
@@ -426,6 +431,7 @@ impl Default for Keybinds {
             (Action::CopySolveLink, "u"),
             (Action::OpenSettings, "Ctrl+,"),
             (Action::ShowHelp, "F1"),
+            (Action::FocusSearch, "/"),
         ];
         Self(
             bindings
@@ -542,6 +548,12 @@ impl Keybinds {
         } else {
             Ok(())
         }
+    }
+
+    /// Returns whether `press` is the key bound to `action`.
+    pub fn is_pressed(&self, action: Action, press: &KeyPress) -> bool {
+        self.get(action)
+            .is_some_and(|binding| binding.matches(press))
     }
 
     /// Finds the action bound to a press.
@@ -947,5 +959,60 @@ mod tests {
         ] {
             assert_eq!(keybinds.action_for(&press(key, shift)), Some(action));
         }
+    }
+
+    #[test]
+    fn focus_search_defaults_to_slash() {
+        let keybinds = Keybinds::default();
+        assert_eq!(keybinds.label(Action::FocusSearch).as_deref(), Some("/"));
+        let slash = KeyPress::new("/", false, false, false).unwrap();
+        assert_eq!(keybinds.action_for(&slash), Some(Action::FocusSearch));
+        assert!(keybinds.is_pressed(Action::FocusSearch, &slash));
+        let shifted = KeyPress::new("/", false, false, true).unwrap();
+        assert!(!keybinds.is_pressed(Action::FocusSearch, &shifted));
+        assert_eq!(Action::from_name("focus_search"), Some(Action::FocusSearch));
+    }
+
+    #[test]
+    fn focus_search_can_be_rebound() {
+        let overrides = BTreeMap::from([("focus_search".to_owned(), "Ctrl+F".to_owned())]);
+        let keybinds = Keybinds::from_overrides(&overrides);
+        assert_eq!(
+            keybinds.label(Action::FocusSearch).as_deref(),
+            Some("Ctrl + F")
+        );
+        let slash = KeyPress::new("/", false, false, false).unwrap();
+        assert!(!keybinds.is_pressed(Action::FocusSearch, &slash));
+        let ctrl_f = KeyPress::new("f", true, false, false).unwrap();
+        assert!(keybinds.is_pressed(Action::FocusSearch, &ctrl_f));
+    }
+
+    #[test]
+    fn focus_search_can_be_unbound() {
+        for text in ["", "none"] {
+            let overrides = BTreeMap::from([("focus_search".to_owned(), text.to_owned())]);
+            let keybinds = Keybinds::from_overrides(&overrides);
+            assert!(!keybinds.is_bound(Action::FocusSearch));
+            let slash = KeyPress::new("/", false, false, false).unwrap();
+            assert!(!keybinds.is_pressed(Action::FocusSearch, &slash));
+            assert_eq!(keybinds.validate_removal(Action::FocusSearch), Ok(()));
+        }
+    }
+
+    #[test]
+    fn focus_search_rejects_a_key_another_action_owns() {
+        let keybinds = Keybinds::default();
+        let n = KeyBinding::parse("n").unwrap();
+        assert_eq!(
+            keybinds.validate(Action::FocusSearch, &n),
+            Err(BindingError::Conflict(Action::NextScramble))
+        );
+        let slash = KeyBinding::parse("/").unwrap();
+        assert_eq!(
+            keybinds.validate(Action::NextScramble, &slash),
+            Err(BindingError::Conflict(Action::FocusSearch))
+        );
+        let free = KeyBinding::parse("Ctrl+F").unwrap();
+        assert_eq!(keybinds.validate(Action::FocusSearch, &free), Ok(()));
     }
 }

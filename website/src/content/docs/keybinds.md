@@ -10,7 +10,8 @@ events, sessions, stats, settings and help all have shortcuts, dialogs stay
 reachable with `Tab`, `Enter` and `Space`, every shortcut can be changed, and
 the timer can be stopped with any key. The same list is available in the app
 with `F1` or the keyboard icon in the title bar.
-The panel opens with a search field; press `/` to focus it. Type to filter by action name or current
+The panel opens with a search field; press `/` to focus it (the
+"Search in dialogs" shortcut, which you can change or remove). Type to filter by action name or current
 key (for example `space`, `ctrl` or `unassigned`). While an action is being
 rebound, keys go to the capture, never to the search field.
 
@@ -68,7 +69,6 @@ nothing is selected.
 | Edit the algorithm | `Shift + H` | Works on the trainer's cases, for the highlighted one |
 | Sort by slowest | `Shift + Y` | Works on the trainer's cases |
 | See the case's attempts | `Shift + Q` | Works on the trainer's cases |
-| Search the cases | `/` | Works on the trainer's cases. This key cannot be changed |
 | Show the next charts view | `V` | Cycles Trends, Calendar, Compare, Tags and All-time bests |
 | Filter charts by the next event | `F` | Cycles all events and every event with solves |
 | Filter charts by the next range | `R` | Cycles all solves, the last 50, 100 or 500 solves and the last 7, 30, 90 or 365 days |
@@ -81,6 +81,7 @@ nothing is selected.
 | Reset the times chart zoom | `X` | |
 | Open settings | `Ctrl + ,` | |
 | Open the shortcuts panel | `F1` | |
+| Search in dialogs | `/` | Jumps to the search field of the shortcuts panel, the settings dialog and the trainer's cases. It types normally once the field has focus |
 
 While a solve is running, **any key stops the timer**. `Esc` is the exception:
 it cancels the attempt without recording it.
@@ -197,7 +198,7 @@ The settings dialog opens on its category list, which is one `Tab` stop:
 | `Home` / `End` | Shows the first or last category |
 | `Tab`, `Right`, `Enter` or `Space` | Moves from the list to the first setting |
 | `Left` | Moves from a setting back to the list, except in a text field |
-| `/` | Jumps to the search field |
+| `/` | Jumps to the search field, unless you rebind "Search in dialogs" |
 
 While you search, the list keeps only the categories with a match and the right
 pane shows matches from all of them. Picking a category ends the search.

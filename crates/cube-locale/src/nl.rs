@@ -241,6 +241,7 @@ pub const STRINGS: Strings = Strings {
     action_copy_solve_link: "Link naar de geselecteerde solve kopiëren",
     action_open_bluetooth: "Een Bluetooth-timer verbinden",
     action_show_help: "Deze sneltoetsen tonen",
+    action_focus_search: "Zoeken in dialogen",
     unassigned: "Niet toegewezen",
     search_placeholder: "Zoeken",
     search_no_results: "Geen resultaten gevonden.",

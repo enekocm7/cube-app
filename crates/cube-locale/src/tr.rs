@@ -241,6 +241,7 @@ pub const STRINGS: Strings = Strings {
     action_copy_solve_link: "Seçili çözümün bağlantısını kopyala",
     action_open_bluetooth: "Bluetooth zamanlayıcı bağla",
     action_show_help: "Bu kısayolları göster",
+    action_focus_search: "İletişim kutularında ara",
     unassigned: "Atanmamış",
     search_placeholder: "Ara",
     search_no_results: "Sonuç bulunamadı.",

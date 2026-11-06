@@ -565,6 +565,7 @@ pub struct Strings {
     pub action_copy_solve_link: &'static str,
     pub action_open_bluetooth: &'static str,
     pub action_show_help: &'static str,
+    pub action_focus_search: &'static str,
     pub unassigned: &'static str,
     pub search_placeholder: &'static str,
     pub search_no_results: &'static str,

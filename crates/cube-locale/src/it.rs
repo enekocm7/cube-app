@@ -241,6 +241,7 @@ pub const STRINGS: Strings = Strings {
     action_copy_solve_link: "Copia un link al tempo selezionato",
     action_open_bluetooth: "Connetti un timer Bluetooth",
     action_show_help: "Mostra queste scorciatoie",
+    action_focus_search: "Cerca nelle finestre di dialogo",
     unassigned: "Non assegnata",
     search_placeholder: "Cerca",
     search_no_results: "Nessun risultato.",

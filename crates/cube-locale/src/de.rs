@@ -241,6 +241,7 @@ pub const STRINGS: Strings = Strings {
     action_copy_solve_link: "Link zum ausgewählten Solve kopieren",
     action_open_bluetooth: "Bluetooth-Timer verbinden",
     action_show_help: "Diese Kürzel anzeigen",
+    action_focus_search: "In Dialogen suchen",
     unassigned: "Nicht zugewiesen",
     search_placeholder: "Suchen",
     search_no_results: "Keine Ergebnisse gefunden.",

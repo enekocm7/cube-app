@@ -241,6 +241,7 @@ pub const STRINGS: Strings = Strings {
     action_copy_solve_link: "選択したソルブのリンクをコピー",
     action_open_bluetooth: "Bluetooth タイマーを接続",
     action_show_help: "これらのショートカットを表示",
+    action_focus_search: "ダイアログ内を検索",
     unassigned: "未割り当て",
     search_placeholder: "検索",
     search_no_results: "結果が見つかりません。",

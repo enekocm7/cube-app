@@ -867,6 +867,7 @@ impl CubeApp {
             | Action::RevealTrainerCase
             | Action::EditTrainerAlgorithm
             | Action::SortTrainerCases
+            | Action::FocusSearch
             | Action::TrainerCaseAttempts => {}
         }
     }
