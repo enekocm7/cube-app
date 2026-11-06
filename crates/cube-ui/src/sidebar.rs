@@ -4,6 +4,7 @@
 use std::ops::Range;
 
 use cube_core::{Modifier, Solve};
+use cube_locale::Language;
 use gpui_kit::assets::IconName;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::input::{Input, InputState};
@@ -25,7 +26,7 @@ const SESSION_MAX_WIDTH: Rems = Rems(7.5);
 /// The widest a session's name gets in the session menu.
 const SESSION_MENU_MAX_WIDTH: Rems = Rems(16.25);
 
-const AVERAGE_WIDTH: Rems = Rems(4.);
+pub(crate) const AVERAGE_WIDTH: Rems = Rems(4.);
 
 /// Height of a solve's row, which follows the text size.
 const ROW_HEIGHT: Rems = Rems(1.75);
@@ -51,6 +52,14 @@ pub(crate) fn solve_time_color(solve: &Solve, colors: Palette) -> Option<Hsla> {
         Modifier::None if solve.was_single_record() => Some(colors.green),
         Modifier::None => None,
     }
+}
+
+/// The width of the number column for a list of `total` solves, sized for the
+/// largest number so it never truncates.
+pub(crate) fn number_width(total: usize, language: Language) -> Rems {
+    let widest = language.format_count(total as u64).chars().count();
+    #[allow(clippy::cast_precision_loss)]
+    Rems(NUMBER_WIDTH.0.max(widest as f32 * NUMBER_CHAR_WIDTH))
 }
 
 impl CubeApp {
@@ -284,10 +293,7 @@ impl CubeApp {
         let total = solves.len();
         let show_average = self.settings.solve_list_ao5;
         let selected_solve = self.selected_solve;
-        // Size the number column for the largest number so it never truncates.
-        let widest = self.language().format_count(total as u64).chars().count();
-        #[allow(clippy::cast_precision_loss)]
-        let number_width = Rems(NUMBER_WIDTH.0.max(widest as f32 * NUMBER_CHAR_WIDTH));
+        let number_width = number_width(total, self.language());
 
         range
             .filter_map(|row| {
