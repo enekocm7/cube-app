@@ -24,15 +24,18 @@ const SCRAMBLE_MIN_LINES: f32 = 2.;
 /// the big events leave room for the digits in a small window.
 const SCRAMBLE_MAX_LINES: f32 = 8.;
 
-/// The share of the window's height the scramble may take, however large its
-/// text, so the digits stay on screen.
-const SCRAMBLE_HEIGHT_SHARE: f32 = 0.3;
-
 /// The share of the window's height the digits may take.
 const DIGITS_HEIGHT_SHARE: f32 = 0.3;
 
 /// The padding on each side of the timer panel.
 const PANEL_PADDING: Rems = Rems(1.5);
+
+/// What the title bar and window frame take from the window's height, which
+/// the panel's room is worked out without. A little too much is safe.
+const TITLE_BAR_ALLOWANCE: Rems = Rems(2.5);
+
+/// The room kept beside the digits for the manual mode label and the hint.
+const HINT_ALLOWANCE: Rems = Rems(2.);
 
 /// How much an all-time best grows the digits at the peak of a flash.
 const ALL_TIME_GROWTH: f32 = 0.06;
@@ -57,66 +60,109 @@ impl CubeApp {
         let muted = theme.muted_foreground;
         // `ring` is the accent in every theme; `accent` is a hover fill in ours.
         let accent = theme.ring;
-        let preview = self.scramble_preview(window.viewport_size().height);
         let digits = self.fit_digits(&display.text, &mono, attempt, window, cx);
 
+        let room = self.room_beside_digits(digits, window);
+
         v_flex()
+            .relative()
             .flex_1()
             .min_w_0()
             .h_full()
             .items_center()
             .p(PANEL_PADDING)
-            .when(!attempt, |panel| {
-                panel.child(self.render_scramble_bar(window, cx))
-            })
+            // The digits sit on their own layer, centered in the panel, so
+            // nothing above or below them can move them. The layer comes first
+            // so the scramble, tags and preview stay clickable on top of it.
             .child(
-                v_flex()
+                div()
                     .id("timer-pad")
-                    .flex_1()
-                    .w_full()
+                    .absolute()
+                    .inset_0()
+                    .flex()
                     .items_center()
                     .justify_center()
-                    .gap_3()
                     // Holding and releasing the digits works like the timer key,
                     // for touchscreens and for a hand resting on the mouse,
                     // while `touch_to_start` is on.
                     .on_mouse_down(MouseButton::Left, cx.listener(Self::on_pointer_down))
                     .on_mouse_up(MouseButton::Left, cx.listener(Self::on_pointer_up))
                     .on_mouse_up_out(MouseButton::Left, cx.listener(Self::on_pointer_up))
-                    .when(self.manual.is_some() && !attempt, |column| {
-                        column.child(
-                            div()
-                                .text_sm()
-                                .font_weight(FontWeight::SEMIBOLD)
-                                .text_color(muted)
-                                .child(self.strings().manual_mode),
-                        )
-                    })
                     .child(
-                        self.celebrated(
-                            div()
-                                .font_family(mono)
-                                .text_size(digits)
-                                .line_height(digits)
-                                .flex_none()
-                                .whitespace_nowrap()
-                                .font_weight(FontWeight::MEDIUM)
-                                .text_color(display.color)
-                                .child(display.text),
-                            digits,
-                            display.color,
-                            accent,
-                        ),
-                    )
-                    .when_some(display.hint, |column, hint| {
-                        column.child(div().text_sm().text_color(muted).child(hint))
-                    }),
+                        div()
+                            .relative()
+                            .flex_none()
+                            .when(self.manual.is_some() && !attempt, |anchor| {
+                                anchor.child(
+                                    div()
+                                        .absolute()
+                                        .bottom_full()
+                                        .left_0()
+                                        .right_0()
+                                        .pb_3()
+                                        .flex()
+                                        .justify_center()
+                                        .whitespace_nowrap()
+                                        .text_sm()
+                                        .font_weight(FontWeight::SEMIBOLD)
+                                        .text_color(muted)
+                                        .child(self.strings().manual_mode),
+                                )
+                            })
+                            .child(
+                                self.celebrated(
+                                    div()
+                                        .font_family(mono)
+                                        .text_size(digits)
+                                        .line_height(digits)
+                                        .flex_none()
+                                        .whitespace_nowrap()
+                                        .font_weight(FontWeight::MEDIUM)
+                                        .text_color(display.color)
+                                        .child(display.text),
+                                    digits,
+                                    display.color,
+                                    accent,
+                                ),
+                            )
+                            .when_some(display.hint, |anchor, hint| {
+                                anchor.child(
+                                    div()
+                                        .absolute()
+                                        .top_full()
+                                        .left_0()
+                                        .right_0()
+                                        .pt_3()
+                                        .flex()
+                                        .justify_center()
+                                        .whitespace_nowrap()
+                                        .text_sm()
+                                        .text_color(muted)
+                                        .child(hint),
+                                )
+                            }),
+                    ),
             )
             .when(!attempt, |panel| {
+                let preview = self.scramble_preview(room, window);
                 panel
-                    .children(self.render_active_tags(cx))
+                    .child(self.render_scramble_bar(room, cx))
+                    // Pushes the tags and the preview to the bottom edge.
+                    .child(div().flex_1())
                     .children(preview)
             })
+    }
+
+    /// The height between the panel's edge and the digits that the scramble,
+    /// or the tags and the preview, may take without reaching the digits. It
+    /// leaves out the panel's padding and the room the hints need.
+    fn room_beside_digits(&self, digits: Pixels, window: &Window) -> Pixels {
+        let rem = window.rem_size();
+        let panel = window.viewport_size().height - TITLE_BAR_ALLOWANCE.to_pixels(rem);
+        let digits = digits * (1. + ALL_TIME_GROWTH);
+        let room =
+            (panel - digits) / 2. - PANEL_PADDING.to_pixels(rem) - HINT_ALLOWANCE.to_pixels(rem);
+        room.max(px(0.))
     }
 
     /// Plays the current celebration on the digits. It only restyles them, with
@@ -199,19 +245,23 @@ impl CubeApp {
     }
 
     /// The drawing of the current scramble, unless it is hidden or not ready.
-    fn scramble_preview(&self, window_height: Pixels) -> Option<Div> {
+    fn scramble_preview(&self, room: Pixels, window: &Window) -> Option<Div> {
         if !self.settings.scramble_preview {
             return None;
         }
         let scramble = self.scramble.as_ref()?;
         let image = self.preview.get(self.event, scramble)?;
         let size = self.settings.preview_size(self.event);
+        // Never taller than the room above the bottom edge once the gap above
+        // the drawing is taken out.
+        let tallest = (room - px(12.)).max(px(0.));
+        let height = (window.viewport_size().height * size.height_share()).min(tallest);
         Some(
             div()
                 .flex_none()
                 .max_w_full()
                 .pt_3()
-                .child(image.element(window_height * size.height_share(), size.max_scale())),
+                .child(image.element(height, size.max_scale())),
         )
     }
 
@@ -318,14 +368,15 @@ impl CubeApp {
 
     fn render_scramble_bar(
         &self,
-        window: &Window,
+        room: Pixels,
         cx: &mut Context<Self>,
     ) -> impl IntoElement + use<> {
         let strings = self.strings();
         let scramble = self.scramble.clone();
         let font_size = px(self.settings.scramble_font_px(self.event));
         let line = px(self.settings.scramble_line_px(self.event));
-        let tallest = window.viewport_size().height * SCRAMBLE_HEIGHT_SHARE;
+        // The room above the digits, less the gap under the scramble.
+        let tallest = (room - px(12.)).max(px(0.));
         let theme = cx.theme();
         let mono = theme.mono_font_family.clone();
         let muted = theme.muted_foreground;
