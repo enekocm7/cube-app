@@ -25,19 +25,23 @@ least 200 ms by design.
 
 | event | first call (incl. tables) | steady state |
 |---|---|---|
-| Cube2x2 | 8.02 ms | 8.09 ms |
-| Cube3x3 | 26.74 ms | 0.58 ms |
-| Cube4x4 | 117.37 ms | 42.43 ms |
-| Cube5x5 | 1.21 ms | 1.33 ms |
-| Cube6x6 | 4.05 ms | 3.09 ms |
-| Cube7x7 | 4.43 ms | 4.46 ms |
-| Megaminx | 1.95 ms | 1.89 ms |
-| Pyraminx | 0.20 ms | 0.08 ms |
-| Fto | 360.52 ms | 85.38 ms |
-| Skewb | 0.55 ms | 0.08 ms |
-| Square1 | 14.50 ms | 7.72 ms |
-| Clock | 0.48 ms | 0.39 ms |
-| Cube3x3 (shorter scrambles) | 200.17 ms | 200.21 ms |
+| Cube2x2 | 8.60 ms | 7.86 ms |
+| Cube3x3 | 26.77 ms | 0.68 ms |
+| Cube3x3OneHanded | 0.12 ms | 0.41 ms |
+| Cube3x3Blind | 2.94 ms | 0.72 ms |
+| Cube4x4 | 114.15 ms | 42.47 ms |
+| Cube4x4Blind | 28.22 ms | 31.47 ms |
+| Cube5x5 | 1.53 ms | 1.47 ms |
+| Cube5x5Blind | 1.87 ms | 1.87 ms |
+| Cube6x6 | 2.65 ms | 2.64 ms |
+| Cube7x7 | 4.05 ms | 4.56 ms |
+| Megaminx | 1.94 ms | 2.16 ms |
+| Pyraminx | 0.26 ms | 0.07 ms |
+| Fto | 532.81 ms | 53.73 ms |
+| Skewb | 0.45 ms | 0.07 ms |
+| Square1 | 11.73 ms | 7.38 ms |
+| Clock | 0.29 ms | 0.23 ms |
+| Cube3x3 (shorter scrambles) | 200.18 ms | 200.17 ms |
 
 ## Queue
 
@@ -47,18 +51,22 @@ so it is one sample that can start partway through a solve already running.
 
 | event | scramble prepared | queue empty |
 |---|---|---|
-| Cube2x2 | 0.01 ms | 10.76 ms |
-| Cube3x3 | 0.00 ms | 1.07 ms |
-| Cube4x4 | 0.01 ms | 11.27 ms |
-| Cube5x5 | 0.01 ms | 1.37 ms |
-| Cube6x6 | 0.01 ms | 2.69 ms |
-| Cube7x7 | 0.01 ms | 5.44 ms |
-| Megaminx | 0.01 ms | 2.25 ms |
-| Pyraminx | 0.01 ms | 0.22 ms |
-| Fto | 0.01 ms | 10.57 ms |
-| Skewb | 0.01 ms | 0.43 ms |
-| Square1 | 0.00 ms | 17.85 ms |
-| Clock | 0.01 ms | 0.43 ms |
+| Cube2x2 | 0.01 ms | 10.16 ms |
+| Cube3x3 | 0.01 ms | 0.42 ms |
+| Cube3x3OneHanded | 0.00 ms | 0.69 ms |
+| Cube3x3Blind | 0.01 ms | 0.76 ms |
+| Cube4x4 | 0.01 ms | 16.48 ms |
+| Cube4x4Blind | 0.01 ms | 39.06 ms |
+| Cube5x5 | 0.01 ms | 1.68 ms |
+| Cube5x5Blind | 0.01 ms | 1.43 ms |
+| Cube6x6 | 0.01 ms | 2.61 ms |
+| Cube7x7 | 0.01 ms | 4.46 ms |
+| Megaminx | 0.01 ms | 2.22 ms |
+| Pyraminx | 0.01 ms | 0.15 ms |
+| Fto | 0.01 ms | 23.27 ms |
+| Skewb | 0.01 ms | 0.17 ms |
+| Square1 | 0.01 ms | 2.96 ms |
+| Clock | 0.01 ms | 0.34 ms |
 
 ## In the app
 

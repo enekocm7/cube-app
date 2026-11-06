@@ -226,6 +226,7 @@ fn attempt_text(attempt: &Attempt) -> String {
     result_text(LastResult {
         time_ms: attempt.time_ms,
         modifier: attempt.modifier,
+        memo_ms: None,
     })
 }
 
@@ -617,7 +618,9 @@ impl CubeApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let TimerOutcome { time_ms, modifier } = outcome;
+        let TimerOutcome {
+            time_ms, modifier, ..
+        } = outcome;
         let Some(active) = &mut self.trainer.drill else {
             return;
         };
@@ -637,7 +640,11 @@ impl CubeApp {
         active.selected = None;
         let advanced = active.drill.advance();
 
-        self.last_result = Some(LastResult { time_ms, modifier });
+        self.last_result = Some(LastResult {
+            time_ms,
+            modifier,
+            memo_ms: None,
+        });
         self.trainer
             .history_scroll
             .scroll_to_item(0, ScrollStrategy::Top);
@@ -706,7 +713,11 @@ impl CubeApp {
         attempt.toggle_modifier(modifier);
         let (time_ms, modifier) = (attempt.time_ms, attempt.modifier);
         if index + 1 == self.trainer.data.attempts.len() && self.last_result.is_some() {
-            self.last_result = Some(LastResult { time_ms, modifier });
+            self.last_result = Some(LastResult {
+                time_ms,
+                modifier,
+                memo_ms: None,
+            });
         }
         self.save_trainer(window, cx);
         cx.notify();

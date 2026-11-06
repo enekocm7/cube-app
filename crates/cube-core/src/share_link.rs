@@ -14,7 +14,9 @@ const SITE: &str = "https://alg.cubing.net/";
 /// Returns the site's name for `event`, if it has that puzzle.
 pub const fn puzzle(event: WcaEvent) -> Option<&'static str> {
     match event {
-        WcaEvent::Cube3x3OneHanded => Some(WcaEvent::Cube3x3.name()),
+        WcaEvent::Cube3x3OneHanded | WcaEvent::Cube3x3Blind => Some(WcaEvent::Cube3x3.name()),
+        WcaEvent::Cube4x4Blind => Some(WcaEvent::Cube4x4.name()),
+        WcaEvent::Cube5x5Blind => Some(WcaEvent::Cube5x5.name()),
         WcaEvent::Cube2x2
         | WcaEvent::Cube3x3
         | WcaEvent::Cube4x4
@@ -155,24 +157,21 @@ mod tests {
     fn every_cube_has_a_link_and_nothing_else_does() {
         for event in WcaEvent::ALL {
             let link = url(&solve(event, "R U", "", ""));
-            let cube = matches!(
-                event,
-                WcaEvent::Cube2x2
-                    | WcaEvent::Cube3x3
-                    | WcaEvent::Cube3x3OneHanded
-                    | WcaEvent::Cube4x4
-                    | WcaEvent::Cube5x5
-                    | WcaEvent::Cube6x6
-                    | WcaEvent::Cube7x7
-            );
-            assert_eq!(link.is_some(), cube, "{event:?}");
-            if let Some(link) = link {
-                let name = if event == WcaEvent::Cube3x3OneHanded {
-                    WcaEvent::Cube3x3.name()
-                } else {
-                    event.name()
-                };
-                assert_eq!(param(&link, "puzzle").as_deref(), Some(name));
+            // The site's name for the puzzle the event is played on.
+            let site = match event {
+                WcaEvent::Cube2x2 => Some(WcaEvent::Cube2x2),
+                WcaEvent::Cube3x3 | WcaEvent::Cube3x3OneHanded | WcaEvent::Cube3x3Blind => {
+                    Some(WcaEvent::Cube3x3)
+                }
+                WcaEvent::Cube4x4 | WcaEvent::Cube4x4Blind => Some(WcaEvent::Cube4x4),
+                WcaEvent::Cube5x5 | WcaEvent::Cube5x5Blind => Some(WcaEvent::Cube5x5),
+                WcaEvent::Cube6x6 => Some(WcaEvent::Cube6x6),
+                WcaEvent::Cube7x7 => Some(WcaEvent::Cube7x7),
+                _ => None,
+            };
+            assert_eq!(link.is_some(), site.is_some(), "{event:?}");
+            if let (Some(link), Some(site)) = (link, site) {
+                assert_eq!(param(&link, "puzzle").as_deref(), Some(site.name()));
             }
         }
     }

@@ -904,7 +904,7 @@ impl CubeApp {
         match self.screen {
             Screen::Stats => true,
             Screen::Charts => self.chart_view != ChartView::Bests,
-            Screen::Timer | Screen::Goals | Screen::Trainer => false,
+            Screen::Timer | Screen::Goals | Screen::Trainer | Screen::MultiBlind => false,
         }
     }
 

@@ -137,9 +137,11 @@ fn merge_session(
                 // The file knows nothing of extras: they stay with this copy.
                 let tags = solve.tags().to_vec();
                 let solution = solve.solution().to_owned();
+                let memo = solve.memo_ms();
                 solve.clone_from(their);
                 solve.set_tags(tags);
                 solve.set_solution(solution);
+                solve.set_memo_ms(memo);
                 summary.updated += 1;
             }
             None if known.contains_key(id) => summary.kept += 1,

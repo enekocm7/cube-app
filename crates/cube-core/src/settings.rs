@@ -206,10 +206,13 @@ impl PreviewSize {
             WcaEvent::Cube2x2
             | WcaEvent::Cube3x3
             | WcaEvent::Cube3x3OneHanded
+            | WcaEvent::Cube3x3Blind
             | WcaEvent::Cube4x4
+            | WcaEvent::Cube4x4Blind
             | WcaEvent::Square1 => Self::Huge,
             WcaEvent::Fto => Self::Big,
             WcaEvent::Cube5x5
+            | WcaEvent::Cube5x5Blind
             | WcaEvent::Cube6x6
             | WcaEvent::Cube7x7
             | WcaEvent::Megaminx

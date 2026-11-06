@@ -47,6 +47,10 @@ pub struct Solve {
     /// The moves that solved it, kept beside the tags for the same reason.
     #[serde(skip)]
     solution: String,
+    /// How much of `time_ms` a blindfolded solve spent on the memo, kept
+    /// beside the tags for the same reason.
+    #[serde(skip)]
+    memo_ms: Option<u64>,
 }
 
 /// The editable fields of a solve, without its audit trail.
@@ -103,6 +107,7 @@ impl Solve {
             was_single_record: false,
             tags: Vec::new(),
             solution: String::new(),
+            memo_ms: None,
         }
     }
 
@@ -163,6 +168,22 @@ impl Solve {
 
     pub fn set_solution(&mut self, solution: String) {
         self.solution = solution;
+    }
+
+    /// Returns how long the memo took, when the solve was timed in two parts.
+    ///
+    /// Never more than the time itself, which an edit may have shortened.
+    pub fn memo_ms(&self) -> Option<u64> {
+        self.memo_ms.map(|memo| memo.min(self.time_ms))
+    }
+
+    pub fn set_memo_ms(&mut self, memo_ms: Option<u64>) {
+        self.memo_ms = memo_ms;
+    }
+
+    /// Returns the measured time after the memo, when the solve has one.
+    pub fn execution_ms(&self) -> Option<u64> {
+        self.memo_ms().map(|memo| self.time_ms - memo)
     }
 
     /// Applies a change to a tag, if the solve has it.

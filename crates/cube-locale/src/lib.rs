@@ -815,6 +815,62 @@ pub struct Strings {
     pub toast_goals_load_failed: &'static str,
     /// `{error}`: the cause.
     pub toast_goals_save_failed: &'static str,
+    /// `{key}`: the timer key.
+    pub hint_memo: &'static str,
+    /// `{memo}`: the memo time; `{key}`: the timer key.
+    pub hint_memo_stop: &'static str,
+    /// `{memo}`: the memo time; `{execution}`: the execution time.
+    pub result_memo_split: &'static str,
+    pub label_memo: &'static str,
+    pub label_execution: &'static str,
+    pub stat_success: &'static str,
+    pub nav_multi_blind: &'static str,
+    pub action_open_multi_blind: &'static str,
+    pub action_copy_multi_blind_scrambles: &'static str,
+    pub action_save_multi_blind_scrambles: &'static str,
+    pub multi_blind_new: &'static str,
+    pub multi_blind_prepare: &'static str,
+    /// `{min}`, `{max}`: the fewest and most cubes.
+    pub multi_blind_how_many: &'static str,
+    /// `{min}`, `{max}`: the fewest and most cubes.
+    pub multi_blind_cubes_invalid: &'static str,
+    /// `{count}`: how many scrambles.
+    pub multi_blind_preparing: &'static str,
+    /// `{key}`: the timer key.
+    pub multi_blind_ready: &'static str,
+    /// `{key}`: the timer key.
+    pub multi_blind_running: &'static str,
+    /// `{key}`: the timer key.
+    pub multi_blind_start_hint: &'static str,
+    pub multi_blind_result_title: &'static str,
+    pub multi_blind_edit_title: &'static str,
+    pub multi_blind_field_attempted: &'static str,
+    pub multi_blind_field_solved: &'static str,
+    /// `{count}`: the cubes attempted.
+    pub multi_blind_solved_prompt: &'static str,
+    /// `{count}`: the cubes attempted.
+    pub multi_blind_solved_invalid: &'static str,
+    /// `{solved}`, `{attempted}`: the cubes; `{points}`: the score; `{time}`: the time.
+    pub multi_blind_result: &'static str,
+    /// `{solved}`, `{attempted}`: the cubes.
+    pub multi_blind_dnf_no_points: &'static str,
+    /// `{solved}`, `{attempted}`: the cubes; `{limit}`: the time limit.
+    pub multi_blind_dnf_over_time: &'static str,
+    /// `{limit}`: the time limit.
+    pub multi_blind_time_limit: &'static str,
+    pub multi_blind_empty: &'static str,
+    /// `{attempts}`, `{scored}`, `{rate}`: the attempts, those scored and their percentage; `{best}`: the best result.
+    pub multi_blind_summary: &'static str,
+    pub multi_blind_scrambles_copied: &'static str,
+    /// `{path}`: the file.
+    pub multi_blind_scrambles_saved: &'static str,
+    pub multi_blind_unavailable: &'static str,
+    /// `{error}`: the cause.
+    pub toast_multi_blind_load_failed: &'static str,
+    /// `{error}`: the cause.
+    pub toast_multi_blind_save_failed: &'static str,
+    /// `{error}`: the cause.
+    pub toast_multi_blind_scrambles_failed: &'static str,
 }
 
 #[cfg(test)]
@@ -894,6 +950,48 @@ mod tests {
             assert!(strings.toast_trainer_load_failed.contains("{error}"));
             assert!(strings.toast_trainer_save_failed.contains("{error}"));
             assert!(strings.toast_trainer_scramble_failed.contains("{error}"));
+        }
+    }
+
+    #[test]
+    fn every_language_keeps_the_blindfolded_placeholders() {
+        for language in Language::ALL {
+            let strings = language.strings();
+            assert!(strings.hint_memo.contains("{key}"));
+            assert!(strings.hint_memo_stop.contains("{memo}"));
+            assert!(strings.hint_memo_stop.contains("{key}"));
+            assert!(strings.result_memo_split.contains("{memo}"));
+            assert!(strings.result_memo_split.contains("{execution}"));
+            assert!(strings.multi_blind_how_many.contains("{min}"));
+            assert!(strings.multi_blind_how_many.contains("{max}"));
+            assert!(strings.multi_blind_cubes_invalid.contains("{min}"));
+            assert!(strings.multi_blind_cubes_invalid.contains("{max}"));
+            assert!(strings.multi_blind_preparing.contains("{count}"));
+            assert!(strings.multi_blind_ready.contains("{key}"));
+            assert!(strings.multi_blind_running.contains("{key}"));
+            assert!(strings.multi_blind_start_hint.contains("{key}"));
+            assert!(strings.multi_blind_solved_prompt.contains("{count}"));
+            assert!(strings.multi_blind_solved_invalid.contains("{count}"));
+            for placeholder in ["{solved}", "{attempted}", "{points}", "{time}"] {
+                assert!(strings.multi_blind_result.contains(placeholder));
+            }
+            assert!(strings.multi_blind_dnf_no_points.contains("{solved}"));
+            assert!(strings.multi_blind_dnf_no_points.contains("{attempted}"));
+            assert!(strings.multi_blind_dnf_over_time.contains("{solved}"));
+            assert!(strings.multi_blind_dnf_over_time.contains("{attempted}"));
+            assert!(strings.multi_blind_dnf_over_time.contains("{limit}"));
+            assert!(strings.multi_blind_time_limit.contains("{limit}"));
+            for placeholder in ["{attempts}", "{scored}", "{rate}", "{best}"] {
+                assert!(strings.multi_blind_summary.contains(placeholder));
+            }
+            assert!(strings.multi_blind_scrambles_saved.contains("{path}"));
+            assert!(strings.toast_multi_blind_load_failed.contains("{error}"));
+            assert!(strings.toast_multi_blind_save_failed.contains("{error}"));
+            assert!(
+                strings
+                    .toast_multi_blind_scrambles_failed
+                    .contains("{error}")
+            );
         }
     }
 
