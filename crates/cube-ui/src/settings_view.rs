@@ -2,7 +2,6 @@
 //! selected category on the right.
 
 use std::cell::Cell;
-use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 
 use cube_core::dialogs::{reveal_shift, settings_nav_width};
@@ -13,12 +12,12 @@ use cube_core::settings::{
 };
 use cube_core::settings::{
     FontChoice, InvalidSizePt, MAX_SCRAMBLE_PT, MAX_TEXT_PT, MAX_TIMER_PT, MIN_SCRAMBLE_PT,
-    MIN_TEXT_PT, MIN_TIMER_PT, PreviewSize, ScrambleSize, TextSize, ThemePreference, TimerSize,
-    UpdateChannel, UpdateFrequency,
+    MIN_TEXT_PT, MIN_TIMER_PT, ScrambleSize, TextSize, ThemePreference, TimerSize, UpdateChannel,
+    UpdateFrequency,
 };
 use cube_core::theme;
 use cube_core::theme::{ThemeColor, ThemeFile};
-use cube_core::{Settings, SettingsCategory, WcaEvent};
+use cube_core::{Settings, SettingsCategory};
 use cube_locale::{Language, Strings};
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{Disableable as _, ElementExt as _};
@@ -49,24 +48,6 @@ const LANGUAGE_MENU_HEIGHT: Pixels = px(320.);
 /// the row is not left under an edge fade.
 const REVEAL_MARGIN: f32 = 28.;
 
-/// Chooses a preset for an event and returns the custom points it is left with.
-type ApplySize = Rc<dyn Fn(&mut Settings) -> Option<u32>>;
-
-/// One preset of an event's size menu. `apply` chooses it for the event and
-/// returns the custom points the event is left with.
-struct SizeOption {
-    label: &'static str,
-    selected: bool,
-    apply: ApplySize,
-}
-
-/// A size an event can set for itself.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-enum EventSizeKind {
-    Scramble,
-    Timer,
-}
-
 /// A view of the app's settings; re-renders whenever the app changes.
 #[allow(
     clippy::struct_excessive_bools,
@@ -74,10 +55,6 @@ enum EventSizeKind {
 )]
 struct SettingsView {
     app: Entity<CubeApp>,
-    /// The custom size field of each event that can have its own size.
-    event_pts: BTreeMap<(EventSizeKind, WcaEvent), Entity<InputState>>,
-    /// The event size fields whose text is not a valid size.
-    event_pt_invalid: BTreeSet<(EventSizeKind, WcaEvent)>,
     /// Every valid theme in the shared `themes` folder, read when the dialog
     /// opens.
     themes: Vec<ThemeFile>,
@@ -755,155 +732,18 @@ impl SettingsView {
         )
     }
 
-    /// The rows of one event's own size of `kind`: a menu of the presets and,
-    /// while it is custom, the exact field. Each event's rows are laid out like
-    /// the preview size's.
-    fn event_size_rows(
-        &self,
-        kind: EventSizeKind,
-        event: WcaEvent,
-        settings: &Settings,
-        strings: &'static Strings,
-        cx: &App,
-    ) -> Vec<AnyElement> {
-        let (title, description, custom_title, range) = match kind {
-            EventSizeKind::Scramble => (
-                strings.setting_scramble_size_event,
-                strings.setting_scramble_size_event_desc,
-                strings.setting_scramble_custom_event,
-                (MIN_SCRAMBLE_PT, MAX_SCRAMBLE_PT),
-            ),
-            EventSizeKind::Timer => (
-                strings.setting_timer_size_event,
-                strings.setting_timer_size_event_desc,
-                strings.setting_timer_custom_event,
-                (MIN_TIMER_PT, MAX_TIMER_PT),
-            ),
-        };
-        let title = title.replace("{event}", event.name());
-        let (options, custom): (Vec<SizeOption>, bool) = match kind {
-            EventSizeKind::Scramble => {
-                let current = settings.scramble_choice(event).size;
-                let options = ScrambleSize::ALL
-                    .into_iter()
-                    .map(|choice| SizeOption {
-                        label: scramble_size_label(strings, choice),
-                        selected: choice == current,
-                        apply: Rc::new(move |settings| {
-                            settings.set_scramble_size(event, choice);
-                            settings.scramble_choice(event).custom_pt
-                        }),
-                    })
-                    .collect();
-                (options, current == ScrambleSize::Custom)
-            }
-            EventSizeKind::Timer => {
-                let current = settings.timer_choice(event).size;
-                let options = TimerSize::ALL
-                    .into_iter()
-                    .map(|choice| SizeOption {
-                        label: timer_size_label(strings, choice),
-                        selected: choice == current,
-                        apply: Rc::new(move |settings| {
-                            settings.set_timer_size(event, choice);
-                            settings.timer_choice(event).custom_pt
-                        }),
-                    })
-                    .collect();
-                (options, current == TimerSize::Custom)
-            }
-        };
-        let label = options
-            .iter()
-            .find(|option| option.selected)
-            .map_or("", |option| option.label);
-        let app = self.app.clone();
-        let input = self.event_pts[&(kind, event)].clone();
-        let mut rows = vec![row(
-            title,
-            description,
-            Button::new(SharedString::from(format!("event-size-{kind:?}-{event:?}")))
-                .outline()
-                .small()
-                .label(label)
-                .dropdown_caret(true)
-                .dropdown_menu(move |mut menu, _, _| {
-                    for option in &options {
-                        let app = app.clone();
-                        let input = input.clone();
-                        let apply = option.apply.clone();
-                        menu = menu.item(
-                            PopupMenuItem::new(option.label)
-                                .checked(option.selected)
-                                .on_click(move |_, window, cx| {
-                                    let mut start = None;
-                                    app.update(cx, |app, cx| {
-                                        app.update_settings(window, cx, |settings| {
-                                            start = apply(settings);
-                                        });
-                                    });
-                                    // Custom starts from what is shown now.
-                                    if let Some(points) = start {
-                                        input.update(cx, |input, cx| {
-                                            input.set_value(points.to_string(), window, cx);
-                                        });
-                                    }
-                                }),
-                        );
-                    }
-                    menu
-                }),
-            cx,
-        )];
-        if custom {
-            rows.extend(number_rows(
-                custom_title.replace("{event}", event.name()),
-                strings.size_custom_range,
-                &self.event_pts[&(kind, event)],
-                self.event_pt_invalid.contains(&(kind, event)),
-                range,
-                strings,
-                cx,
-            ));
-        }
-        rows
-    }
-
-    /// How large the scramble preview is drawn for one event, listing only the
-    /// sizes the event offers.
-    fn preview_size_row(
-        &self,
-        event: WcaEvent,
-        settings: &Settings,
-        strings: &'static Strings,
-        cx: &App,
-    ) -> AnyElement {
-        let current = settings.preview_size(event);
+    /// Opens the dialog that sizes the preview, timer and scramble per event.
+    fn event_sizes_row(&self, strings: &'static Strings, cx: &App) -> AnyElement {
         let app = self.app.clone();
         row(
-            preview_size_title(strings, event),
-            strings.setting_preview_size_desc,
-            Button::new(SharedString::from(format!("preview-size-{event:?}")))
+            strings.setting_event_sizes,
+            strings.setting_event_sizes_desc,
+            Button::new("event-sizes")
                 .outline()
                 .small()
-                .label(preview_size_label(strings, current))
-                .dropdown_caret(true)
-                .dropdown_menu(move |mut menu, _, _| {
-                    for choice in PreviewSize::offered_for(event) {
-                        let app = app.clone();
-                        menu = menu.item(
-                            PopupMenuItem::new(preview_size_label(strings, choice))
-                                .checked(choice == current)
-                                .on_click(move |_, window, cx| {
-                                    app.update(cx, |app, cx| {
-                                        app.update_settings(window, cx, |settings| {
-                                            settings.set_preview_size(event, choice);
-                                        });
-                                    });
-                                }),
-                        );
-                    }
-                    menu
+                .label(strings.event_sizes_open)
+                .on_click(move |_, window, cx| {
+                    app.update(cx, |app, cx| app.open_event_sizes(window, cx));
                 }),
             cx,
         )
@@ -1470,15 +1310,7 @@ impl SettingsView {
                     strings.setting_scramble_preview_desc,
                     settings.scramble_preview,
                 ),
-            ]
-            .into_iter()
-            .chain(WcaEvent::ALL.into_iter().map(|event| {
-                text(
-                    &preview_size_title(strings, event),
-                    strings.setting_preview_size_desc,
-                    preview_size_label(strings, settings.preview_size(event)),
-                )
-            })),
+            ],
             [
                 self.switch(
                     "accurate",
@@ -1496,13 +1328,7 @@ impl SettingsView {
                     |settings, value| settings.scramble_preview = value,
                     cx,
                 ),
-            ]
-            .into_iter()
-            .chain(
-                WcaEvent::ALL
-                    .into_iter()
-                    .map(|event| self.preview_size_row(event, settings, strings, cx)),
-            ),
+            ],
         );
 
         let mut theme_texts = vec![
@@ -1589,15 +1415,6 @@ impl SettingsView {
             font_size_rows.extend(custom);
         }
 
-        for event in WcaEvent::ALL {
-            let rows = self.event_size_rows(EventSizeKind::Timer, event, settings, strings, cx);
-            let label = strings
-                .setting_timer_size_event
-                .replace("{event}", event.name());
-            font_size_texts.extend(rows.iter().map(|_| label.clone()));
-            font_size_rows.extend(rows);
-        }
-
         font_size_texts.push(text(
             strings.setting_scramble_size,
             strings.setting_scramble_size_desc,
@@ -1620,14 +1437,12 @@ impl SettingsView {
             );
             font_size_rows.extend(custom);
         }
-        for event in WcaEvent::ALL {
-            let rows = self.event_size_rows(EventSizeKind::Scramble, event, settings, strings, cx);
-            let label = strings
-                .setting_scramble_size_event
-                .replace("{event}", event.name());
-            font_size_texts.extend(rows.iter().map(|_| label.clone()));
-            font_size_rows.extend(rows);
-        }
+        font_size_texts.push(text(
+            strings.setting_event_sizes,
+            strings.setting_event_sizes_desc,
+            strings.event_sizes_open,
+        ));
+        font_size_rows.push(self.event_sizes_row(strings, cx));
         let font_size = tagged(font_size_texts, font_size_rows);
 
         let solve_list = tagged(
@@ -1783,7 +1598,7 @@ impl SettingsView {
 
 /// A number field and, while its text is wrong, the message saying why.
 /// `description` shows under the label, with `{min}` and `{max}` filled in.
-fn number_rows(
+pub(crate) fn number_rows(
     label: impl Into<SharedString>,
     description: &'static str,
     input: &Entity<InputState>,
@@ -1842,71 +1657,6 @@ fn observe_size_input(
                     view.change(window, cx, move |settings| set_value(settings, points));
                 }
                 Err(InvalidSizePt) => set_invalid(view, true),
-            }
-            cx.notify();
-        },
-    )
-    .detach();
-}
-
-/// The custom size fields of every event, filled from the settings.
-fn new_event_pts(
-    settings: &Settings,
-    window: &mut Window,
-    cx: &mut App,
-) -> BTreeMap<(EventSizeKind, WcaEvent), Entity<InputState>> {
-    let mut pts = BTreeMap::new();
-    for event in WcaEvent::ALL {
-        for (kind, custom) in [
-            (
-                EventSizeKind::Scramble,
-                settings.scramble_choice(event).custom_pt,
-            ),
-            (EventSizeKind::Timer, settings.timer_choice(event).custom_pt),
-        ] {
-            pts.insert(
-                (kind, event),
-                cx.new(|cx| {
-                    InputState::new(window, cx)
-                        .default_value(custom.map_or_default(|pt| pt.to_string()))
-                        .placeholder("pt")
-                }),
-            );
-        }
-    }
-    pts
-}
-
-/// Wires an event's size field to its settings, flagging invalid input.
-fn observe_event_size_input(
-    input: &Entity<InputState>,
-    window: &mut Window,
-    cx: &mut Context<SettingsView>,
-    (kind, event): (EventSizeKind, WcaEvent),
-) {
-    cx.subscribe_in(
-        input,
-        window,
-        move |view, input, event_: &InputEvent, window, cx| {
-            if !matches!(event_, InputEvent::Change) {
-                return;
-            }
-            let text = input.read(cx).value().to_string();
-            let parsed = match kind {
-                EventSizeKind::Scramble => parse_scramble_pt(&text),
-                EventSizeKind::Timer => parse_timer_pt(&text),
-            };
-            match parsed {
-                Ok(points) => {
-                    view.event_pt_invalid.remove(&(kind, event));
-                    view.change(window, cx, move |settings| match kind {
-                        EventSizeKind::Scramble => settings.set_scramble_custom_pt(event, points),
-                        EventSizeKind::Timer => settings.set_timer_custom_pt(event, points),
-                    });
-                }
-                Err(InvalidSizePt) => {
-                    view.event_pt_invalid.insert((kind, event));
-                }
             }
             cx.notify();
         },
@@ -2081,7 +1831,11 @@ fn category_icon(category: SettingsCategory) -> IconName {
 }
 
 /// One option of a group, filled while it is the current one.
-fn choice(id: impl Into<ElementId>, label: impl Into<SharedString>, selected: bool) -> Button {
+pub(crate) fn choice(
+    id: impl Into<ElementId>,
+    label: impl Into<SharedString>,
+    selected: bool,
+) -> Button {
     let button = Button::new(id).small().label(label).selected(selected);
     if selected {
         button.primary()
@@ -2107,7 +1861,7 @@ fn text_size_label(strings: &'static Strings, size: TextSize) -> &'static str {
 }
 
 /// The menu label for a timer size.
-fn timer_size_label(strings: &'static Strings, size: TimerSize) -> &'static str {
+pub(crate) fn timer_size_label(strings: &'static Strings, size: TimerSize) -> &'static str {
     match size {
         TimerSize::Small => strings.timer_size_small,
         TimerSize::Normal => strings.timer_size_normal,
@@ -2118,7 +1872,7 @@ fn timer_size_label(strings: &'static Strings, size: TimerSize) -> &'static str 
 }
 
 /// The menu label for a scramble size.
-fn scramble_size_label(strings: &'static Strings, size: ScrambleSize) -> &'static str {
+pub(crate) fn scramble_size_label(strings: &'static Strings, size: ScrambleSize) -> &'static str {
     match size {
         ScrambleSize::Small => strings.scramble_size_small,
         ScrambleSize::Normal => strings.scramble_size_normal,
@@ -2126,23 +1880,6 @@ fn scramble_size_label(strings: &'static Strings, size: ScrambleSize) -> &'stati
         ScrambleSize::Largest => strings.scramble_size_largest,
         ScrambleSize::Custom => strings.scramble_size_custom,
     }
-}
-
-/// The menu label for a preview size.
-fn preview_size_label(strings: &'static Strings, size: PreviewSize) -> &'static str {
-    match size {
-        PreviewSize::Small => strings.preview_size_small,
-        PreviewSize::Normal => strings.preview_size_normal,
-        PreviewSize::Big => strings.preview_size_big,
-        PreviewSize::Huge => strings.preview_size_huge,
-    }
-}
-
-/// The title of an event's preview size row.
-fn preview_size_title(strings: &'static Strings, event: WcaEvent) -> String {
-    strings
-        .setting_preview_size
-        .replace("{event}", event.name())
 }
 
 /// The menu label for a font choice.
@@ -2156,7 +1893,7 @@ fn font_label(strings: &'static Strings, choice: FontChoice) -> &'static str {
 }
 
 /// A label over a short description, with the control aligned to the right.
-fn row(
+pub(crate) fn row(
     label: impl Into<SharedString>,
     description: impl Into<SharedString>,
     control: impl IntoElement,
@@ -2216,7 +1953,6 @@ impl CubeApp {
                 .default_value(timer_custom.map_or_default(|pt| pt.to_string()))
                 .placeholder("pt")
         });
-        let event_pts = new_event_pts(&self.settings, window, cx);
         let best_min_solves = cx.new(|cx| {
             InputState::new(window, cx)
                 .default_value(min_solves.to_string())
@@ -2250,9 +1986,6 @@ impl CubeApp {
                 |settings, points| settings.timer_custom_pt = points,
                 |view, invalid| view.timer_pt_invalid = invalid,
             );
-            for (&key, input) in &event_pts {
-                observe_event_size_input(input, window, cx, key);
-            }
             observe_size_input(
                 &best_min_solves,
                 window,
@@ -2265,8 +1998,6 @@ impl CubeApp {
             );
             SettingsView {
                 app: app.clone(),
-                event_pts: event_pts.clone(),
-                event_pt_invalid: BTreeSet::new(),
                 themes,
                 scramble_pt: scramble_pt.clone(),
                 scramble_pt_invalid: false,
