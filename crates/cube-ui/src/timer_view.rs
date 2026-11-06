@@ -92,7 +92,7 @@ impl CubeApp {
                         div()
                             .relative()
                             .flex_none()
-                            .when(self.manual.is_some() && !attempt, |anchor| {
+                            .when(self.manual_mode() && !attempt, |anchor| {
                                 anchor.child(
                                     div()
                                         .absolute()
@@ -144,11 +144,18 @@ impl CubeApp {
                     ),
             )
             .when(!attempt, |panel| {
-                let preview = self.scramble_preview(room, window);
+                // The case takes the place of the preview once it is revealed.
+                let preview = if self.trainer_revealed() {
+                    None
+                } else {
+                    self.scramble_preview(room, window)
+                };
+                let revealed = self.render_revealed_case();
                 panel
                     .child(self.render_scramble_bar(room, cx))
                     // Pushes the tags and the preview to the bottom edge.
                     .child(div().flex_1())
+                    .children(revealed)
                     .children(preview)
             })
     }
@@ -169,7 +176,8 @@ impl CubeApp {
     /// the line height left alone so nothing around them moves, and it ends as
     /// soon as the next attempt begins.
     fn celebrated(&self, digits: Div, size: Pixels, color: Hsla, accent: Hsla) -> AnyElement {
-        let showing_result = !self.timer.is_active() && self.last_result.is_some();
+        let showing_result =
+            !self.timer.is_active() && self.last_result.is_some() && !self.drilling();
         let celebration = self.celebration.filter(|celebration| {
             let length = Duration::from_millis(celebration.scope.effect_ms());
             showing_result && celebration.started.elapsed() < length
@@ -213,14 +221,18 @@ impl CubeApp {
         window: &Window,
         cx: &App,
     ) -> Pixels {
-        let chosen = self.settings.timer_digits_px(self.event);
+        let chosen = self.settings.timer_digits_px(self.shown_event());
         let viewport = window.viewport_size();
         let padding = PANEL_PADDING.to_pixels(window.rem_size()) * 2.;
         let panels = if attempt {
             px(0.)
         } else {
             let (sidebar, stats) = self.panel_widths(window, cx);
-            sidebar + stats
+            if self.drilling() {
+                sidebar
+            } else {
+                sidebar + stats
+            }
         };
         let mut digits = font(family.clone());
         digits.weight = FontWeight::MEDIUM;
@@ -249,9 +261,10 @@ impl CubeApp {
         if !self.settings.scramble_preview {
             return None;
         }
-        let scramble = self.scramble.as_ref()?;
-        let image = self.preview.get(self.event, scramble)?;
-        let size = self.settings.preview_size(self.event);
+        let event = self.shown_event();
+        let scramble = self.shown_scramble()?;
+        let image = self.preview.get(event, scramble)?;
+        let size = self.settings.preview_size(event);
         // Never taller than the room above the bottom edge once the gap above
         // the drawing is taken out.
         let tallest = (room - px(12.)).max(px(0.));
@@ -289,7 +302,7 @@ impl CubeApp {
                     Some(Modifier::PlusTwo) => colors.yellow,
                     _ => foreground,
                 };
-                if let Some(entry) = &self.manual {
+                if let Some(entry) = self.manual.as_ref().filter(|_| self.manual_mode()) {
                     return self.manual_display(entry, text, color, [foreground, colors.red]);
                 }
                 let hint = if self.hardware_timing() {
@@ -372,9 +385,10 @@ impl CubeApp {
         cx: &mut Context<Self>,
     ) -> impl IntoElement + use<> {
         let strings = self.strings();
-        let scramble = self.scramble.clone();
-        let font_size = px(self.settings.scramble_font_px(self.event));
-        let line = px(self.settings.scramble_line_px(self.event));
+        let event = self.shown_event();
+        let scramble = self.shown_scramble().map(str::to_owned);
+        let font_size = px(self.settings.scramble_font_px(event));
+        let line = px(self.settings.scramble_line_px(event));
         // The room above the digits, less the gap under the scramble.
         let tallest = (room - px(12.)).max(px(0.));
         let theme = cx.theme();
@@ -384,7 +398,7 @@ impl CubeApp {
         // Blank while a scramble is prepared, so a fast one never flashes text.
         // A no-break space keeps the line's height.
         let text: SharedString = match &scramble {
-            Some(scramble) => cube_core::scramble::display_text(self.event, scramble).into(),
+            Some(scramble) => cube_core::scramble::display_text(event, scramble).into(),
             None if self.generating_visible => strings.generating_scramble.into(),
             None => "\u{a0}".into(),
         };
@@ -413,8 +427,9 @@ impl CubeApp {
                         )
                     })
                     .on_click(cx.listener(|app, _, window, cx| {
-                        if let Some(scramble) = &app.scramble {
-                            cx.write_to_clipboard(ClipboardItem::new_string(scramble.clone()));
+                        if let Some(scramble) = app.shown_scramble() {
+                            let scramble = scramble.to_owned();
+                            cx.write_to_clipboard(ClipboardItem::new_string(scramble));
                             app.toast(app.strings().scramble_copied, window, cx);
                         }
                         app.focus.focus(window, cx);
@@ -425,7 +440,7 @@ impl CubeApp {
 }
 
 /// Formats a finished attempt the way it will be recorded.
-fn result_text(result: LastResult) -> String {
+pub(crate) fn result_text(result: LastResult) -> String {
     match result.modifier {
         Modifier::None => format_ms(result.time_ms),
         Modifier::PlusTwo => format!("{}+", format_ms(result.time_ms + 2_000)),

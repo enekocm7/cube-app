@@ -62,14 +62,26 @@ const AVERAGE_ACTIONS: [Action; 6] = [
     Action::CopyAverage,
     Action::ShareAverage,
 ];
-const SCREEN_ACTIONS: [Action; 7] = [
+const SCREEN_ACTIONS: [Action; 8] = [
     Action::OpenStats,
     Action::OpenCharts,
     Action::OpenBluetooth,
     Action::OpenGoals,
     Action::NewGoal,
+    Action::OpenTrainer,
     Action::OpenSettings,
     Action::ShowHelp,
+];
+const TRAINER_ACTIONS: [Action; 9] = [
+    Action::NextTrainerSet,
+    Action::ToggleTrainerCase,
+    Action::ToggleTrainerGroup,
+    Action::ToggleTrainerSet,
+    Action::StartTrainer,
+    Action::RevealTrainerCase,
+    Action::EditTrainerAlgorithm,
+    Action::SortTrainerCases,
+    Action::TrainerCaseAttempts,
 ];
 const CHART_ACTIONS: [Action; 10] = [
     Action::NextChartView,
@@ -328,6 +340,7 @@ impl KeybindsView {
 }
 
 impl Render for KeybindsView {
+    #[allow(clippy::too_many_lines, reason = "one section per group of actions")]
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let app = self.app.read(cx);
         let strings = app.strings();
@@ -341,6 +354,7 @@ impl Render for KeybindsView {
             (strings.help_section_averages, &AVERAGE_ACTIONS[..]),
             (strings.help_section_screens, &SCREEN_ACTIONS[..]),
             (strings.help_section_charts, &CHART_ACTIONS[..]),
+            (strings.nav_trainer, &TRAINER_ACTIONS[..]),
         ];
         let capture_hint = self.capturing.map(|action| {
             strings
@@ -463,6 +477,16 @@ fn action_label(strings: &'static Strings, action: Action) -> &'static str {
         Action::OpenBluetooth => strings.action_open_bluetooth,
         Action::OpenGoals => strings.action_open_goals,
         Action::NewGoal => strings.goals_new,
+        Action::OpenTrainer => strings.action_open_trainer,
+        Action::NextTrainerSet => strings.action_next_trainer_set,
+        Action::ToggleTrainerCase => strings.trainer_toggle_case,
+        Action::ToggleTrainerGroup => strings.trainer_toggle_group,
+        Action::ToggleTrainerSet => strings.trainer_toggle_all,
+        Action::StartTrainer => strings.trainer_start,
+        Action::RevealTrainerCase => strings.trainer_reveal,
+        Action::EditTrainerAlgorithm => strings.trainer_edit_algorithm,
+        Action::SortTrainerCases => strings.trainer_sort_slowest,
+        Action::TrainerCaseAttempts => strings.trainer_case_attempts,
         Action::EditTags => strings.action_edit_tags,
         Action::ActiveTags => strings.action_active_tags,
         Action::ManageTags => strings.tags_manage,

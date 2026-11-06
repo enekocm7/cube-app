@@ -12,6 +12,7 @@ order: 2
 | Solves and sessions | `times.json` | Yes |
 | This app's settings | `cube-app.toml` | No (cube-tui uses `config.toml`) |
 | Practice goals | `goals.json` | No |
+| Algorithm trainer | `trainer.json` | No |
 | Tags and solutions of solves | `solve-extras.json` | No |
 | Themes | `themes/` | Yes |
 | Automatic backups | `backups/` | No |

@@ -22,7 +22,7 @@ nothing is selected.
 | Action | Default | Notes |
 |---|---|---|
 | Start or stop the timer | `Space` | Hold and release to start the solve. Pressing and releasing the digits with the left mouse button or a touch does the same while **Timer → Touch the digits to start or stop the timer** is on (off by default) |
-| Cancel the current attempt | `Esc` | Does not record the solve; on the stats, charts or goals screen it returns to the timer |
+| Cancel the current attempt | `Esc` | Does not record the solve; on the stats, charts or goals screen it returns to the timer. In the trainer it goes from the drill back to the cases, then to the timer |
 | New scramble | `N` | |
 | Turn inspection on or off | `I` | |
 | Show or hide the scramble preview | `P` | The same switch as the setting |
@@ -58,6 +58,17 @@ nothing is selected.
 | Connect a Bluetooth timer | `B` | Also the Bluetooth icon in the title bar. See [Bluetooth timers](#bluetooth-timers) |
 | Show goals or the timer | `Shift + G` | Also the tick icon in the title bar. See [Goals](#goals) |
 | New goal | `Shift + N` | Works on the goals screen. See [Goals](#goals) |
+| Show the trainer or the timer | `Shift + P` | See [Trainer](#trainer) |
+| Next algorithm set | `Y` | Works on the trainer's cases. See [Trainer](#trainer) |
+| Select or clear the highlighted case | `J` | Works on the trainer's cases, where the timer key does the same |
+| Select or clear the highlighted case's group | `Shift + J` | Works on the trainer's cases |
+| Select or clear every case | `Shift + A` | Works on the trainer's cases |
+| Start training | `Q` | Works on the trainer's cases, where `Enter` does the same |
+| Show or hide the case | `H` | Works during a drill |
+| Edit the algorithm | `Shift + H` | Works on the trainer's cases, for the highlighted one |
+| Sort by slowest | `Shift + Y` | Works on the trainer's cases |
+| See the case's attempts | `Shift + Q` | Works on the trainer's cases |
+| Search the cases | `/` | Works on the trainer's cases. This key cannot be changed |
 | Show the next charts view | `V` | Cycles Trends, Calendar, Compare, Tags and All-time bests |
 | Filter charts by the next event | `F` | Cycles all events and every event with solves |
 | Filter charts by the next range | `R` | Cycles all solves, the last 50, 100 or 500 solves and the last 7, 30, 90 or 365 days |
@@ -88,6 +99,15 @@ and deleting a solve, so rebinding those moves these too.
 
 In the goal dialog, `Tab` moves between the controls, `Enter` or `Space` presses
 the focused one and `Enter` anywhere else saves.
+
+## Trainer
+
+On the trainer's cases, the arrow keys move the highlight: the bindings of
+selecting solves and averages move it up and down, and left and right. During a
+drill, new scramble skips the case, and selecting, opening, deleting and the
+penalties work on its attempts. Selecting, deleting and the penalties work the
+same on a case's attempts. `Esc` goes back to the cases. See
+[Algorithm trainer](/cube-app/docs/trainer/).
 
 ## Tags
 

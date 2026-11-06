@@ -1,4 +1,4 @@
-//! The search field at the top of the shortcuts and settings dialogs.
+//! The search field of the shortcuts and settings dialogs and the trainer.
 
 use cube_locale::Strings;
 use gpui_kit::assets::IconName;
@@ -29,30 +29,37 @@ pub(crate) fn new_search<V: 'static>(
 
 /// The field, laid out above a dialog's scrolling body.
 pub(crate) fn search_bar(input: &Entity<InputState>, cx: &App) -> Div {
+    div()
+        .h(BAR_HEIGHT)
+        .px_4()
+        .pt_4()
+        .child(search_field(input, cx))
+}
+
+/// The field on its own, for wherever it is laid out.
+pub(crate) fn search_field(input: &Entity<InputState>, cx: &App) -> Input {
     let theme = cx.theme();
     let (muted, border) = (theme.muted_foreground, theme.border);
     let mono = theme.mono_font_family.clone();
     let empty = input.read(cx).value().is_empty();
-    div().h(BAR_HEIGHT).px_4().pt_4().child(
-        Input::new(input)
-            .w_full()
-            .cleanable(true)
-            .prefix(Icon::new(IconName::Search).text_color(muted))
-            .when(empty, |input| {
-                // Shows which key jumps to the field.
-                input.suffix(
-                    div()
-                        .px_1p5()
-                        .rounded(px(4.))
-                        .border_1()
-                        .border_color(border)
-                        .font_family(mono)
-                        .text_xs()
-                        .text_color(muted)
-                        .child("/"),
-                )
-            }),
-    )
+    Input::new(input)
+        .w_full()
+        .cleanable(true)
+        .prefix(Icon::new(IconName::Search).text_color(muted))
+        .when(empty, |input| {
+            // Shows which key jumps to the field.
+            input.suffix(
+                div()
+                    .px_1p5()
+                    .rounded(px(4.))
+                    .border_1()
+                    .border_color(border)
+                    .font_family(mono)
+                    .text_xs()
+                    .text_color(muted)
+                    .child("/"),
+            )
+        })
 }
 
 /// Moves focus to the field when `/` is pressed anywhere else in the dialog.
