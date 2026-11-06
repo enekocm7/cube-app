@@ -282,11 +282,10 @@ impl SolveForm {
         }
         let text = self.scramble.read(cx).value().to_string();
         let image = self.preview.get(self.event, &text)?;
-        Some(
-            h_flex()
-                .justify_center()
-                .child(image.element(PREVIEW_HEIGHT)),
-        )
+        Some(h_flex().justify_center().child(image.element(
+            PREVIEW_HEIGHT,
+            cube_core::settings::PreviewSize::Normal.max_scale(),
+        )))
     }
 
     /// The event picker next to the date field.

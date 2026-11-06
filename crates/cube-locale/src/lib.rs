@@ -411,6 +411,13 @@ pub struct Strings {
     pub setting_touch_to_start_desc: &'static str,
     pub setting_accurate_desc: &'static str,
     pub setting_scramble_preview_desc: &'static str,
+    /// `{event}`: the event the size is for.
+    pub setting_preview_size: &'static str,
+    pub setting_preview_size_desc: &'static str,
+    pub preview_size_small: &'static str,
+    pub preview_size_normal: &'static str,
+    pub preview_size_big: &'static str,
+    pub preview_size_huge: &'static str,
     pub setting_theme_desc: &'static str,
     pub custom_themes_desc: &'static str,
     pub setting_font_desc: &'static str,

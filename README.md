@@ -186,7 +186,8 @@ Details worth knowing:
   an exact size in points (6 to 120). Long scrambles still scroll.
 - **Scramble preview.** The preview draws the puzzle as the scramble leaves it, under the timer and in the solve
   details, where it follows the scramble you are editing. Turn it off with **Timer → Show the scramble preview**,
-  or toggle it with `P`.
+  or toggle it with `P`. Each event has its own preview size (Small, Normal, Big or Huge, up to what suits the puzzle)
+  under **Timer → Scrambles**.
 - **Scrollbar.** The solve list scrollbar appears only while you scroll. Turn on **Appearance → Always show the solve
   list scrollbar** to keep it visible.
 
