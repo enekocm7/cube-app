@@ -21,6 +21,7 @@ order: 1
 - **Penalty** — None, `+2`, or DNF.
 - **Date** — backdate a solve imported from elsewhere.
 - **Comment** — context like "lucky F2L" or "new cube".
+- **Solution** — the moves you solved it with. `//` notes and line breaks are fine. It goes on the solve's alg.cubing.net link.
 
 Every change is kept in an audit trail, so you can see what a solve used to be.
 
@@ -46,3 +47,16 @@ See [Stats and charts](/cube-app/docs/stats-charts/) for filtering and comparing
 - `Up` / `Down` moves the highlight in the solve list (hold to keep moving).
 - Actions that need a solve use the highlight, or the latest solve when nothing is highlighted.
 - In an average's dialog, each solve is a button: reach it with `Tab`, open it with `Enter` or `Space`.
+
+## Share a result
+
+Press `K` for an image of the selected solve, or `Shift + K` for the selected mo3, ao5 or ao12. **Create image** in the solve and average details does the same. Once the card is drawn it opens in the image preview. The card shows the event, the result, the date and the scramble's preview, and an average's attempts are the stickers of a cube face with the fastest in your accent. The card takes its colors from your theme, and the scramble's preview looks the same as it does in the app. It uses Cube Mono unless your font setting is the system one.
+
+- `Enter` or **Copy to clipboard** copies the image and leaves the preview open.
+- `Tab` reaches **Download PNG**, **Close** and **Copy link**.
+- `Esc` closes the preview.
+- `U` copies the link without making an image.
+
+A solve's link opens it on [alg.cubing.net](https://alg.cubing.net) with its scramble, its solution and its comment, so check the comment before you post it. The site only has cubes, so there are links for 2x2x2 to 7x7x7 only. An average links to its fastest attempt, the one pictured on the card.
+
+Cards are drawn on your computer and nothing is uploaded. Text in Arabic, Chinese, Japanese and Korean uses your system's fonts, so those languages need one installed.

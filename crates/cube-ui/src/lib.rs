@@ -27,6 +27,7 @@ mod scoped_rem;
 mod scroll_fade;
 mod search_bar;
 mod settings_view;
+mod share_dialog;
 mod sidebar;
 mod stats_panel;
 mod stats_screen;

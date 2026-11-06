@@ -1322,6 +1322,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "dirs 7.0.0",
+ "resvg 0.46.0",
  "serde",
  "serde_json",
  "tnoodle-rs",

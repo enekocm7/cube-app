@@ -1,7 +1,9 @@
 //! The average details dialog: the solves behind one average, marking the
-//! trimmed ones, and copying an average as text.
+//! trimmed ones, and copying or sharing an average.
 
 use cube_core::format::format_delta;
+use cube_core::share_card::{self, CardLabels, ShareCard};
+use cube_core::share_link;
 use cube_core::stats::{
     self, AVERAGE_SIZES, Average, AverageDetail, DEFAULT_AVERAGE, SessionStats, Trim,
 };
@@ -94,6 +96,58 @@ impl CubeApp {
         self.toast(strings.average_copied, window, cx);
     }
 
+    /// Opens the card of the selected average, ending at the target solve.
+    pub(crate) fn share_selected_average(&self, window: &mut Window, cx: &mut Context<Self>) {
+        let end = self.target_solve().unwrap_or_default();
+        let end = self.average_place(end);
+        self.share_average(end, self.selected_average_size(), window, cx);
+    }
+
+    /// Opens the card of the `size` solves ending at `end`.
+    fn share_average(&self, end: usize, size: usize, window: &mut Window, cx: &mut Context<Self>) {
+        let strings = self.strings();
+        let language = self.language();
+        if size > share_card::MAX_ATTEMPTS {
+            let limit = language.format_count(share_card::MAX_ATTEMPTS as u64);
+            let message = strings.share_average_too_long.replace("{size}", &limit);
+            self.toast_warning(&message, window, cx);
+            return;
+        }
+        let solves = self.average_solves();
+        let Some(detail) = AverageDetail::at(&solves, end, size) else {
+            self.warn_missing_average(size, window, cx);
+            return;
+        };
+        let last = detail.attempts().last();
+        let date = last.map_or_else(String::new, |solve| {
+            language.format_date(solve.solved_at_unix_ms())
+        });
+        let title = average_title(strings, language, size);
+        let labels = CardLabels {
+            title: &title,
+            date: &date,
+            badge: self
+                .is_best_average(&detail, size)
+                .then_some(strings.share_session_best),
+        };
+        let link = share_card::featured_attempt(&detail).and_then(share_link::url);
+        if let Some(card) = ShareCard::average(&detail, labels) {
+            self.open_share(&card, &average_label(size), link, window, cx);
+        }
+    }
+
+    /// Returns whether `detail` is the session's fastest of its window.
+    fn is_best_average(&self, detail: &AverageDetail<'_>, size: usize) -> bool {
+        let filtered = self
+            .stats_tag()
+            .map(|_| SessionStats::compute(&self.average_solves()));
+        let stats = filtered.as_ref().unwrap_or(&self.stats);
+        let window = stats.windows.iter().find(|stats| stats.size == size);
+        stats.count > size
+            && detail.average() != Average::Dnf
+            && window.and_then(|stats| stats.best).map(|(best, _)| best) == Some(detail.average())
+    }
+
     fn warn_missing_average(&self, size: usize, window: &mut Window, cx: &mut Context<Self>) {
         let message = self
             .strings()
@@ -125,6 +179,7 @@ impl CubeApp {
             let max_height = dialog_body_height(DIALOG_SIZE, window);
             let body = render_body(&app, end, size, max_height, window.rem_size(), cx);
             let copy_app = app.clone();
+            let share_app = app.clone();
             dialog
                 .title(dialog_title(title, strings.close))
                 .close_button(false)
@@ -136,13 +191,29 @@ impl CubeApp {
                         .w_full()
                         .justify_between()
                         .child(
-                            Button::new("average-copy")
-                                .outline()
-                                .label(strings.copy_average)
-                                .on_click(move |_, window, cx| {
-                                    copy_app.update(cx, |app, cx| {
-                                        app.copy_average(end, size, window, cx);
-                                    });
+                            h_flex()
+                                .gap_2()
+                                .child(
+                                    Button::new("average-copy")
+                                        .outline()
+                                        .label(strings.copy_average)
+                                        .on_click(move |_, window, cx| {
+                                            copy_app.update(cx, |app, cx| {
+                                                app.copy_average(end, size, window, cx);
+                                            });
+                                        }),
+                                )
+                                .when(size <= share_card::MAX_ATTEMPTS, |actions| {
+                                    actions.child(
+                                        Button::new("average-share")
+                                            .outline()
+                                            .label(strings.share_button)
+                                            .on_click(move |_, window, cx| {
+                                                share_app.update(cx, |app, cx| {
+                                                    app.share_average(end, size, window, cx);
+                                                });
+                                            }),
+                                    )
                                 }),
                         )
                         .child(

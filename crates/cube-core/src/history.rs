@@ -72,6 +72,18 @@ impl History {
         }
     }
 
+    /// Replaces the solution of the solve at `index`; returns whether it
+    /// changed.
+    pub fn set_solution(&mut self, index: usize, solution: String) -> bool {
+        match self.times.get_mut(index) {
+            Some(solve) if solve.solution() != solution => {
+                solve.set_solution(solution);
+                true
+            }
+            _ => false,
+        }
+    }
+
     /// Applies a change to a tag on every solve that has it.
     pub fn change_tags(&mut self, change: &TagChange) {
         for solve in &mut self.times {

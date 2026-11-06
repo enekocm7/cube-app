@@ -79,6 +79,17 @@ impl DialogSize {
         chrome_height: 190.,
     };
 
+    /// The image viewer, whose card reads best large.
+    pub const CARD_VIEWER: Self = Self {
+        width_share: 0.74,
+        min_width: 720.,
+        max_width: 1280.,
+        body_share: 0.72,
+        min_body_height: 260.,
+        max_body_height: 720.,
+        chrome_height: 190.,
+    };
+
     /// The settings dialog, with its category list beside the settings. It has
     /// no title or footer of its own, so nearly all of it is body.
     pub const SETTINGS: Self = Self {

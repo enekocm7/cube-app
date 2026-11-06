@@ -69,6 +69,8 @@ for valid bindings.
 | `Left` / `Right` | Select a shorter or longer average |
 | `O` / `Shift + O` | Open the selected average, or its best |
 | `C` | Copy the selected average as text |
+| `K` / `Shift + K` | Create an image of the selected solve or average |
+| `U` | Copy an alg.cubing.net link to the selected solve |
 | `A` | Show stats, or return to the timer |
 | `G` | Show charts, or return to the timer |
 | `B` | Connect or disconnect a Bluetooth timer |
@@ -117,11 +119,16 @@ Around the shortcuts:
 - Official WCA random-state scrambles for 12 events, generated with `tnoodle-rs`.
 - A picture of the scrambled puzzle on the timer and in the solve details. Turn it off with `P`.
 
+**Sharing**
+
+- Result images: a single or an average up to ao12 as a card in your theme, with a preview to copy or download as a PNG.
+- alg.cubing.net links with the scramble and any solution you typed.
+
 **Solves and sessions**
 
 - Manual mode to type in times from another timer.
 - Sessions with custom names, deletable from the session dropdown.
-- A solve history whose details you can edit: time, event, scramble, penalty, date and comment. Every change is kept
+- A solve history whose details you can edit: time, event, scramble, penalty, date, comment and solution. Every change is kept
   in an audit trail.
 - Undo and redo for deleted solves and sessions.
 - Tags on solves, such as the cube or method used, to filter stats and charts and compare two side by side.

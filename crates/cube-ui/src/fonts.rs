@@ -8,6 +8,7 @@
 
 use std::borrow::Cow;
 
+use cube_core::share_card::{CUBE_MONO_MEDIUM, CUBE_MONO_REGULAR};
 use gpui_kit::*;
 
 /// The family name inside the bundled font files.
@@ -29,8 +30,8 @@ impl Global for TimerDigits {}
 pub(crate) fn family(cx: &mut App) -> Option<SharedString> {
     if cx.try_global::<DigitsFont>().is_none() {
         let fonts: Vec<Cow<'static, [u8]>> = vec![
-            Cow::Borrowed(&include_bytes!("../../../fonts/CubeMono-Regular.ttf")[..]),
-            Cow::Borrowed(&include_bytes!("../../../fonts/CubeMono-Medium.ttf")[..]),
+            Cow::Borrowed(CUBE_MONO_REGULAR),
+            Cow::Borrowed(CUBE_MONO_MEDIUM),
         ];
         let registered = cx.text_system().add_fonts(fonts).inspect_err(|error| {
             eprintln!("cube: could not load the bundled digit font: {error}");

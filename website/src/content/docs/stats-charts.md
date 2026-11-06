@@ -31,7 +31,7 @@ A table of every solve's rolling averages:
 - The header shows each column's best. Click it to jump to that result.
 - Tiles are heat-mapped: green for fast, orange for slow, unshaded in between.
 - The best tile of each column is tinted green.
-- `Left` / `Right` picks the highlighted average column; `O` opens it, `Shift + O` opens its best, `C` copies it as text to share.
+- `Left` / `Right` picks the highlighted average column; `O` opens it, `Shift + O` opens its best, `C` copies it as text to share, `Shift + K` creates an image of it.
 - `L`, or the menu above the table, keeps only the solves with a tag. Averages then run over those solves alone.
 
 ## Charts screen (`G`)

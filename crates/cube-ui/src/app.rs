@@ -290,6 +290,8 @@ pub struct CubeApp {
     /// The average selected with the keyboard, as an index into
     /// `stats::AVERAGE_SIZES`.
     pub(crate) selected_average: Option<usize>,
+    /// Whether a share card is being drawn, so a second press waits for it.
+    pub(crate) drawing_card: Cell<bool>,
     pub(crate) goals: Vec<Goal>,
     /// Where the goals are saved; `None` keeps saving off.
     pub(crate) goals_path: Option<PathBuf>,
@@ -434,6 +436,7 @@ impl CubeApp {
             solves_scroll: UniformListScrollHandle::new(),
             selected_solve: None,
             selected_average: None,
+            drawing_card: Cell::new(false),
             goals,
             goals_path,
             goal_progress,
@@ -717,6 +720,8 @@ impl CubeApp {
                 if self.screen != Screen::Charts || self.chart_view != ChartView::Tags => {}
             Action::DeleteSolve | Action::PenaltyPlusTwo | Action::PenaltyDnf
                 if self.screen != Screen::Timer => {}
+            Action::ShareSolve | Action::ShareAverage | Action::CopySolveLink
+                if matches!(self.screen, Screen::Charts | Screen::Goals) => {}
             Action::NextChartView
             | Action::NextChartEvent
             | Action::NextChartRange
@@ -789,6 +794,9 @@ impl CubeApp {
             Action::OpenAverage => self.open_selected_average(window, cx),
             Action::OpenBestAverage => self.open_best_average(window, cx),
             Action::CopyAverage => self.copy_selected_average(window, cx),
+            Action::ShareSolve => self.share_target_solve(window, cx),
+            Action::ShareAverage => self.share_selected_average(window, cx),
+            Action::CopySolveLink => self.copy_target_solve_link(window, cx),
             Action::OpenSettings => self.open_settings(window, cx),
             Action::ShowHelp => self.open_help(window, cx),
             Action::Timer | Action::Cancel => {}
@@ -1404,14 +1412,17 @@ impl CubeApp {
         &mut self,
         index: usize,
         after: SolveSnapshot,
-        tags: Option<Vec<String>>,
+        extras: Option<(Vec<String>, String)>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
         let session = &mut self.sessions[self.current];
         let edited = session.edit(index, after);
-        let tagged = tags.is_some_and(|tags| session.set_tags(index, tags));
-        if edited || tagged {
+        let extended = extras.is_some_and(|(tags, solution)| {
+            let tagged = session.set_tags(index, tags);
+            session.set_solution(index, solution) || tagged
+        });
+        if edited || extended {
             self.solves_changed(window, cx);
             self.sync_last_result();
             cx.notify();

@@ -3,7 +3,7 @@
 use cube_core::format::{format_ms, parse_time};
 use cube_core::validation::{
     format_date_input, parse_date, parse_date_input, validate_comment, validate_duration,
-    validate_scramble,
+    validate_scramble, validate_solution,
 };
 use cube_core::{Modifier, Solve, SolveChange, SolveSnapshot, WcaEvent};
 use gpui_kit::assets::IconName;
@@ -59,6 +59,8 @@ struct SolveForm {
     scramble: Entity<TextareaState>,
     date: Entity<InputState>,
     comment: Entity<InputState>,
+    /// `None` while the solve's extras cannot be saved.
+    solution: Option<Entity<TextareaState>>,
     /// `None` while tags cannot be saved.
     tags: Option<Entity<TagEditor>>,
     time_error: Option<String>,
@@ -66,6 +68,7 @@ struct SolveForm {
     preview: PreviewCache,
     date_error: Option<String>,
     comment_error: Option<String>,
+    solution_error: Option<String>,
     strings: &'static cube_locale::Strings,
     language: cube_locale::Language,
 }
@@ -85,6 +88,10 @@ impl SolveForm {
         let scramble_text = self.scramble.read(cx).value().to_string();
         let date_text = self.date.read(cx).value().to_string();
         let comment_text = self.comment.read(cx).value().to_string();
+        let solution_text = self.solution.as_ref().map(|solution| {
+            let text = solution.read(cx).value().to_string();
+            text.trim().to_owned()
+        });
         self.time_error = None;
         self.scramble_error = None;
         self.date_error = None;
@@ -120,12 +127,19 @@ impl SolveForm {
         };
         self.comment_error =
             (!validate_comment(&comment_text)).then(|| strings.invalid_comment.to_owned());
+        self.solution_error = solution_text
+            .as_deref()
+            .filter(|text| !validate_solution(text))
+            .map(|_| strings.invalid_solution.to_owned());
 
         let (Some(time_ms), Some(solved_at_unix_ms)) = (time_ms, solved_at_unix_ms) else {
             cx.notify();
             return false;
         };
-        if self.scramble_error.is_some() || self.comment_error.is_some() {
+        if self.scramble_error.is_some()
+            || self.comment_error.is_some()
+            || self.solution_error.is_some()
+        {
             cx.notify();
             return false;
         }
@@ -138,10 +152,12 @@ impl SolveForm {
             comment: comment_text.trim().to_owned(),
         };
         let index = self.index;
+        // Both sit in the same file, so both are there or neither is.
         let tags = self.tags.as_ref().map(|tags| tags.read(cx).selected());
+        let extras = tags.zip(solution_text);
         self.app
             .update(cx, |app, cx| {
-                app.edit_solve(index, after, tags, window, cx);
+                app.edit_solve(index, after, extras, window, cx);
             })
             .is_ok()
     }
@@ -263,6 +279,13 @@ impl Render for SolveForm {
                         .child(keep_focus("field-comment", Input::new(&self.comment)))
                         .children(field_error(self.comment_error.as_ref(), colors.red)),
                 )
+                .children(self.solution.clone().map(|solution| {
+                    v_flex()
+                        .gap_1()
+                        .child(field_label(strings.field_solution, muted))
+                        .child(keep_focus("field-solution", Textarea::new(&solution)))
+                        .children(field_error(self.solution_error.as_ref(), colors.red))
+                }))
                 .children(self.tags.clone())
                 .child(self.render_history(cx)),
         )
@@ -543,11 +566,19 @@ impl CubeApp {
             let selected = solve.tags().to_vec();
             TagEditor::new(selected, self.known_tags(), strings, window, cx)
         });
+        let solution = self.tags_available.then(|| {
+            let text = solve.solution().to_owned();
+            cx.new(|cx| {
+                TextareaState::new(window, cx)
+                    .default_value(text)
+                    .auto_grow(2, 6)
+            })
+        });
         let form = new_form(
             app.clone(),
             index,
             solve,
-            tags,
+            (tags, solution),
             (strings, language),
             window,
             cx,
@@ -560,6 +591,7 @@ impl CubeApp {
 
         window.open_dialog(cx, move |dialog, window, _| {
             let (form_for_save, app_for_delete) = (form.clone(), app.clone());
+            let app_for_share = app.clone();
             let save: Submit = std::rc::Rc::new(move |window, cx| {
                 let saved = form_for_save.update(cx, |form, cx| form.save(window, cx));
                 if saved {
@@ -577,17 +609,33 @@ impl CubeApp {
                         .w_full()
                         .justify_between()
                         .child(
-                            Button::new("solve-delete")
-                                .danger()
-                                .label(strings.delete_solve)
-                                .on_click(move |_, window, cx| {
-                                    window.close_dialog(cx);
-                                    app_for_delete
-                                        .update(cx, |app, cx| {
-                                            app.confirm_delete_solve(index, window, cx);
-                                        })
-                                        .ok();
-                                }),
+                            h_flex()
+                                .gap_2()
+                                .child(
+                                    Button::new("solve-delete")
+                                        .danger()
+                                        .label(strings.delete_solve)
+                                        .on_click(move |_, window, cx| {
+                                            window.close_dialog(cx);
+                                            app_for_delete
+                                                .update(cx, |app, cx| {
+                                                    app.confirm_delete_solve(index, window, cx);
+                                                })
+                                                .ok();
+                                        }),
+                                )
+                                .child(
+                                    Button::new("solve-share")
+                                        .outline()
+                                        .label(strings.share_button)
+                                        .on_click(move |_, window, cx| {
+                                            app_for_share
+                                                .update(cx, |app, cx| {
+                                                    app.share_solve(index, window, cx);
+                                                })
+                                                .ok();
+                                        }),
+                                ),
                         )
                         .child(
                             h_flex()
@@ -639,7 +687,7 @@ fn new_form(
     app: WeakEntity<CubeApp>,
     index: usize,
     solve: &Solve,
-    tags: Option<Entity<TagEditor>>,
+    (tags, solution): (Option<Entity<TagEditor>>, Option<Entity<TextareaState>>),
     (strings, language): (&'static cube_locale::Strings, cube_locale::Language),
     window: &mut Window,
     cx: &mut Context<CubeApp>,
@@ -681,12 +729,14 @@ fn new_form(
             scramble,
             date,
             comment,
+            solution,
             tags,
             time_error: None,
             scramble_error: None,
             preview: PreviewCache::default(),
             date_error: None,
             comment_error: None,
+            solution_error: None,
             strings,
             language,
         }
