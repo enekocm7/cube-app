@@ -14,6 +14,7 @@ const SITE: &str = "https://alg.cubing.net/";
 /// Returns the site's name for `event`, if it has that puzzle.
 pub const fn puzzle(event: WcaEvent) -> Option<&'static str> {
     match event {
+        WcaEvent::Cube3x3OneHanded => Some(WcaEvent::Cube3x3.name()),
         WcaEvent::Cube2x2
         | WcaEvent::Cube3x3
         | WcaEvent::Cube4x4
@@ -158,6 +159,7 @@ mod tests {
                 event,
                 WcaEvent::Cube2x2
                     | WcaEvent::Cube3x3
+                    | WcaEvent::Cube3x3OneHanded
                     | WcaEvent::Cube4x4
                     | WcaEvent::Cube5x5
                     | WcaEvent::Cube6x6
@@ -165,7 +167,12 @@ mod tests {
             );
             assert_eq!(link.is_some(), cube, "{event:?}");
             if let Some(link) = link {
-                assert_eq!(param(&link, "puzzle").as_deref(), Some(event.name()));
+                let name = if event == WcaEvent::Cube3x3OneHanded {
+                    WcaEvent::Cube3x3.name()
+                } else {
+                    event.name()
+                };
+                assert_eq!(param(&link, "puzzle").as_deref(), Some(name));
             }
         }
     }

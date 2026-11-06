@@ -1892,6 +1892,7 @@ impl CubeApp {
         if self.settings.accurate_3x3 != accurate_3x3 {
             scramble::set_accurate_3x3(self.settings.accurate_3x3);
             self.queue.discard(WcaEvent::Cube3x3);
+            self.queue.discard(WcaEvent::Cube3x3OneHanded);
         }
         palette::apply(&self.settings, cx);
         self.save_settings(window, cx);

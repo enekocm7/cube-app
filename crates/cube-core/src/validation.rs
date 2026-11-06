@@ -148,13 +148,14 @@ fn is_valid_move(token: &str, event: WcaEvent) -> bool {
     match event {
         WcaEvent::Cube2x2
         | WcaEvent::Cube3x3
+        | WcaEvent::Cube3x3OneHanded
         | WcaEvent::Cube4x4
         | WcaEvent::Cube5x5
         | WcaEvent::Cube6x6
         | WcaEvent::Cube7x7 => {
             let size = match event {
                 WcaEvent::Cube2x2 => 2,
-                WcaEvent::Cube3x3 => 3,
+                WcaEvent::Cube3x3 | WcaEvent::Cube3x3OneHanded => 3,
                 WcaEvent::Cube4x4 => 4,
                 WcaEvent::Cube5x5 => 5,
                 WcaEvent::Cube6x6 => 6,
