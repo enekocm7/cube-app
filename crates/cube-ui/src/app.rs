@@ -9,6 +9,7 @@ use std::time::{Duration, Instant};
 
 use chrono::{Local, NaiveDate};
 use cube_bluetooth::Client;
+use cube_core::bests::{self, BEST_MIN_SOLVES, BestScope};
 use cube_core::charts::{ChartFilter, ChartView, ChartZoom};
 use cube_core::cstimer::{self, ImportReport};
 use cube_core::goals;
@@ -213,6 +214,16 @@ fn notify_when_ready(notification: Notification, window: &Window) {
     });
 }
 
+/// The effect playing on the digits for a new best.
+#[derive(Clone, Copy)]
+pub struct Celebration {
+    pub scope: BestScope,
+    pub started: Instant,
+    /// The session's length at that solve, so that back-to-back bests each
+    /// start their own animation.
+    pub solve: usize,
+}
+
 /// The result shown on the timer once an attempt ends.
 #[derive(Clone, Copy)]
 pub struct LastResult {
@@ -257,6 +268,8 @@ pub struct CubeApp {
     /// trigger that key's action until it is released.
     stop_repeat_key: Option<String>,
     pub(crate) last_result: Option<LastResult>,
+    /// The effect on the digits for the latest solve, if it set a best.
+    pub(crate) celebration: Option<Celebration>,
     pub(crate) stats: SessionStats,
     chart_data: Option<Rc<ChartData>>,
     pub(crate) chart_view: ChartView,
@@ -408,6 +421,7 @@ impl CubeApp {
             pointer_down: false,
             stop_repeat_key: None,
             last_result: None,
+            celebration: None,
             chart_data: None,
             chart_view: ChartView::default(),
             chart_filter: ChartFilter::default(),
@@ -934,15 +948,46 @@ impl CubeApp {
             self.toast(self.strings().toast_dnf, window, cx);
         }
         self.announce_records(window, cx);
+        self.celebrate(window, cx);
         cx.notify();
     }
 
-    /// Reports every statistic the newest solve improved.
-    fn announce_records(&self, window: &mut Window, cx: &mut Context<Self>) {
-        let solves = self.session().solves();
-        let Some(latest_index) = solves.len().checked_sub(1) else {
+    /// Starts the effect and the sound if the newest solve set a best. Only
+    /// [`Self::finish_attempt`] may call this, so that nothing but a live solve
+    /// celebrates.
+    fn celebrate(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.celebration = None;
+        let (effect, sound) = (self.settings.celebrate_bests, self.settings.celebrate_sound);
+        if !effect && !sound {
+            return;
+        }
+        let Some(best) = bests::new_best(&self.sessions, self.current) else {
             return;
         };
+        if effect {
+            self.celebration = Some(Celebration {
+                scope: best.scope,
+                started: Instant::now(),
+                solve: self.session().len(),
+            });
+        }
+        if sound && let Err(error) = crate::audio::play_personal_best() {
+            let message = self
+                .strings()
+                .toast_celebration_audio_failed
+                .replace("{error}", &format!("{error:#}"));
+            self.toast_warning(&message, window, cx);
+        }
+    }
+
+    /// Reports every statistic the newest solve improved, once the session is
+    /// long enough for that to mean something.
+    fn announce_records(&self, window: &mut Window, cx: &mut Context<Self>) {
+        let solves = self.session().solves();
+        if solves.len() <= BEST_MIN_SOLVES {
+            return;
+        }
+        let latest_index = solves.len() - 1;
         let strings = self.strings();
         let announce = |label: String, ms: u64, window: &mut Window, cx: &mut Context<Self>| {
             let message = strings

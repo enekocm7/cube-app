@@ -1,7 +1,8 @@
 //! The central panel: scramble, digits and the finished time.
 
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
+use cube_core::bests::{self, BestScope};
 use cube_core::format::format_ms;
 use cube_core::panels::fit_font_px;
 use cube_core::{Action, ManualEntry, ManualError, Modifier, Readiness, TimerPhase};
@@ -36,6 +37,9 @@ const DIGITS_HEIGHT_SHARE: f32 = 0.3;
 /// The padding on each side of the timer panel.
 const PANEL_PADDING: Rems = Rems(1.5);
 
+/// How much an all-time best grows the digits at the peak of a flash.
+const ALL_TIME_GROWTH: f32 = 0.06;
+
 /// What the digits show at a given moment.
 struct Display {
     text: String,
@@ -54,6 +58,8 @@ impl CubeApp {
         let theme = cx.theme();
         let mono = fonts::timer_digits(cx).unwrap_or_else(|| theme.mono_font_family.clone());
         let muted = theme.muted_foreground;
+        // `ring` is the accent in every theme; `accent` is a hover fill in ours.
+        let accent = theme.ring;
         let preview = self.scramble_preview(window.viewport_size().height);
         let digits = self.fit_digits(&display.text, &mono, attempt, window);
 
@@ -90,15 +96,20 @@ impl CubeApp {
                         )
                     })
                     .child(
-                        div()
-                            .font_family(mono)
-                            .text_size(digits)
-                            .line_height(digits)
-                            .flex_none()
-                            .whitespace_nowrap()
-                            .font_weight(FontWeight::MEDIUM)
-                            .text_color(display.color)
-                            .child(display.text),
+                        self.celebrated(
+                            div()
+                                .font_family(mono)
+                                .text_size(digits)
+                                .line_height(digits)
+                                .flex_none()
+                                .whitespace_nowrap()
+                                .font_weight(FontWeight::MEDIUM)
+                                .text_color(display.color)
+                                .child(display.text),
+                            digits,
+                            display.color,
+                            accent,
+                        ),
                     )
                     .when_some(display.hint, |column, hint| {
                         column.child(div().text_sm().text_color(muted).child(hint))
@@ -109,6 +120,44 @@ impl CubeApp {
                     .children(self.render_active_tags(cx))
                     .children(preview)
             })
+    }
+
+    /// Plays the current celebration on the digits. It only restyles them, with
+    /// the line height left alone so nothing around them moves, and it ends as
+    /// soon as the next attempt begins.
+    fn celebrated(&self, digits: Div, size: Pixels, color: Hsla, accent: Hsla) -> AnyElement {
+        let showing_result = !self.timer.is_active() && self.last_result.is_some();
+        let celebration = self.celebration.filter(|celebration| {
+            let length = Duration::from_millis(celebration.scope.effect_ms());
+            showing_result && celebration.started.elapsed() < length
+        });
+        let Some(celebration) = celebration else {
+            return digits.into_any_element();
+        };
+        let scope = celebration.scope;
+        let reduced = self.settings.reduce_motion;
+        digits
+            .with_animation(
+                ("celebration", celebration.solve),
+                Animation::new(Duration::from_millis(scope.effect_ms())),
+                move |digits, progress| {
+                    if reduced {
+                        return if progress < 1. {
+                            digits.text_color(accent)
+                        } else {
+                            digits
+                        };
+                    }
+                    let glow = bests::glow(progress, scope.flashes());
+                    let digits = digits.text_color(color.blend(accent.opacity(glow)));
+                    if scope == BestScope::AllTime {
+                        digits.text_size(size * (1. + ALL_TIME_GROWTH * glow))
+                    } else {
+                        digits
+                    }
+                },
+            )
+            .into_any_element()
     }
 
     /// The size of the digits: the chosen one, unless `text` would not fit the

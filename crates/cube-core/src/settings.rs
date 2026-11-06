@@ -282,6 +282,13 @@ pub struct Settings {
     pub inspection: bool,
     /// Plays the 8-second and 12-second inspection warnings.
     pub inspection_audio: bool,
+    /// Flashes the digits when a solve sets a personal best.
+    pub celebrate_bests: bool,
+    /// Plays a sound when a solve sets a personal best.
+    pub celebrate_sound: bool,
+    /// Holds a steady color instead of flashing. GPUI does not report the
+    /// system's reduced motion preference, so this stands in for it.
+    pub reduce_motion: bool,
     /// Touching the digits starts and stops the timer like the timer key.
     pub touch_to_start: bool,
     /// Inspection length in milliseconds.
@@ -357,6 +364,9 @@ impl Default for Settings {
         Self {
             inspection: true,
             inspection_audio: false,
+            celebrate_bests: true,
+            celebrate_sound: false,
+            reduce_motion: false,
             touch_to_start: false,
             inspection_limit_ms: 15_000,
             hold_ms: DEFAULT_HOLD.as_millis() as u64,
@@ -516,6 +526,14 @@ mod tests {
         assert!(!settings.scramble_preview);
         let settings: Settings = toml::from_str("inspection = false").unwrap();
         assert!(settings.scramble_preview);
+    }
+
+    #[test]
+    fn older_files_get_the_celebration_defaults() {
+        let settings: Settings = toml::from_str("inspection = false").unwrap();
+        assert!(settings.celebrate_bests);
+        assert!(!settings.celebrate_sound);
+        assert!(!settings.reduce_motion);
     }
 
     #[test]

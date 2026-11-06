@@ -1189,6 +1189,21 @@ impl SettingsView {
                     settings.inspection_audio,
                 ),
                 state(
+                    strings.setting_celebrate,
+                    strings.setting_celebrate_desc,
+                    settings.celebrate_bests,
+                ),
+                state(
+                    strings.setting_celebrate_sound,
+                    strings.setting_celebrate_sound_desc,
+                    settings.celebrate_sound,
+                ),
+                state(
+                    strings.setting_reduce_motion,
+                    strings.setting_reduce_motion_desc,
+                    settings.reduce_motion,
+                ),
+                state(
                     strings.setting_touch_to_start,
                     strings.setting_touch_to_start_desc,
                     settings.touch_to_start,
@@ -1209,6 +1224,30 @@ impl SettingsView {
                     strings.setting_inspection_audio_desc,
                     settings.inspection_audio,
                     |settings, value| settings.inspection_audio = value,
+                    cx,
+                ),
+                self.switch(
+                    "celebrate-bests",
+                    strings.setting_celebrate,
+                    strings.setting_celebrate_desc,
+                    settings.celebrate_bests,
+                    |settings, value| settings.celebrate_bests = value,
+                    cx,
+                ),
+                self.switch(
+                    "celebrate-sound",
+                    strings.setting_celebrate_sound,
+                    strings.setting_celebrate_sound_desc,
+                    settings.celebrate_sound,
+                    |settings, value| settings.celebrate_sound = value,
+                    cx,
+                ),
+                self.switch(
+                    "reduce-motion",
+                    strings.setting_reduce_motion,
+                    strings.setting_reduce_motion_desc,
+                    settings.reduce_motion,
+                    |settings, value| settings.reduce_motion = value,
                     cx,
                 ),
                 self.switch(
