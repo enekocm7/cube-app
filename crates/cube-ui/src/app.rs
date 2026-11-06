@@ -2180,7 +2180,11 @@ impl Render for CubeApp {
         let attempt = self.timer.is_active();
         let body = match self.screen {
             Screen::Timer => {
-                let (sidebar_width, stats_width) = self.panel_widths(window);
+                let (sidebar_width, stats_width) = self.panel_widths(window, cx);
+                let stacked = cube_core::panels::stats_rows_stack(
+                    f32::from(stats_width) as u32,
+                    self.panel_content(window, cx).stats,
+                );
                 h_flex()
                     .relative()
                     .flex_1()
@@ -2195,7 +2199,7 @@ impl Render for CubeApp {
                     })
                     .child(self.render_timer(window, cx))
                     .when(!attempt, |row| {
-                        row.child(self.render_stats_panel(stats_width, cx))
+                        row.child(self.render_stats_panel(stats_width, stacked, cx))
                             // The grips go last so they sit above the panels they straddle.
                             .child(render_grab(PanelSide::Sidebar, sidebar_width, cx))
                             .child(render_grab(PanelSide::Stats, stats_width, cx))

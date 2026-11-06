@@ -1,7 +1,6 @@
 //! The right panel: current and best statistics of the session.
 
 use cube_core::format::format_ms;
-use cube_core::panels::stats_rows_stack;
 use cube_core::stats::{Average, SessionStats};
 use cube_locale::Strings;
 use gpui_kit::component::{ActiveTheme as _, h_flex, v_flex};
@@ -14,7 +13,7 @@ use crate::scroll_fade::FadeScroll;
 /// Height of a row, which follows the text size.
 const ROW_HEIGHT: Rems = Rems(1.75);
 /// Width of the column naming each row.
-const LABEL_WIDTH: Rems = Rems(3.25);
+pub(crate) const LABEL_WIDTH: Rems = Rems(3.25);
 
 /// What clicking a value of the panel opens.
 #[derive(Clone, Copy)]
@@ -27,6 +26,7 @@ impl CubeApp {
     pub(crate) fn render_stats_panel(
         &self,
         width: Pixels,
+        stacked: bool,
         cx: &mut Context<Self>,
     ) -> impl IntoElement + use<> {
         let strings = self.strings();
@@ -47,7 +47,6 @@ impl CubeApp {
                 .text_right()
                 .child(text)
         };
-        let stacked = stats_rows_stack(f32::from(width) as u32, self.settings.text_scale());
         let row = |label: String, current: AnyElement, best: AnyElement| {
             stats_row(label, current, best, stacked, muted)
         };

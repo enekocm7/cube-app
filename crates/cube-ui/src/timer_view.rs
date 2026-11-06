@@ -60,7 +60,7 @@ impl CubeApp {
         let muted = theme.muted_foreground;
         // `ring` is the accent in every theme; `accent` is a hover fill in ours.
         let accent = theme.ring;
-        let digits = self.fit_digits(&display.text, &mono, attempt, window);
+        let digits = self.fit_digits(&display.text, &mono, attempt, window, cx);
 
         let room = self.room_beside_digits(digits, window);
 
@@ -211,6 +211,7 @@ impl CubeApp {
         family: &SharedString,
         attempt: bool,
         window: &Window,
+        cx: &App,
     ) -> Pixels {
         let chosen = self.settings.timer_digits_px(self.event);
         let viewport = window.viewport_size();
@@ -218,7 +219,7 @@ impl CubeApp {
         let panels = if attempt {
             px(0.)
         } else {
-            let (sidebar, stats) = self.panel_widths(window);
+            let (sidebar, stats) = self.panel_widths(window, cx);
             sidebar + stats
         };
         let mut digits = font(family.clone());
