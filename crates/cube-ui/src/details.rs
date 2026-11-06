@@ -24,6 +24,7 @@ use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
 use crate::palette::Palette;
 use crate::preview::PreviewCache;
 use crate::scroll_fade::FadeScroll;
+use crate::tag_dialogs::TagEditor;
 
 /// The tallest the scramble preview grows in the dialog.
 const PREVIEW_HEIGHT: Pixels = px(190.);
@@ -58,6 +59,8 @@ struct SolveForm {
     scramble: Entity<TextareaState>,
     date: Entity<InputState>,
     comment: Entity<InputState>,
+    /// `None` while tags cannot be saved.
+    tags: Option<Entity<TagEditor>>,
     time_error: Option<String>,
     scramble_error: Option<String>,
     preview: PreviewCache,
@@ -70,6 +73,11 @@ struct SolveForm {
 impl SolveForm {
     /// Applies the form to the solve; returns whether the dialog may close.
     fn save(&mut self, window: &mut Window, cx: &mut Context<Self>) -> bool {
+        if let Some(tags) = &self.tags
+            && !tags.update(cx, |tags, cx| tags.ready_to_save(window, cx))
+        {
+            return false;
+        }
         let strings = self.strings;
         let event = self.event;
         let modifier = self.modifier;
@@ -130,8 +138,11 @@ impl SolveForm {
             comment: comment_text.trim().to_owned(),
         };
         let index = self.index;
+        let tags = self.tags.as_ref().map(|tags| tags.read(cx).selected());
         self.app
-            .update(cx, |app, cx| app.edit_solve(index, after, window, cx))
+            .update(cx, |app, cx| {
+                app.edit_solve(index, after, tags, window, cx);
+            })
             .is_ok()
     }
 
@@ -252,6 +263,7 @@ impl Render for SolveForm {
                         .child(keep_focus("field-comment", Input::new(&self.comment)))
                         .children(field_error(self.comment_error.as_ref(), colors.red)),
                 )
+                .children(self.tags.clone())
                 .child(self.render_history(cx)),
         )
     }
@@ -528,7 +540,19 @@ impl CubeApp {
         let strings = self.strings();
         let language = self.language();
         let app = cx.entity().downgrade();
-        let form = new_form(app.clone(), index, solve, strings, language, window, cx);
+        let tags = self.tags_available.then(|| {
+            let selected = solve.tags().to_vec();
+            TagEditor::new(selected, self.known_tags(), strings, window, cx)
+        });
+        let form = new_form(
+            app.clone(),
+            index,
+            solve,
+            tags,
+            (strings, language),
+            window,
+            cx,
+        );
         let title = format!(
             "{} · #{}",
             strings.solve_details,
@@ -616,8 +640,8 @@ fn new_form(
     app: WeakEntity<CubeApp>,
     index: usize,
     solve: &Solve,
-    strings: &'static cube_locale::Strings,
-    language: cube_locale::Language,
+    tags: Option<Entity<TagEditor>>,
+    (strings, language): (&'static cube_locale::Strings, cube_locale::Language),
     window: &mut Window,
     cx: &mut Context<CubeApp>,
 ) -> Entity<SolveForm> {
@@ -658,6 +682,7 @@ fn new_form(
             scramble,
             date,
             comment,
+            tags,
             time_error: None,
             scramble_error: None,
             preview: PreviewCache::default(),

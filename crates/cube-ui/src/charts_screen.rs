@@ -8,11 +8,12 @@ use std::rc::Rc;
 use chrono::{Datelike as _, NaiveDate};
 use cube_core::charts::{
     self, COMPARE_COLUMNS, Calendar, ChartFilter, ChartPoint, ChartRange, ChartView, ChartZoom,
-    CompareRow, EventBests, MAX_HEAT, OVERLAY_SIZES, Record, Selection,
+    CompareRow, EventBests, MAX_HEAT, OVERLAY_SIZES, Record, Selection, TagSide,
 };
 use cube_core::dialogs::DialogSize;
 use cube_core::format::format_ms;
 use cube_core::stats::{self, AVERAGE_SIZES, SessionStats};
+use cube_core::tags;
 use cube_core::{Action, History, WcaEvent};
 use cube_locale::Strings;
 use gpui_kit::assets::IconName;
@@ -27,7 +28,7 @@ use gpui_kit::component::{
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
-use crate::app::{CubeApp, average_label};
+use crate::app::{CubeApp, Screen, average_label};
 use crate::dialog_size::{dialog_title, dialog_width};
 use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
 use crate::palette::Palette;
@@ -86,11 +87,18 @@ pub struct ChartData {
     distribution: Vec<Bucket>,
     calendar: Calendar,
     compare: Vec<CompareRow>,
+    /// The two sides of the tag comparison.
+    tags: [TagSide; 2],
     bests: Vec<EventBests>,
 }
 
 impl ChartData {
-    pub fn new(sessions: &[History], current: usize, filter: ChartFilter) -> Self {
+    pub fn new(
+        sessions: &[History],
+        current: usize,
+        filter: &ChartFilter,
+        compare_tag: Option<&str>,
+    ) -> Self {
         let today = charts::today();
         let selection = Selection::across(sessions, current, filter, today);
         let visible = selection.visible();
@@ -115,6 +123,8 @@ impl ChartData {
             distribution,
             calendar: Calendar::new(&visible),
             compare: charts::compare(sessions, filter, today),
+            tags: [filter.tag.as_deref(), compare_tag]
+                .map(|tag| TagSide::new(sessions, current, filter, tag, today)),
             bests: charts::all_time_bests(sessions),
         }
     }
@@ -127,6 +137,7 @@ impl CubeApp {
             ChartView::Trends => self.render_trends(&data, cx),
             ChartView::Calendar => self.render_calendar(&data, cx),
             ChartView::Compare => self.render_compare(&data, cx),
+            ChartView::Tags => self.render_tag_compare(&data, cx),
             ChartView::Bests => self.render_bests(&data, cx),
         };
         v_flex()
@@ -183,7 +194,14 @@ impl CubeApp {
                     })
                     .when(self.chart_view != ChartView::Bests, |row| {
                         row.child(self.render_range_filter(cx))
-                    }),
+                    })
+                    .when(self.tag_filter_shown() && self.has_tags(), |row| {
+                        row.child(self.render_tag_filter(cx))
+                    })
+                    .when(
+                        self.chart_view == ChartView::Tags && self.has_tags(),
+                        |row| row.child(self.render_compare_tag_filter(cx)),
+                    ),
             )
     }
 
@@ -300,6 +318,61 @@ impl CubeApp {
                         }),
                 )
             },
+        )
+    }
+
+    /// Picks the tag the charts and the stats table are filtered by.
+    pub(crate) fn render_tag_filter(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
+        let selected = self.chart_filter.tag.clone();
+        self.render_tag_menu("tag-filter", selected, Self::set_tag_filter, cx)
+    }
+
+    /// Picks what the tag comparison sets against the tag filter.
+    fn render_compare_tag_filter(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
+        let selected = self.compare_tag.clone();
+        self.render_tag_menu("compare-tag", selected, Self::set_compare_tag, cx)
+    }
+
+    fn render_tag_menu(
+        &self,
+        id: &'static str,
+        selected: Option<String>,
+        pick: fn(&mut Self, Option<String>, &mut Context<Self>),
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement + use<> {
+        let strings = self.strings();
+        let entity = cx.entity().downgrade();
+        let known = self.known_tags();
+        let label = tag_label(strings, selected.as_deref());
+        div().max_w(SESSION_FILTER_MAX_WIDTH).child(
+            filter_button(id, label)
+                .w_full()
+                .dropdown_menu(move |menu, window, _| {
+                    let mut menu = menu
+                        .scrollable(true)
+                        .max_h(window.viewport_size().height * SESSION_MENU_SHARE);
+                    for option in std::iter::once(None).chain(known.iter().cloned().map(Some)) {
+                        let entity = entity.clone();
+                        let checked = match (&option, &selected) {
+                            (Some(option), Some(selected)) => tags::same(option, selected),
+                            (option, selected) => option.is_none() && selected.is_none(),
+                        };
+                        menu = menu.item(
+                            PopupMenuItem::new(tag_label(strings, option.as_deref()))
+                                .checked(checked)
+                                .on_click(move |_, window, cx| {
+                                    let option = option.clone();
+                                    entity
+                                        .update(cx, |app, cx| {
+                                            pick(app, option, cx);
+                                            app.focus.focus(window, cx);
+                                        })
+                                        .ok();
+                                }),
+                        );
+                    }
+                    menu
+                }),
         )
     }
 
@@ -613,6 +686,80 @@ impl CubeApp {
             .into_any_element()
     }
 
+    /// Two tags side by side. Each works on what the other filters keep.
+    fn render_tag_compare(&self, data: &ChartData, cx: &mut Context<Self>) -> AnyElement {
+        let strings = self.strings();
+        let language = self.language();
+        let colors = Palette::of(cx);
+        let theme = cx.theme();
+        let (muted, background) = (theme.muted_foreground, theme.background);
+        let mono = theme.mono_font_family.clone();
+        if !self.has_tags() {
+            return empty_message(strings.tags_none, muted);
+        }
+        let [left, right] = &data.tags;
+        if left.count == 0 && right.count == 0 {
+            return empty_message(self.chart_empty_text(), muted);
+        }
+
+        let mut names = vec![strings.stat_single.to_owned(), strings.stat_mean.to_owned()];
+        names.extend(OVERLAY_SIZES.into_iter().map(average_label));
+        let rows = names.into_iter().enumerate().map(|(column, name)| {
+            let (first, second) = (left.values[column], right.values[column]);
+            let fastest = first.into_iter().chain(second).min();
+            // A tie has no winner to point out.
+            let wins = |value: Option<u64>| value.is_some() && value == fastest && first != second;
+            table_row()
+                .child(name_cell(name))
+                .child(
+                    value_cell(format_value(first))
+                        .font_family(mono.clone())
+                        .when(wins(first), |cell| cell.text_color(colors.green)),
+                )
+                .child(
+                    value_cell(format_value(second))
+                        .font_family(mono.clone())
+                        .when(wins(second), |cell| cell.text_color(colors.green)),
+                )
+        });
+
+        FadeScroll::new("chart-tags", background)
+            .track(&self.chart_scroll)
+            .flex_1()
+            .min_h_0()
+            .p_6()
+            .child(
+                v_flex()
+                    .child(
+                        table_row()
+                            .text_color(muted)
+                            .child(name_cell(String::new()))
+                            .child(
+                                value_cell(tag_label(strings, self.chart_filter.tag.as_deref()))
+                                    .truncate(),
+                            )
+                            .child(
+                                value_cell(tag_label(strings, self.compare_tag.as_deref()))
+                                    .truncate(),
+                            ),
+                    )
+                    .child(
+                        table_row()
+                            .child(name_cell(strings.stat_solves.to_owned()))
+                            .child(
+                                value_cell(language.format_count(left.count as u64))
+                                    .font_family(mono.clone()),
+                            )
+                            .child(
+                                value_cell(language.format_count(right.count as u64))
+                                    .font_family(mono.clone()),
+                            ),
+                    )
+                    .children(rows),
+            )
+            .into_any_element()
+    }
+
     /// Each event's best results, with the session each one came from.
     fn render_bests(&self, data: &ChartData, cx: &mut Context<Self>) -> AnyElement {
         let strings = self.strings();
@@ -745,6 +892,43 @@ impl CubeApp {
         self.clear_chart_data();
         self.chart_day = None;
         cx.notify();
+    }
+
+    /// Returns whether any tag exists, so the controls for them mean anything.
+    fn has_tags(&self) -> bool {
+        !self.tag_usage.is_empty() || self.chart_filter.tag.is_some()
+    }
+
+    /// Returns whether what is showing follows the tag filter.
+    pub(crate) fn tag_filter_shown(&self) -> bool {
+        match self.screen {
+            Screen::Stats => true,
+            Screen::Charts => self.chart_view != ChartView::Bests,
+            Screen::Timer | Screen::Goals => false,
+        }
+    }
+
+    fn set_tag_filter(&mut self, tag: Option<String>, cx: &mut Context<Self>) {
+        self.chart_filter.tag = tag;
+        self.clear_stats_table();
+        self.stats_table_scroll
+            .scroll_to_item(0, ScrollStrategy::Top);
+        self.chart_filter_changed(cx);
+    }
+
+    fn set_compare_tag(&mut self, tag: Option<String>, cx: &mut Context<Self>) {
+        self.compare_tag = tag;
+        self.chart_filter_changed(cx);
+    }
+
+    pub(crate) fn next_tag_filter(&mut self, cx: &mut Context<Self>) {
+        let tag = tags::next_filter(self.chart_filter.tag.as_deref(), &self.known_tags());
+        self.set_tag_filter(tag, cx);
+    }
+
+    pub(crate) fn next_compare_tag(&mut self, cx: &mut Context<Self>) {
+        let tag = tags::next_filter(self.compare_tag.as_deref(), &self.known_tags());
+        self.set_compare_tag(tag, cx);
     }
 
     pub(crate) fn next_chart_event(&mut self, cx: &mut Context<Self>) {
@@ -930,8 +1114,13 @@ const fn view_label(strings: &'static Strings, view: ChartView) -> &'static str 
         ChartView::Trends => strings.chart_view_trends,
         ChartView::Calendar => strings.chart_view_calendar,
         ChartView::Compare => strings.chart_view_compare,
+        ChartView::Tags => strings.field_tags,
         ChartView::Bests => strings.chart_view_bests,
     }
+}
+
+fn tag_label(strings: &'static Strings, tag: Option<&str>) -> String {
+    tag.unwrap_or(strings.chart_all_tags).to_owned()
 }
 
 fn event_label(strings: &'static Strings, event: Option<WcaEvent>) -> &'static str {

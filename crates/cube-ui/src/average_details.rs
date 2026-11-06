@@ -2,7 +2,9 @@
 //! trimmed ones, and copying an average as text.
 
 use cube_core::format::format_delta;
-use cube_core::stats::{self, AVERAGE_SIZES, Average, AverageDetail, DEFAULT_AVERAGE, Trim};
+use cube_core::stats::{
+    self, AVERAGE_SIZES, Average, AverageDetail, DEFAULT_AVERAGE, SessionStats, Trim,
+};
 use cube_locale::{Language, Strings};
 use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::{ActiveTheme as _, WindowExt as _, h_flex, v_flex};
@@ -55,13 +57,18 @@ impl CubeApp {
     /// Opens the selected average, ending at the target solve.
     pub(crate) fn open_selected_average(&self, window: &mut Window, cx: &mut Context<Self>) {
         let end = self.target_solve().unwrap_or_default();
+        let end = self.average_place(end);
         self.open_average(end, self.selected_average_size(), window, cx);
     }
 
     /// Opens the fastest average of the selected window.
     pub(crate) fn open_best_average(&self, window: &mut Window, cx: &mut Context<Self>) {
         let size = self.selected_average_size();
-        let best = self.stats.windows.iter().find(|stats| stats.size == size);
+        let filtered = self
+            .stats_tag()
+            .map(|_| SessionStats::compute(&self.average_solves()));
+        let stats = filtered.as_ref().unwrap_or(&self.stats);
+        let best = stats.windows.iter().find(|stats| stats.size == size);
         match best.and_then(|stats| stats.best) {
             Some((_, end)) => self.open_average(end, size, window, cx),
             None => self.warn_missing_average(size, window, cx),
@@ -71,12 +78,14 @@ impl CubeApp {
     /// Copies the selected average, ending at the target solve.
     pub(crate) fn copy_selected_average(&self, window: &mut Window, cx: &mut Context<Self>) {
         let end = self.target_solve().unwrap_or_default();
+        let end = self.average_place(end);
         self.copy_average(end, self.selected_average_size(), window, cx);
     }
 
     fn copy_average(&self, end: usize, size: usize, window: &mut Window, cx: &mut Context<Self>) {
         let strings = self.strings();
-        let Some(detail) = AverageDetail::at(self.session().solves(), end, size) else {
+        let solves = self.average_solves();
+        let Some(detail) = AverageDetail::at(&solves, end, size) else {
             self.warn_missing_average(size, window, cx);
             return;
         };
@@ -104,7 +113,7 @@ impl CubeApp {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if AverageDetail::at(self.session().solves(), end, size).is_none() {
+        if AverageDetail::at(&self.average_solves(), end, size).is_none() {
             self.warn_missing_average(size, window, cx);
             return;
         }
@@ -162,7 +171,8 @@ fn render_body(
     let theme = cx.theme();
     let (background, muted) = (theme.background, theme.muted_foreground);
     let mono = theme.mono_font_family.clone();
-    let Some(detail) = AverageDetail::at(state.session().solves(), end, size) else {
+    let solves = state.average_solves();
+    let Some(detail) = AverageDetail::at(&solves, end, size) else {
         let message = strings
             .average_missing
             .replace("{label}", &average_label(size));
@@ -249,7 +259,7 @@ fn render_attempt(
     let mono = theme.mono_font_family.clone();
     let colors = Palette::of(cx);
     let solve = &detail.attempts()[position];
-    let index = detail.first() + position;
+    let index = app.read(cx).session_index(detail.first() + position);
     let trim = detail.trim(position);
     let deviation = detail.deviation(position);
 

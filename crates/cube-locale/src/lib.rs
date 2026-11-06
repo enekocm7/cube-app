@@ -680,6 +680,27 @@ pub struct Strings {
     pub toast_import_failed: &'static str,
     /// `{error}`: the cause.
     pub toast_export_failed: &'static str,
+    pub field_tags: &'static str,
+    pub tag_new_placeholder: &'static str,
+    pub tag_add: &'static str,
+    pub tags_none: &'static str,
+    pub tag_invalid: &'static str,
+    pub tag_exists: &'static str,
+    pub tags_unavailable: &'static str,
+    pub toast_tags_load_failed: &'static str,
+    pub tags_active_title: &'static str,
+    pub tags_solve_title: &'static str,
+    pub tags_manage: &'static str,
+    pub tag_rename: &'static str,
+    pub tag_delete: &'static str,
+    pub tag_delete_confirm: &'static str,
+    pub tags_active_label: &'static str,
+    pub tags_active_none: &'static str,
+    pub chart_all_tags: &'static str,
+    pub action_edit_tags: &'static str,
+    pub action_active_tags: &'static str,
+    pub action_next_tag_filter: &'static str,
+    pub action_next_compare_tag: &'static str,
     pub action_open_goals: &'static str,
     pub goals_title: &'static str,
     pub goals_empty: &'static str,
@@ -824,6 +845,11 @@ mod tests {
             assert!(strings.goal_summary_streak.contains("{days}"));
             assert!(strings.goal_error_count.contains("{max}"));
             assert!(strings.toast_goal_reached.contains("{goal}"));
+            assert!(strings.tag_invalid.contains("{max}"));
+            assert!(strings.toast_tags_load_failed.contains("{error}"));
+            assert!(strings.tag_delete_confirm.contains("{tag}"));
+            assert!(strings.tag_delete_confirm.contains("{count}"));
+            assert!(strings.tags_active_label.contains("{tags}"));
             assert!(strings.toast_goals_load_failed.contains("{error}"));
             assert!(strings.toast_goals_save_failed.contains("{error}"));
             assert!(strings.toast_load_failed.contains("{error}"));

@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::solve::{Modifier, Solve, SolveSnapshot};
+use crate::tags::TagChange;
 
 /// One session. Field names are part of the save format shared with cube-tui.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -58,6 +59,24 @@ impl History {
             self.remark_single_records();
         }
         changed
+    }
+
+    /// Replaces the tags of the solve at `index`; returns whether they changed.
+    pub fn set_tags(&mut self, index: usize, tags: Vec<String>) -> bool {
+        match self.times.get_mut(index) {
+            Some(solve) if solve.tags() != tags => {
+                solve.set_tags(tags);
+                true
+            }
+            _ => false,
+        }
+    }
+
+    /// Applies a change to a tag on every solve that has it.
+    pub fn change_tags(&mut self, change: &TagChange) {
+        for solve in &mut self.times {
+            solve.change_tags(change);
+        }
     }
 
     /// Toggles a penalty on the solve at `index`, clearing it if already set.

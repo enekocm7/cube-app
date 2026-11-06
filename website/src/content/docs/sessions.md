@@ -24,6 +24,17 @@ order: 1
 
 Every change is kept in an audit trail, so you can see what a solve used to be.
 
+## Tags
+
+Tags say what a solve had in common with others, such as the cube, the method or "warm-up", so you can tell whether a new cube is really faster.
+
+- Tag a solve in its details, or with `T`.
+- `Shift + T`, or the line under the timer, picks tags for the next solves. They stay on until you change them, even after closing the app.
+- `Ctrl + T` renames or deletes a tag everywhere. A tag can't take the name of another one.
+- Tags ignore case and keep the spelling they were first typed with, so `gan` becomes `GAN` if that came first.
+
+See [Stats and charts](/cube-app/docs/stats-charts/) for filtering and comparing them.
+
 ## Penalties
 
 - `2` toggles `+2` on the keyboard selection (or the latest solve).

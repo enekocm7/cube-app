@@ -18,6 +18,7 @@ use std::thread::{self, JoinHandle};
 use crate::history::History;
 use crate::merge::MergeSummary;
 use crate::persistence::HistoryStore;
+use crate::tags::TagChange;
 
 /// A merge finished in the background, waiting for the UI.
 pub struct Merge {
@@ -61,6 +62,8 @@ struct State {
     /// from no update, without nesting `Option`.
     user_backups: Option<PathBuf>,
     user_backups_dirty: bool,
+    /// Changes to tags, for the solves only the store knows about.
+    tag_changes: Vec<TagChange>,
     /// Whether a backup was asked for.
     back_up: bool,
     /// Whether the thread is working right now.
@@ -128,6 +131,13 @@ impl HistoryWriter {
         };
         state.pending = Some(request);
         self.shared.work.notify_one();
+    }
+
+    /// Queues `sessions`, which `change` was already applied to, and applies
+    /// it to the solves `sessions` does not have too.
+    pub fn change_tags(&self, change: TagChange, sessions: Vec<History>) {
+        lock(&self.shared.state).tag_changes.push(change);
+        self.save(sessions);
     }
 
     /// Queues a check for what another app wrote, with `sessions` as the
@@ -236,7 +246,7 @@ fn save(store: &mut HistoryStore, request: Request) -> Option<WriterEvent> {
 
 fn run(shared: &Shared, mut store: HistoryStore) {
     loop {
-        let (request, user_backups, back_up) = {
+        let (request, tag_changes, user_backups, back_up) = {
             let mut state = lock(&shared.state);
             loop {
                 if state.has_work() {
@@ -249,6 +259,7 @@ fn run(shared: &Shared, mut store: HistoryStore) {
                     };
                     break (
                         state.pending.take(),
+                        std::mem::take(&mut state.tag_changes),
                         user_backups,
                         std::mem::take(&mut state.back_up),
                     );
@@ -268,8 +279,14 @@ fn run(shared: &Shared, mut store: HistoryStore) {
         if let Some(dir) = user_backups {
             store.set_user_backups(dir);
         }
+        for change in &tag_changes {
+            store.change_tags(change);
+        }
         if let Some(request) = request {
             events.extend(save(&mut store, request));
+        }
+        if let Some(error) = store.take_extras_error() {
+            events.push(WriterEvent::SaveFailed(format!("{error:#}")));
         }
         if let Some(error) = store.take_backup_error() {
             events.push(WriterEvent::BackupFailed(format!("{error:#}")));
@@ -296,7 +313,7 @@ mod tests {
 
     use super::*;
     use crate::event::WcaEvent;
-    use crate::solve::{Modifier, Solve};
+    use crate::solve::{Modifier, Solve, SolveSnapshot};
 
     static NEXT_ID: AtomicU64 = AtomicU64::new(0);
 
@@ -485,6 +502,148 @@ mod tests {
 
         assert_eq!(writer.take_events().len(), 0);
         assert_eq!(times(&load(&path)), [10]);
+        remove_folder_of(&path);
+    }
+
+    fn tagged(ms: u64, tag: &str) -> Solve {
+        let mut solve = solve(ms);
+        solve.set_tags(vec![tag.to_owned()]);
+        solve
+    }
+
+    fn tags(sessions: &[History]) -> Vec<Vec<String>> {
+        let solves = sessions[0].solves().iter();
+        solves.map(|solve| solve.tags().to_vec()).collect()
+    }
+
+    #[test]
+    fn a_tag_alone_is_saved_and_leaves_the_history_file_as_it_was() {
+        let path = temporary_history();
+        let writer = writer_at(&path);
+        writer.save(session(&[10]));
+        writer.flush();
+        let before = fs::read(&path).unwrap();
+
+        let mut sessions = session(&[10]);
+        assert!(sessions[0].set_tags(0, vec!["GAN".to_owned()]));
+        writer.save(sessions);
+        writer.flush();
+
+        assert_eq!(fs::read(&path).unwrap(), before);
+        assert_eq!(tags(&load(&path)), [vec!["GAN".to_owned()]]);
+        remove_folder_of(&path);
+    }
+
+    #[test]
+    fn tags_survive_a_cube_tui_save_and_merge() {
+        let path = temporary_history();
+        let writer = writer_at(&path);
+        let mut ours = session(&[10]);
+        ours[0].push(tagged(20, "GAN"));
+        writer.save(ours.clone());
+        writer.flush();
+
+        // cube-tui adds a solve and edits the tagged one, knowing nothing of tags.
+        let mut theirs = load(&path);
+        let after = SolveSnapshot {
+            comment: "from cube-tui".to_owned(),
+            ..theirs[0].solves()[1].snapshot()
+        };
+        assert!(theirs[0].edit(1, after));
+        theirs[0].push(solve(30));
+        write_like_cube_tui(&path, &theirs);
+
+        writer.refresh(ours);
+        let (merged, summary) = writer.adopt(finished_merge(&writer)).unwrap();
+
+        assert_eq!(summary.added, 1);
+        assert_eq!(summary.updated, 1);
+        assert_eq!(merged[0].solves()[1].comment(), "from cube-tui");
+        let expected = [vec![], vec!["GAN".to_owned()], vec![]];
+        assert_eq!(tags(&merged), expected);
+        assert_eq!(tags(&load(&path)), expected);
+        remove_folder_of(&path);
+    }
+
+    #[test]
+    fn a_solve_cube_tui_brings_back_gets_its_tags_back() {
+        let path = temporary_history();
+        let writer = writer_at(&path);
+        let mut sessions = session(&[10]);
+        sessions[0].push(tagged(20, "GAN"));
+        writer.save(sessions);
+        drop(writer);
+
+        // Gone from the file while the app was closed, then written back.
+        write_like_cube_tui(&path, &session(&[10]));
+        let (store, opened) = HistoryStore::open(&path).unwrap();
+        assert_eq!(opened[0].len(), 1);
+        let writer = HistoryWriter::new(store);
+
+        let mut with_solve = session(&[10]);
+        with_solve[0].push(solve(20));
+        write_like_cube_tui(&path, &with_solve);
+
+        // The first merge is never taken in, so the second has to do it again.
+        writer.save(opened.clone());
+        let stale = finished_merge(&writer);
+        assert_eq!(tags(&stale.sessions)[1], ["GAN"]);
+        writer.save(opened);
+        let (merged, _) = writer.adopt(finished_merge(&writer)).unwrap();
+        assert!(writer.adopt(stale).is_none());
+
+        assert_eq!(tags(&merged)[1], ["GAN"]);
+        assert_eq!(tags(&load(&path))[1], ["GAN"]);
+        remove_folder_of(&path);
+    }
+
+    #[test]
+    fn a_tag_change_reaches_a_solve_missing_from_the_history() {
+        let path = temporary_history();
+        let writer = writer_at(&path);
+        let mut sessions = session(&[10]);
+        sessions[0].push(tagged(20, "GAN"));
+        writer.save(sessions);
+        drop(writer);
+
+        write_like_cube_tui(&path, &session(&[10]));
+        let (store, opened) = HistoryStore::open(&path).unwrap();
+        let writer = HistoryWriter::new(store);
+        let change = TagChange::Rename {
+            from: "gan".to_owned(),
+            to: "Moyu".to_owned(),
+        };
+        writer.change_tags(change, opened);
+        drop(writer);
+
+        let mut with_solve = session(&[10]);
+        with_solve[0].push(solve(20));
+        write_like_cube_tui(&path, &with_solve);
+        assert_eq!(tags(&load(&path))[1], ["Moyu"]);
+        remove_folder_of(&path);
+    }
+
+    #[test]
+    fn unreadable_extras_leave_the_solves_usable_and_the_file_alone() {
+        let path = temporary_history();
+        write_like_cube_tui(&path, &session(&[10]));
+        let extras = path.with_file_name("solve-extras.json");
+        fs::write(&extras, "not json").unwrap();
+
+        let (mut store, sessions) = HistoryStore::open(&path).unwrap();
+        assert_eq!(times(&sessions), [10]);
+        assert!(!store.tags_available());
+        assert!(store.take_extras_error().is_some());
+
+        let writer = HistoryWriter::new(store);
+        let mut tagged_sessions = session(&[10, 20]);
+        assert!(tagged_sessions[0].set_tags(1, vec!["GAN".to_owned()]));
+        writer.save(tagged_sessions);
+        writer.flush();
+
+        assert_eq!(times(&load(&path)), [10, 20]);
+        assert_eq!(fs::read_to_string(&extras).unwrap(), "not json");
+        assert_eq!(writer.take_events().len(), 0);
         remove_folder_of(&path);
     }
 

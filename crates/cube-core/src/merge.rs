@@ -7,6 +7,8 @@
 
 use std::collections::{HashMap, HashSet};
 
+use serde::{Deserialize, Serialize};
+
 use crate::event::WcaEvent;
 use crate::history::History;
 use crate::solve::Solve;
@@ -33,8 +35,8 @@ impl MergeSummary {
 ///
 /// Built from the solve as first recorded, so edits do not change it.
 /// `occurrence` tells identical legacy solves apart.
-#[derive(Clone, PartialEq, Eq, Hash)]
-struct SolveId {
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub(crate) struct SolveId {
     event: WcaEvent,
     scramble: String,
     solved_at_unix_ms: u64,
@@ -42,25 +44,28 @@ struct SolveId {
     occurrence: usize,
 }
 
+/// Returns the id of `solve`, the next of its kind after those in `seen`.
+pub(crate) fn identify(solve: &Solve, seen: &mut HashMap<SolveId, usize>) -> SolveId {
+    let (event, scramble, solved_at_unix_ms, time_ms) = solve.origin();
+    let mut id = SolveId {
+        event,
+        scramble: scramble.to_owned(),
+        solved_at_unix_ms,
+        time_ms,
+        occurrence: 0,
+    };
+    let count = seen.entry(id.clone()).or_default();
+    id.occurrence = *count;
+    *count += 1;
+    id
+}
+
 fn solve_ids(session: &History) -> Vec<SolveId> {
-    let mut seen: HashMap<SolveId, usize> = HashMap::new();
+    let mut seen = HashMap::new();
     session
         .solves()
         .iter()
-        .map(|solve| {
-            let (event, scramble, solved_at_unix_ms, time_ms) = solve.origin();
-            let mut id = SolveId {
-                event,
-                scramble: scramble.to_owned(),
-                solved_at_unix_ms,
-                time_ms,
-                occurrence: 0,
-            };
-            let count = seen.entry(id.clone()).or_default();
-            id.occurrence = *count;
-            *count += 1;
-            id
-        })
+        .map(|solve| identify(solve, &mut seen))
         .collect()
 }
 
@@ -129,7 +134,10 @@ fn merge_session(
     for (id, solve) in our_ids.iter().zip(ours.solves_mut()) {
         match their_solves.get(id) {
             Some(their) if revision(their) > revision(solve) => {
+                // The file knows nothing of tags: they stay with this copy.
+                let tags = solve.tags().to_vec();
                 solve.clone_from(their);
+                solve.set_tags(tags);
                 summary.updated += 1;
             }
             None if known.contains_key(id) => summary.kept += 1,

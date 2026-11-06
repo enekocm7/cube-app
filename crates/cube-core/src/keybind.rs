@@ -38,6 +38,11 @@ pub enum Action {
     OpenBluetooth,
     OpenGoals,
     NewGoal,
+    EditTags,
+    ActiveTags,
+    ManageTags,
+    NextTagFilter,
+    NextCompareTag,
     NextChartView,
     NextChartEvent,
     NextChartRange,
@@ -57,7 +62,7 @@ pub enum Action {
 
 impl Action {
     /// Every action, in the order the help dialog lists them.
-    pub const ALL: [Self; 41] = [
+    pub const ALL: [Self; 46] = [
         Self::Timer,
         Self::Cancel,
         Self::NextScramble,
@@ -84,6 +89,11 @@ impl Action {
         Self::OpenBluetooth,
         Self::OpenGoals,
         Self::NewGoal,
+        Self::EditTags,
+        Self::ActiveTags,
+        Self::ManageTags,
+        Self::NextTagFilter,
+        Self::NextCompareTag,
         Self::NextChartView,
         Self::NextChartEvent,
         Self::NextChartRange,
@@ -130,6 +140,11 @@ impl Action {
             Self::OpenBluetooth => "open_bluetooth",
             Self::OpenGoals => "open_goals",
             Self::NewGoal => "new_goal",
+            Self::EditTags => "edit_tags",
+            Self::ActiveTags => "active_tags",
+            Self::ManageTags => "manage_tags",
+            Self::NextTagFilter => "next_tag_filter",
+            Self::NextCompareTag => "next_compare_tag",
             Self::NextChartView => "next_chart_view",
             Self::NextChartEvent => "next_chart_event",
             Self::NextChartRange => "next_chart_range",
@@ -339,6 +354,11 @@ impl Default for Keybinds {
             (Action::OpenBluetooth, "b"),
             (Action::OpenGoals, "Shift+G"),
             (Action::NewGoal, "Shift+N"),
+            (Action::EditTags, "t"),
+            (Action::ActiveTags, "Shift+T"),
+            (Action::ManageTags, "Ctrl+T"),
+            (Action::NextTagFilter, "l"),
+            (Action::NextCompareTag, "Shift+L"),
             (Action::NextChartView, "v"),
             (Action::NextChartEvent, "f"),
             (Action::NextChartRange, "r"),
@@ -838,6 +858,22 @@ mod tests {
         let shifted = |key| KeyPress::new(key, false, false, true).unwrap();
         assert_eq!(binds.action_for(&shifted("g")), Some(Action::OpenGoals));
         assert_eq!(binds.action_for(&shifted("n")), Some(Action::NewGoal));
+    }
+
+    #[test]
+    fn the_tag_actions_have_their_default_keys() {
+        let binds = Keybinds::default();
+        let plain = |key| KeyPress::new(key, false, false, false).unwrap();
+        let shifted = |key| KeyPress::new(key, false, false, true).unwrap();
+        let ctrl = |key| KeyPress::new(key, true, false, false).unwrap();
+        assert_eq!(binds.action_for(&plain("t")), Some(Action::EditTags));
+        assert_eq!(binds.action_for(&shifted("t")), Some(Action::ActiveTags));
+        assert_eq!(binds.action_for(&ctrl("t")), Some(Action::ManageTags));
+        assert_eq!(binds.action_for(&plain("l")), Some(Action::NextTagFilter));
+        assert_eq!(
+            binds.action_for(&shifted("l")),
+            Some(Action::NextCompareTag)
+        );
     }
 
     #[test]

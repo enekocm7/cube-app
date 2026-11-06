@@ -29,6 +29,7 @@ mod settings_view;
 mod sidebar;
 mod stats_panel;
 mod stats_screen;
+mod tag_dialogs;
 mod theme_editor;
 mod timer_view;
 mod times_plot;

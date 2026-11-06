@@ -11,6 +11,7 @@ use crate::event::WcaEvent;
 use crate::history::History;
 use crate::solve::Solve;
 use crate::stats::{self, AVERAGE_SIZES, SessionStats};
+use crate::tags;
 
 /// The rolling averages drawn over the solve times, and compared between
 /// sessions.
@@ -35,12 +36,19 @@ pub enum ChartView {
     Trends,
     Calendar,
     Compare,
+    Tags,
     Bests,
 }
 
 impl ChartView {
     /// Every view, in tab order.
-    pub const ALL: [Self; 4] = [Self::Trends, Self::Calendar, Self::Compare, Self::Bests];
+    pub const ALL: [Self; 5] = [
+        Self::Trends,
+        Self::Calendar,
+        Self::Compare,
+        Self::Tags,
+        Self::Bests,
+    ];
 
     /// Returns the view after this one, wrapping to the first.
     #[must_use]
@@ -113,7 +121,7 @@ impl ChartRange {
 }
 
 /// What the charts screen keeps of each session.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ChartFilter {
     /// The event to show, or `None` for every event.
     pub event: Option<WcaEvent>,
@@ -121,6 +129,9 @@ pub struct ChartFilter {
     /// Whether to show every session merged, not just the current one. The
     /// comparison always lists every session, so it ignores this.
     pub all_sessions: bool,
+    /// The tag a solve must have, or `None` for every solve. The stats table
+    /// follows this too.
+    pub tag: Option<String>,
 }
 
 /// One position of the times chart.
@@ -165,7 +176,7 @@ pub struct Selection {
 
 impl Selection {
     /// Selects from the solves of a single session.
-    pub fn new(solves: &[Solve], filter: ChartFilter, today: NaiveDate) -> Self {
+    pub fn new(solves: &[Solve], filter: &ChartFilter, today: NaiveDate) -> Self {
         Self::build([(0, solves)], false, filter, today)
     }
 
@@ -174,7 +185,7 @@ impl Selection {
     pub fn across(
         sessions: &[History],
         current: usize,
-        filter: ChartFilter,
+        filter: &ChartFilter,
         today: NaiveDate,
     ) -> Self {
         let chosen = sessions
@@ -188,7 +199,7 @@ impl Selection {
     fn build<'a>(
         sessions: impl IntoIterator<Item = (usize, &'a [Solve])>,
         merged: bool,
-        filter: ChartFilter,
+        filter: &ChartFilter,
         today: NaiveDate,
     ) -> Self {
         let mut entries: Vec<Entry> = sessions
@@ -198,6 +209,7 @@ impl Selection {
                     .iter()
                     .enumerate()
                     .filter(|(_, solve)| filter.event.is_none_or(|event| solve.event() == event))
+                    .filter(|(_, solve)| tags::keeps(solve, filter.tag.as_deref()))
                     .map(move |(index, solve)| Entry {
                         session,
                         number: index + 1,
@@ -467,19 +479,24 @@ pub struct CompareRow {
     pub values: [Option<u64>; COMPARE_COLUMNS],
 }
 
+/// The best single, the mean and the best of each of [`OVERLAY_SIZES`].
+fn compare_values(stats: &SessionStats) -> [Option<u64>; COMPARE_COLUMNS] {
+    let mut values = [None; COMPARE_COLUMNS];
+    values[0] = stats.best.map(|(ms, _)| ms);
+    values[1] = stats.mean;
+    for (column, size) in OVERLAY_SIZES.into_iter().enumerate() {
+        values[2 + column] = best_average(stats, size);
+    }
+    values
+}
+
 impl CompareRow {
     fn new(session: usize, solves: &[Solve]) -> Self {
         let stats = SessionStats::compute(solves);
-        let mut values = [None; COMPARE_COLUMNS];
-        values[0] = stats.best.map(|(ms, _)| ms);
-        values[1] = stats.mean;
-        for (column, size) in OVERLAY_SIZES.into_iter().enumerate() {
-            values[2 + column] = best_average(&stats, size);
-        }
         Self {
             session,
             count: stats.count,
-            values,
+            values: compare_values(&stats),
         }
     }
 
@@ -490,7 +507,7 @@ impl CompareRow {
 }
 
 /// Summarizes every session with solves under `filter`.
-pub fn compare(sessions: &[History], filter: ChartFilter, today: NaiveDate) -> Vec<CompareRow> {
+pub fn compare(sessions: &[History], filter: &ChartFilter, today: NaiveDate) -> Vec<CompareRow> {
     sessions
         .iter()
         .enumerate()
@@ -500,6 +517,39 @@ pub fn compare(sessions: &[History], filter: ChartFilter, today: NaiveDate) -> V
         })
         .filter(|row| row.count > 0)
         .collect()
+}
+
+/// One side of a comparison of tags.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TagSide {
+    pub count: usize,
+    /// The best single, the mean and the best of each of [`OVERLAY_SIZES`].
+    pub values: [Option<u64>; COMPARE_COLUMNS],
+}
+
+impl TagSide {
+    /// Summarizes the solves `filter` shows with `tag`, or all of them.
+    ///
+    /// Across sessions the solves count as one run, oldest first, so that
+    /// what is compared is the tag and not where its solves happen to be.
+    pub fn new(
+        sessions: &[History],
+        current: usize,
+        filter: &ChartFilter,
+        tag: Option<&str>,
+        today: NaiveDate,
+    ) -> Self {
+        let filter = ChartFilter {
+            tag: tag.map(str::to_owned),
+            ..filter.clone()
+        };
+        let visible = Selection::across(sessions, current, &filter, today).visible();
+        let stats = SessionStats::compute(&visible);
+        Self {
+            count: stats.count,
+            values: compare_values(&stats),
+        }
+    }
 }
 
 /// Returns the fastest value of each column of `rows`.
@@ -668,6 +718,7 @@ mod tests {
             event,
             range,
             all_sessions: false,
+            tag: None,
         }
     }
 
@@ -710,6 +761,95 @@ mod tests {
         );
     }
 
+    fn tagged(day: NaiveDate, ms: u64, tag: &str) -> Solve {
+        let mut solve = on(day, ms, WcaEvent::Cube3x3);
+        solve.set_tags(vec![tag.to_owned()]);
+        solve
+    }
+
+    #[test]
+    fn the_tag_filter_keeps_session_numbers_and_ignores_case() {
+        let today = day(2026, 6, 1);
+        let solves = [
+            tagged(today, 1000, "GAN"),
+            on(today, 2000, WcaEvent::Cube3x3),
+            tagged(today, 3000, "gan"),
+        ];
+        let filter = ChartFilter {
+            tag: Some("Gan".to_owned()),
+            ..ChartFilter::default()
+        };
+        let points = Selection::new(&solves, &filter, today).points();
+        let numbers: Vec<usize> = points.iter().map(|point| point.number).collect();
+        assert_eq!(numbers, [1, 3]);
+    }
+
+    #[test]
+    fn the_tag_filter_averages_only_the_tagged_solves() {
+        let today = day(2026, 6, 1);
+        let mut solves = Vec::new();
+        for ms in [1000, 2000, 3000] {
+            solves.push(tagged(today, ms, "GAN"));
+            solves.push(on(today, 60_000, WcaEvent::Cube3x3));
+        }
+        let filter = ChartFilter {
+            tag: Some("GAN".to_owned()),
+            ..ChartFilter::default()
+        };
+        let visible = Selection::new(&solves, &filter, today).visible();
+        assert_eq!(visible.len(), 3);
+        assert_eq!(stats::average(&visible), Some(stats::Average::Time(2000)));
+    }
+
+    #[test]
+    fn comparing_tags_uses_the_same_rules_as_the_stats() {
+        let today = day(2026, 6, 1);
+        let mut first = History::new();
+        let mut second = History::new();
+        for ms in [1000, 2000, 3000, 4000, 5000] {
+            first.push(tagged(today, ms, "GAN"));
+            second.push(tagged(today, ms * 2, "Moyu"));
+        }
+        let mut dnf = tagged(today, 500, "GAN");
+        let after = crate::solve::SolveSnapshot {
+            modifier: Modifier::DNF,
+            ..dnf.snapshot()
+        };
+        dnf.edit(after);
+        first.push(dnf);
+        let sessions = [first, second];
+        let filter = ChartFilter {
+            all_sessions: true,
+            ..ChartFilter::default()
+        };
+
+        let gan = TagSide::new(&sessions, 0, &filter, Some("gan"), today);
+        let moyu = TagSide::new(&sessions, 0, &filter, Some("moyu"), today);
+        let everything = TagSide::new(&sessions, 0, &filter, None, today);
+
+        assert_eq!((gan.count, moyu.count, everything.count), (6, 5, 11));
+        // The single and mean skip the DNF, which the ao5 counts as the worst.
+        assert_eq!(gan.values[0], Some(1000));
+        assert_eq!(gan.values[1], Some(3000));
+        assert_eq!(gan.values[2], Some(3000));
+        assert_eq!(moyu.values[0], Some(2000));
+        assert_eq!(moyu.values[2], Some(6000));
+    }
+
+    #[test]
+    fn comparing_tags_stays_in_the_session_unless_told_otherwise() {
+        let today = day(2026, 6, 1);
+        let mut first = History::new();
+        let mut second = History::new();
+        first.push(tagged(today, 1000, "GAN"));
+        second.push(tagged(today, 2000, "GAN"));
+        let sessions = [first, second];
+        let filter = ChartFilter::default();
+        let side = TagSide::new(&sessions, 1, &filter, Some("GAN"), today);
+        assert_eq!(side.count, 1);
+        assert_eq!(side.values[0], Some(2000));
+    }
+
     #[test]
     fn the_event_filter_keeps_session_numbers() {
         let today = day(2026, 6, 1);
@@ -719,7 +859,7 @@ mod tests {
             on(today, 3000, WcaEvent::Cube3x3),
         ];
         let filter = filter(Some(WcaEvent::Cube3x3), ChartRange::All);
-        let points = Selection::new(&solves, filter, today).points();
+        let points = Selection::new(&solves, &filter, today).points();
         assert_eq!(numbers(&points), [1, 3]);
     }
 
@@ -734,7 +874,7 @@ mod tests {
         ];
         let range = ChartRange::LastSolves(2);
         let filter = filter(Some(WcaEvent::Cube3x3), range);
-        let points = Selection::new(&solves, filter, today).points();
+        let points = Selection::new(&solves, &filter, today).points();
         assert_eq!(numbers(&points), [2, 4]);
     }
 
@@ -747,7 +887,7 @@ mod tests {
             solve(1000),
             on(today, 1000, WcaEvent::Cube3x3),
         ];
-        let points = |range| Selection::new(&solves, filter(None, range), today).points();
+        let points = |range| Selection::new(&solves, &filter(None, range), today).points();
         assert_eq!(numbers(&points(ChartRange::LastDays(7))), [2, 4]);
         assert_eq!(numbers(&points(ChartRange::LastDays(1))), [4]);
         let dates = ChartRange::Dates {
@@ -765,7 +905,7 @@ mod tests {
             .map(solve)
             .collect();
         let filter = filter(None, ChartRange::LastSolves(1));
-        let points = Selection::new(&solves, filter, day(2026, 1, 1)).points();
+        let points = Selection::new(&solves, &filter, day(2026, 1, 1)).points();
         assert_eq!(points.len(), 1);
         assert_eq!(points[0].averages[0], Some(4000));
         assert_eq!(points[0].averages[1], None);
@@ -775,7 +915,7 @@ mod tests {
     fn dnf_averages_leave_a_gap() {
         let mut solves = vec![dnf(), dnf()];
         solves.extend([1000, 2000, 3000].map(solve));
-        let points = Selection::new(&solves, ChartFilter::default(), day(2026, 1, 1)).points();
+        let points = Selection::new(&solves, &ChartFilter::default(), day(2026, 1, 1)).points();
         assert_eq!(points[4].averages[0], None);
         assert_eq!(points[0].ms, None);
     }
@@ -783,13 +923,13 @@ mod tests {
     #[test]
     fn personal_bests_are_strict_and_survive_the_range() {
         let solves = [solve(3000), dnf(), solve(3000), solve(2000), solve(2500)];
-        let all = Selection::new(&solves, ChartFilter::default(), day(2026, 1, 1)).points();
+        let all = Selection::new(&solves, &ChartFilter::default(), day(2026, 1, 1)).points();
         let marks: Vec<bool> = all.iter().map(|point| point.personal_best).collect();
         assert_eq!(marks, [true, false, false, true, false]);
 
         // The 2500 is the fastest of the range, but an earlier solve beat it.
         let last = filter(None, ChartRange::LastSolves(1));
-        let cut = Selection::new(&solves, last, day(2026, 1, 1)).points();
+        let cut = Selection::new(&solves, &last, day(2026, 1, 1)).points();
         assert!(!cut[0].personal_best);
     }
 
@@ -801,7 +941,7 @@ mod tests {
             on(today, 9000, WcaEvent::Cube3x3),
         ];
         let filter = filter(Some(WcaEvent::Cube3x3), ChartRange::All);
-        assert!(Selection::new(&solves, filter, today).points()[0].personal_best);
+        assert!(Selection::new(&solves, &filter, today).points()[0].personal_best);
     }
 
     #[test]
@@ -811,7 +951,7 @@ mod tests {
             session(vec![on(today, 1000, WcaEvent::Cube3x3)]),
             session(vec![on(today, 2000, WcaEvent::Cube3x3); 2]),
         ];
-        let points = Selection::across(&sessions, 1, ChartFilter::default(), today).points();
+        let points = Selection::across(&sessions, 1, &ChartFilter::default(), today).points();
         assert_eq!(numbers(&points), [1, 2]);
         assert!(points.iter().all(|point| point.session == 1));
         assert_eq!(points[1].axis, 2);
@@ -831,7 +971,7 @@ mod tests {
             ]),
         ];
         let filter = everything(None, ChartRange::All);
-        let points = Selection::across(&sessions, 0, filter, today).points();
+        let points = Selection::across(&sessions, 0, &filter, today).points();
         let times: Vec<Option<u64>> = points.iter().map(|point| point.ms).collect();
         assert_eq!(times, [Some(9000), Some(1000), Some(2000), Some(3000)]);
         let origins: Vec<(usize, usize)> = points
@@ -852,7 +992,7 @@ mod tests {
             session(vec![on(today, 9000, WcaEvent::Cube3x3); 5]),
         ];
         let filter = everything(None, ChartRange::All);
-        let points = Selection::across(&sessions, 0, filter, today).points();
+        let points = Selection::across(&sessions, 0, &filter, today).points();
         // Four solves of the first session make no ao5, and neither do the
         // first four of the second, though nine solves have gone by.
         assert!(points[..8].iter().all(|point| point.averages[0].is_none()));
@@ -866,9 +1006,9 @@ mod tests {
             session(vec![on(day(2026, 6, 1), 1000, WcaEvent::Cube3x3)]),
             session(vec![on(today, 2000, WcaEvent::Cube3x3)]),
         ];
-        let all = Selection::across(&sessions, 0, everything(None, ChartRange::All), today);
+        let all = Selection::across(&sessions, 0, &everything(None, ChartRange::All), today);
         assert!(!all.points()[1].personal_best);
-        let one = Selection::across(&sessions, 1, ChartFilter::default(), today);
+        let one = Selection::across(&sessions, 1, &ChartFilter::default(), today);
         assert!(one.points()[0].personal_best);
     }
 
@@ -880,7 +1020,7 @@ mod tests {
             session(vec![on(today, 2000, WcaEvent::Cube3x3); 3]),
         ];
         let filter = everything(None, ChartRange::LastSolves(4));
-        let points = Selection::across(&sessions, 0, filter, today).points();
+        let points = Selection::across(&sessions, 0, &filter, today).points();
         let axis: Vec<usize> = points.iter().map(|point| point.axis).collect();
         assert_eq!(axis, [3, 4, 5, 6]);
     }
@@ -892,7 +1032,7 @@ mod tests {
             session(vec![on(today, 1000, WcaEvent::Cube3x3); 3]),
             session(vec![on(today, 2000, WcaEvent::Cube3x3); 2]),
         ];
-        let rows = compare(&sessions, everything(None, ChartRange::All), today);
+        let rows = compare(&sessions, &everything(None, ChartRange::All), today);
         let counts: Vec<usize> = rows.iter().map(|row| row.count).collect();
         assert_eq!(counts, [3, 2]);
     }
@@ -1014,7 +1154,7 @@ mod tests {
             session(vec![on(today, 4000, WcaEvent::Cube3x3); 2]),
         ];
         let filter = filter(Some(WcaEvent::Cube3x3), ChartRange::All);
-        let rows = compare(&sessions, filter, today);
+        let rows = compare(&sessions, &filter, today);
         let indices: Vec<usize> = rows.iter().map(|row| row.session).collect();
         assert_eq!(indices, [0, 2]);
         assert_eq!(
@@ -1032,7 +1172,7 @@ mod tests {
     fn compare_ignores_dnf_only_averages() {
         let rows = compare(
             &[session(vec![dnf(); 5])],
-            ChartFilter::default(),
+            &ChartFilter::default(),
             day(2026, 1, 1),
         );
         assert_eq!(rows[0].count, 5);

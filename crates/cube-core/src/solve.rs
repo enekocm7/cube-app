@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::event::WcaEvent;
 use crate::format::format_ms;
+use crate::tags::TagChange;
 
 /// Time added by a `+2` penalty.
 const PLUS_TWO_MS: u64 = 2_000;
@@ -39,6 +40,10 @@ pub struct Solve {
     /// Whether this single improved the session best when it was set.
     #[serde(default)]
     pub(crate) was_single_record: bool,
+    /// Kept in `solve-extras.json`: cube-tui would drop a field it does not
+    /// know from `times.json`.
+    #[serde(skip)]
+    tags: Vec<String>,
 }
 
 /// The editable fields of a solve, without its audit trail.
@@ -93,6 +98,7 @@ impl Solve {
             comment,
             changes: Vec::new(),
             was_single_record: false,
+            tags: Vec::new(),
         }
     }
 
@@ -137,6 +143,19 @@ impl Solve {
 
     pub const fn was_single_record(&self) -> bool {
         self.was_single_record
+    }
+
+    pub fn tags(&self) -> &[String] {
+        &self.tags
+    }
+
+    pub fn set_tags(&mut self, tags: Vec<String>) {
+        self.tags = tags;
+    }
+
+    /// Applies a change to a tag, if the solve has it.
+    pub fn change_tags(&mut self, change: &TagChange) {
+        change.apply(&mut self.tags);
     }
 
     /// Returns the solve's current editable fields.

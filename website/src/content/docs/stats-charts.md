@@ -32,14 +32,16 @@ A table of every solve's rolling averages:
 - Tiles are heat-mapped: green for fast, orange for slow, unshaded in between.
 - The best tile of each column is tinted green.
 - `Left` / `Right` picks the highlighted average column; `O` opens it, `Shift + O` opens its best, `C` copies it as text to share.
+- `L`, or the menu above the table, keeps only the solves with a tag. Averages then run over those solves alone.
 
 ## Charts screen (`G`)
 
-Four views, cycled with `V`:
+Five views, cycled with `V`:
 
 - **Trends** — your times plus ao5, ao12 and ao100 lines, personal bests, and DNF marks.
 - **Calendar** — solves per day. Arrow keys move the selected day on the calendar view.
 - **Compare** — sessions side by side.
+- **Tags** — two tags side by side: solves, best single, mean and best ao5, ao12 and ao100. With all sessions on, each tag's solves count as one run by date.
 - **All-time bests** — your best single and averages per event.
 
 Filters:
@@ -50,5 +52,7 @@ Filters:
 | `R` | Cycle the range: all, last 50/100/500, last 7/30/90/365 days |
 | `Shift + R` | Custom range as `YYYY-MM-DD` |
 | `W` | One session or all merged by date |
+| `L` | Cycle the tag filter, shared with the stats screen. On Tags it sets the left side |
+| `Shift + L` | On Tags, cycle the right side |
 
 On Trends, the mouse wheel zooms around the cursor (`Z` / `Shift + Z` / `X` do the same from the keyboard, hold to keep zooming). `Shift` + wheel pans while zoomed. Changing a filter resets the zoom.

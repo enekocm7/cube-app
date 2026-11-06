@@ -30,13 +30,16 @@ const TIMER_ACTIONS: [Action; 6] = [
     Action::ToggleScramblePreview,
     Action::ManualEntry,
 ];
-const SOLVE_ACTIONS: [Action; 6] = [
+const SOLVE_ACTIONS: [Action; 9] = [
     Action::PreviousSolve,
     Action::NextSolve,
     Action::OpenSolve,
     Action::DeleteSolve,
     Action::PenaltyPlusTwo,
     Action::PenaltyDnf,
+    Action::EditTags,
+    Action::ActiveTags,
+    Action::ManageTags,
 ];
 const SESSION_ACTIONS: [Action; 9] = [
     Action::NextEvent,
@@ -65,10 +68,12 @@ const SCREEN_ACTIONS: [Action; 7] = [
     Action::OpenSettings,
     Action::ShowHelp,
 ];
-const CHART_ACTIONS: [Action; 8] = [
+const CHART_ACTIONS: [Action; 10] = [
     Action::NextChartView,
     Action::NextChartEvent,
     Action::NextChartRange,
+    Action::NextTagFilter,
+    Action::NextCompareTag,
     Action::ChartDates,
     Action::ToggleChartSessions,
     Action::ChartZoomIn,
@@ -455,6 +460,11 @@ fn action_label(strings: &'static Strings, action: Action) -> &'static str {
         Action::OpenBluetooth => strings.action_open_bluetooth,
         Action::OpenGoals => strings.action_open_goals,
         Action::NewGoal => strings.goals_new,
+        Action::EditTags => strings.action_edit_tags,
+        Action::ActiveTags => strings.action_active_tags,
+        Action::ManageTags => strings.tags_manage,
+        Action::NextTagFilter => strings.action_next_tag_filter,
+        Action::NextCompareTag => strings.action_next_compare_tag,
         Action::NextChartView => strings.action_next_chart_view,
         Action::NextChartEvent => strings.action_next_chart_event,
         Action::NextChartRange => strings.action_next_chart_range,
