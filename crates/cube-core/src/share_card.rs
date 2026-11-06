@@ -837,6 +837,38 @@ mod tests {
         accent: ThemeColor::BLUE,
     };
 
+    /// How many bytes of TrueType instructions the outline of `digit` carries.
+    fn hinting_bytes(font: &[u8], digit: char) -> u16 {
+        let face = ttf_parser::Face::parse(font, 0).unwrap();
+        let glyph = face.glyph_index(digit).unwrap();
+        let raw = face.raw_face();
+        let tables = face.tables();
+        let loca = ttf_parser::loca::Table::parse(
+            tables.maxp.number_of_glyphs,
+            tables.head.index_to_location_format,
+            raw.table(ttf_parser::Tag::from_bytes(b"loca")).unwrap(),
+        )
+        .unwrap();
+        let range = loca.glyph_range(glyph).unwrap();
+        let outline = &raw.table(ttf_parser::Tag::from_bytes(b"glyf")).unwrap()[range];
+        // A contour count and a bounding box, the last point of each contour,
+        // and then the length of the instructions.
+        let contours = usize::from(u16::from_be_bytes([outline[0], outline[1]]));
+        let length = 10 + contours * 2;
+        u16::from_be_bytes([outline[length], outline[length + 1]])
+    }
+
+    /// Windows fits hinted outlines to the pixel grid, so a digit without
+    /// instructions comes out a different height from the ones beside it.
+    #[test]
+    fn every_digit_of_the_bundled_font_is_hinted() {
+        for font in [CUBE_MONO_REGULAR, CUBE_MONO_MEDIUM] {
+            for digit in '0'..='9' {
+                assert!(hinting_bytes(font, digit) > 0, "{digit} has no hinting");
+            }
+        }
+    }
+
     fn style(language: &str) -> CardStyle<'_> {
         CardStyle {
             colors: COLORS,

@@ -1327,6 +1327,7 @@ dependencies = [
  "serde_json",
  "tnoodle-rs",
  "toml 0.8.23",
+ "ttf-parser",
 ]
 
 [[package]]

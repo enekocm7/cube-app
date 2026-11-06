@@ -16,5 +16,8 @@ serde_json.workspace = true
 tnoodle-rs.workspace = true
 toml.workspace = true
 
+[dev-dependencies]
+ttf-parser.workspace = true
+
 [lints]
 workspace = true
