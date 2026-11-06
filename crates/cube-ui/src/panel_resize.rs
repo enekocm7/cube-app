@@ -4,8 +4,10 @@
 //! updates the settings as it moves, and they are written to disk when the
 //! mouse is released, not on every pixel.
 
+use cube_core::format::format_ms;
 use cube_core::panels::{
-    DEFAULT_SIDEBAR_WIDTH, DEFAULT_STATS_WIDTH, clamp_panel_width, fit_panels,
+    DEFAULT_SIDEBAR_WIDTH, DEFAULT_STATS_WIDTH, PanelContent, clamp_panel_width, fit_panels,
+    panel_minimums,
 };
 use gpui_kit::component::{ActiveTheme as _, InteractiveElementExt as _};
 use gpui_kit::*;
@@ -75,19 +77,113 @@ pub(crate) fn render_grab(
     }
 }
 
+/// How wide `text` is when drawn in `family` at `size`.
+fn text_width(window: &Window, text: &str, family: &SharedString, size: Pixels) -> f32 {
+    if text.is_empty() {
+        return 0.;
+    }
+    let run = TextRun {
+        len: text.len(),
+        font: font(family.clone()),
+        color: black(),
+        background_color: None,
+        underline: None,
+        strikethrough: None,
+    };
+    f32::from(
+        window
+            .text_system()
+            .shape_line(text.to_owned().into(), size, &[run], None)
+            .width,
+    )
+}
+
+/// The longest of `texts` by character count. Every value here is set in a
+/// monospace font, so the longest string is the widest.
+fn longest(texts: impl IntoIterator<Item = String>) -> String {
+    texts
+        .into_iter()
+        .max_by_key(|text| text.chars().count())
+        .unwrap_or_default()
+}
+
 /// The width of the window's content, in whole pixels.
 fn window_width(window: &Window) -> u32 {
     f32::from(window.viewport_size().width) as u32
 }
 
 impl CubeApp {
+    /// How wide each panel's content is, measured with the real font at the
+    /// current text size, so a panel never needs to wrap or cut a value.
+    pub(crate) fn panel_content(&self, window: &Window, cx: &App) -> PanelContent {
+        let theme = cx.theme();
+        let (text_font, mono) = (&theme.font_family, &theme.mono_font_family);
+        let rem = window.rem_size();
+        let (small, extra_small) = (rem * 0.875, rem * 0.75);
+        let rems = |count: f32| f32::from(rem) * count;
+
+        // One statistics row: label, then the current and best values.
+        let stats = &self.stats;
+        let optional_ms = |ms: Option<u64>| ms.map_or_else(|| "–".to_owned(), format_ms);
+        let widest = longest(
+            [
+                self.session()
+                    .solves()
+                    .last()
+                    .map_or_else(|| "–".to_owned(), ToString::to_string),
+                optional_ms(stats.best.map(|(ms, _)| ms)),
+            ]
+            .into_iter()
+            .chain(stats.windows.iter().flat_map(|window| {
+                [
+                    crate::app::format_average(window.current),
+                    crate::app::format_average(window.best.map(|(average, _)| average)),
+                ]
+            })),
+        );
+        let strings = self.strings();
+        let column = text_width(window, &widest, mono, small)
+            .max(text_width(
+                window,
+                strings.stats_current,
+                text_font,
+                extra_small,
+            ))
+            .max(text_width(
+                window,
+                strings.stats_best,
+                text_font,
+                extra_small,
+            ));
+        let stats_row = rems(1.5 + crate::stats_panel::LABEL_WIDTH.0 + 2. * 0.5) + 2. * column;
+
+        // One solve row: number, time and, if shown, the average.
+        let solves = self.session().solves();
+        let show_average = self.settings.solve_list_ao5 && !solves.is_empty();
+        let time = longest(solves.iter().map(ToString::to_string));
+        let number = crate::sidebar::number_width(solves.len(), self.language()).0;
+        let mut sidebar_row = rems(0.75 + number + 0.5) + text_width(window, &time, mono, small);
+        if show_average {
+            // The right padding clears the scrollbar instead of matching the left.
+            sidebar_row += rems(0.75 + crate::sidebar::AVERAGE_WIDTH.0 + 0.5) + 22.;
+        } else {
+            sidebar_row += rems(0.75);
+        }
+
+        PanelContent {
+            sidebar: sidebar_row.ceil() as u32,
+            stats: stats_row.ceil() as u32,
+        }
+    }
+
     /// The sidebar and statistics widths to draw, fitted to the window.
-    pub(crate) fn panel_widths(&self, window: &Window) -> (Pixels, Pixels) {
+    pub(crate) fn panel_widths(&self, window: &Window, cx: &App) -> (Pixels, Pixels) {
         let (sidebar, stats) = fit_panels(
             window_width(window),
             self.settings.sidebar_width,
             self.settings.stats_panel_width,
             self.settings.text_scale(),
+            self.panel_content(window, cx),
         );
         (px(sidebar as f32), px(stats as f32))
     }
@@ -115,19 +211,23 @@ impl CubeApp {
         // for a window that may be wider than the current one.
         let available = window_width(window);
         let scale = self.settings.text_scale();
+        let content = self.panel_content(window, cx);
+        let (sidebar_min, stats_min) = panel_minimums(available, content);
         let (sidebar, stats) = fit_panels(
             available,
             self.settings.sidebar_width,
             self.settings.stats_panel_width,
             scale,
+            content,
         );
         match side {
             PanelSide::Sidebar => {
-                self.settings.sidebar_width = clamp_panel_width(requested, available, stats, scale);
+                self.settings.sidebar_width =
+                    clamp_panel_width(requested, available, stats, scale, sidebar_min);
             }
             PanelSide::Stats => {
                 self.settings.stats_panel_width =
-                    clamp_panel_width(requested, available, sidebar, scale);
+                    clamp_panel_width(requested, available, sidebar, scale, stats_min);
             }
         }
         self.panel_resizing = true;
