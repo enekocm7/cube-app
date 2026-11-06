@@ -10,6 +10,7 @@ use super::deck::bounded;
 use super::notation::{self, AlgError, Face, Turn, invert, parse_outer, simplify, to_text};
 use super::three_by_three::PLL;
 use super::{AlgCase, AlgSet, Step};
+pub use crate::library::check as check_algorithm;
 
 /// The longest solution asked of the solver. It finds one this short almost
 /// instantly, and it is what `TNoodle` asks of it too.
@@ -50,6 +51,7 @@ pub(super) fn setup(case: &AlgCase) -> Result<Vec<Turn>> {
 }
 
 /// Returns whether the first two layers are solved.
+#[cfg(test)]
 fn first_two_layers_solved(facelets: &[u8]) -> bool {
     // Each side's lower two rows, and the whole of the bottom face.
     [
@@ -65,6 +67,7 @@ fn first_two_layers_solved(facelets: &[u8]) -> bool {
 
 impl Step {
     /// Returns whether a cube that went through `turns` finished this step.
+    #[cfg(test)]
     fn reached(self, turns: &[Turn]) -> bool {
         match self {
             Self::OrientLastLayer => {
@@ -80,6 +83,7 @@ impl Step {
                     facelets(&turns) == solved
                 })
             }
+            Self::Reference => false,
         }
     }
 
@@ -98,30 +102,6 @@ impl Step {
 
 fn random_auf(random: &mut dyn RandomSource) -> Turn {
     auf(bounded(random, 4) as u8)
-}
-
-/// Checks that `algorithm` solves `case`, from any angle of the last layer: an
-/// algorithm may start with a turn of it or a rotation.
-pub fn check_algorithm(
-    set: &AlgSet,
-    case: &AlgCase,
-    algorithm: &str,
-) -> Result<(), CustomAlgError> {
-    let candidate = notation::parse(algorithm).map_err(CustomAlgError::Notation)?;
-    let Ok(setup) = setup(case) else {
-        return Err(CustomAlgError::WrongCase);
-    };
-    let solves = (0..4).any(|quarters| {
-        let mut turns = setup.clone();
-        turns.push(auf(quarters));
-        turns.extend_from_slice(&candidate);
-        set.step.reached(&turns)
-    });
-    if solves {
-        Ok(())
-    } else {
-        Err(CustomAlgError::WrongCase)
-    }
 }
 
 /// A random turn on a face other than the last one's and its opposite.
@@ -418,6 +398,7 @@ mod tests {
                             });
                             assert!(solved, "{}", case.name);
                         }
+                        Step::Reference => panic!("{} can't be drilled", set.name),
                     }
                 }
             }

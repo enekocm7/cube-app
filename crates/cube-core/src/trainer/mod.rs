@@ -1,10 +1,10 @@
 //! The algorithm trainer: drilling the cases of a set, such as PLL, one timed
 //! attempt at a time.
 //!
-//! Everything here works from [`PUZZLES`], a catalog of puzzles and their
-//! [`AlgSet`]s. A new set is its case data and one more line in the catalog;
-//! the picker, the drill, the history and the stats follow from that. A set
-//! that is solved differently also needs a [`Step`].
+//! A set is a block of the library's data files, which is the one copy of the
+//! cases: see [`crate::library`]. The trainer drills those with a [`Step`] that
+//! says how to scramble into a case, and the picker, the drill, the history and
+//! the stats follow from that.
 //!
 //! Attempts live in `trainer.json` and never in `times.json`, so they stay out
 //! of sessions, averages and charts.
@@ -26,7 +26,11 @@ pub use drill::{Drill, Prompt};
 pub use grid::{GridStep, grid_step, rows_before};
 pub use three_by_three::{OLL, PLL};
 
+use std::sync::{LazyLock, OnceLock};
+
 use crate::event::WcaEvent;
+use crate::library::catalog;
+use crate::library::model::{Model, Region};
 
 /// What solving a set's cases achieves, which decides how a case is set up,
 /// when an algorithm counts as solving it, and how it is drawn.
@@ -36,6 +40,8 @@ pub enum Step {
     OrientLastLayer,
     /// The last layer starts oriented and ends up solved.
     PermuteLastLayer,
+    /// Listed in the library, with no way yet to drill it.
+    Reference,
 }
 
 /// One case of a set. Its name is what saved data refers to it by, so it must
@@ -45,8 +51,12 @@ pub struct AlgCase {
     pub name: &'static str,
     /// The group the case belongs to; those of a group sit together in `cases`.
     pub group: &'static str,
+    /// How to spot the case.
+    pub recognition: &'static str,
     /// The default algorithm, which also defines the case.
     pub algorithm: &'static str,
+    /// Every algorithm the data lists, the default first.
+    pub algorithms: &'static [&'static str],
 }
 
 /// A set of cases to train. Its id is what saved data refers to it by.
@@ -54,11 +64,64 @@ pub struct AlgCase {
 pub struct AlgSet {
     pub id: &'static str,
     pub name: &'static str,
+    /// What the set is listed under in the library, such as CFOP.
+    pub method: &'static str,
+    /// The event whose puzzle the set belongs to.
+    pub event: WcaEvent,
     pub step: Step,
+    /// What is solved in every case, as a [`Region`].
+    pub before_text: &'static str,
+    /// What an algorithm of the set must solve, as a [`Region`].
+    pub after_text: &'static str,
+    /// The turns allowed on either side of an algorithm.
+    pub turn_text: &'static str,
+    /// Which stickers are drawn in color, by where they began, as a [`Region`].
+    pub show_text: &'static str,
+    /// Whether cases are drawn as a solid and not from above.
+    pub solid_view: bool,
+    /// Where the algorithms came from.
+    pub source: &'static str,
     pub cases: &'static [AlgCase],
+    pub(crate) regions: OnceLock<[Region; 3]>,
 }
 
 impl AlgSet {
+    /// Returns the rules of the set's puzzle.
+    pub fn model(&self) -> &'static Model {
+        Model::of(self.event)
+    }
+
+    /// Reads the set's regions. The tests rule out one that can't be read.
+    fn regions(&self) -> &[Region; 3] {
+        self.regions.get_or_init(|| {
+            let read = |text: &str| {
+                self.model()
+                    .region(text)
+                    .unwrap_or_else(|| panic!("{} has a bad region: {text}", self.id))
+            };
+            [
+                read(self.before_text),
+                read(self.after_text),
+                read(self.show_text),
+            ]
+        })
+    }
+
+    /// Returns what is solved in every case of the set.
+    pub fn before(&self) -> &Region {
+        &self.regions()[0]
+    }
+
+    /// Returns what an algorithm of the set must solve.
+    pub fn after(&self) -> &Region {
+        &self.regions()[1]
+    }
+
+    /// Returns which stickers are drawn in color.
+    pub fn show(&self) -> &Region {
+        &self.regions()[2]
+    }
+
     /// Returns the position of the case called `name`.
     pub fn position(&self, name: &str) -> Option<usize> {
         self.cases.iter().position(|case| case.name == name)
@@ -116,28 +179,38 @@ pub struct CaseGroup {
 pub struct TrainerPuzzle {
     /// The event whose scrambles and drawings the puzzle shares.
     pub event: WcaEvent,
-    pub sets: &'static [&'static AlgSet],
+    pub sets: Vec<&'static AlgSet>,
 }
 
-/// Every puzzle the trainer knows, in the order they are listed.
-pub static PUZZLES: &[TrainerPuzzle] = &[TrainerPuzzle {
-    event: WcaEvent::Cube3x3,
-    sets: &[&PLL, &OLL],
-}];
+/// Returns every puzzle the trainer can drill, in the order they are listed.
+pub fn puzzles() -> &'static [TrainerPuzzle] {
+    static PUZZLES: LazyLock<Vec<TrainerPuzzle>> = LazyLock::new(|| {
+        let drilled = catalog().iter().map(|puzzle| {
+            let sets = puzzle.sets.iter().copied();
+            let mut sets: Vec<&'static AlgSet> =
+                sets.filter(|set| set.step != Step::Reference).collect();
+            // The shortest set is the one to start from.
+            sets.sort_by_key(|set| set.cases.len());
+            TrainerPuzzle {
+                event: puzzle.event,
+                sets,
+            }
+        });
+        drilled.filter(|puzzle| !puzzle.sets.is_empty()).collect()
+    });
+    &PUZZLES
+}
 
-/// Returns every set, in the order they are listed.
+/// Returns every set the trainer can drill, in the order they are listed.
 pub fn all_sets() -> impl Iterator<Item = &'static AlgSet> {
-    PUZZLES
+    puzzles()
         .iter()
         .flat_map(|puzzle| puzzle.sets.iter().copied())
 }
 
 /// Returns the event of the puzzle `set` belongs to.
-pub fn set_event(set: &AlgSet) -> WcaEvent {
-    PUZZLES
-        .iter()
-        .find(|puzzle| puzzle.sets.iter().any(|other| other.id == set.id))
-        .map_or(WcaEvent::Cube3x3, |puzzle| puzzle.event)
+pub const fn set_event(set: &AlgSet) -> WcaEvent {
+    set.event
 }
 
 /// Returns the set that follows `set`, going back to the first after the last.

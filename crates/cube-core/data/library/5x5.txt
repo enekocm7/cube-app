@@ -1,0 +1,37 @@
+# The 5x5x5 sets. See library/catalog.rs for the format.
+
+set 5x5-parity
+name Edge parity
+method Reduction
+before touching:3 touching:1
+after all
+turn U
+show all
+view top
+source standard
+group Parity
+case OLL parity |  | 2R2 B2 U2 2L U2 2R' U2 2R U2 F2 2R F2 2L' B2 2R2
+
+set 5x5-edges
+name Last edges
+method Reduction
+before touching:1
+after all
+turn U
+show all
+view solid
+source standard
+group Pairing
+case Flipped pair |  | Uw' R U R' F R' F' R Uw
+
+set 5x5-centers
+name Last centers
+method Reduction
+before touching:3 touching:2
+after all
+turn 
+show all
+view solid
+source standard
+group Commutators
+case Centers 2-2 |  | 2R U 2L' U' 2R' U 2L U'

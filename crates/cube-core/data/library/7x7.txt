@@ -1,0 +1,42 @@
+# The 7x7x7 sets. See library/catalog.rs for the format.
+
+set 7x7-parity
+name Edge parity
+method Reduction
+before touching:3 touching:1
+after all
+turn U
+show all
+view top
+source standard
+group Parity
+case OLL parity (layer 2) |  | 2R2 B2 U2 2L U2 2R' U2 2R U2 F2 2R F2 2L' B2 2R2
+case OLL parity (layer 3) |  | 3R2 B2 U2 3L U2 3R' U2 3R U2 F2 3R F2 3L' B2 3R2
+
+set 7x7-edges
+name Last edges
+method Reduction
+before touching:1
+after all
+turn U
+show all
+view solid
+source standard
+group Pairing
+case Flipped pair (layer 2) |  | Uw' R U R' F R' F' R Uw
+case Flipped pair (layer 3) |  | 3Uw' R U R' F R' F' R 3Uw
+
+set 7x7-centers
+name Last centers
+method Reduction
+before touching:3 touching:2
+after all
+turn 
+show all
+view solid
+source standard
+group Commutators
+case Centers 2-2 |  | 2R U 2L' U' 2R' U 2L U'
+case Centers 2-3 |  | 2R U 3L' U' 2R' U 3L U'
+case Centers 3-2 |  | 3R U 2L' U' 3R' U 2L U'
+case Centers 3-3 |  | 3R U 3L' U' 3R' U 3L U'
