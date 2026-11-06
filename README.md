@@ -127,7 +127,7 @@ Around the shortcuts:
 
 **Scrambles**
 
-- Official WCA random-state scrambles for 12 events, generated with `tnoodle-rs`.
+- Official WCA random-state scrambles for 13 events, including 3x3x3 One-Handed, generated with `tnoodle-rs`.
 - A picture of the scrambled puzzle on the timer and in the solve details. Turn it off with `P`.
 
 **Trainer**

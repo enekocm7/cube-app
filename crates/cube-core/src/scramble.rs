@@ -104,12 +104,14 @@ pub fn preview(event: WcaEvent, scramble: &str) -> Option<Preview> {
 }
 
 fn scrambler(event: WcaEvent) -> &'static Scrambler {
-    if event == WcaEvent::Cube3x3 && ACCURATE_3X3.load(Ordering::Relaxed) {
+    if matches!(event, WcaEvent::Cube3x3 | WcaEvent::Cube3x3OneHanded)
+        && ACCURATE_3X3.load(Ordering::Relaxed)
+    {
         return &ACCURATE_THREE;
     }
     let puzzle = match event {
         WcaEvent::Cube2x2 => PuzzleRegistry::Two,
-        WcaEvent::Cube3x3 => PuzzleRegistry::Three,
+        WcaEvent::Cube3x3 | WcaEvent::Cube3x3OneHanded => PuzzleRegistry::Three,
         WcaEvent::Cube4x4 => PuzzleRegistry::Four,
         WcaEvent::Cube5x5 => PuzzleRegistry::Five,
         WcaEvent::Cube6x6 => PuzzleRegistry::Six,

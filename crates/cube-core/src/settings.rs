@@ -203,9 +203,11 @@ impl PreviewSize {
     /// small puzzles.
     pub const fn largest_for(event: WcaEvent) -> Self {
         match event {
-            WcaEvent::Cube2x2 | WcaEvent::Cube3x3 | WcaEvent::Cube4x4 | WcaEvent::Square1 => {
-                Self::Huge
-            }
+            WcaEvent::Cube2x2
+            | WcaEvent::Cube3x3
+            | WcaEvent::Cube3x3OneHanded
+            | WcaEvent::Cube4x4
+            | WcaEvent::Square1 => Self::Huge,
             WcaEvent::Fto => Self::Big,
             WcaEvent::Cube5x5
             | WcaEvent::Cube6x6

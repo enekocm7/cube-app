@@ -845,6 +845,21 @@ mod tests {
     }
 
     #[test]
+    fn one_handed_keeps_its_own_name_in_the_save() {
+        let text = r#"[{ "times": [
+          { "timestamp_in_millis": 9000, "event": "Cube3x3OneHanded", "scramble": "R U" },
+          { "timestamp_in_millis": 8000, "event": "Cube3x3", "scramble": "R U" }
+        ] }]"#;
+        let sessions: Vec<History> = serde_json::from_str(text).unwrap();
+        let solves = sessions[0].solves();
+        assert_eq!(solves[0].event(), WcaEvent::Cube3x3OneHanded);
+        assert_eq!(solves[1].event(), WcaEvent::Cube3x3);
+        let written = serde_json::to_value(&sessions).unwrap();
+        assert_eq!(written[0]["times"][0]["event"], "Cube3x3OneHanded");
+        assert_eq!(written[0]["times"][1]["event"], "Cube3x3");
+    }
+
+    #[test]
     fn tags_never_reach_the_history_file() {
         let mut sessions: Vec<History> = serde_json::from_str(CUBE_TUI_SAVE).unwrap();
         let untagged = serde_json::to_string(&sessions).unwrap();

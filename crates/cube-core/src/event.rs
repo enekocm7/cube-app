@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 pub enum WcaEvent {
     Cube2x2,
     Cube3x3,
+    /// 3x3x3 solved one-handed. Uses ordinary 3x3x3 scrambles.
+    Cube3x3OneHanded,
     Cube4x4,
     Cube5x5,
     Cube6x6,
@@ -21,9 +23,10 @@ pub enum WcaEvent {
 
 impl WcaEvent {
     /// Every event, in navigation order.
-    pub const ALL: [Self; 12] = [
+    pub const ALL: [Self; 13] = [
         Self::Cube2x2,
         Self::Cube3x3,
+        Self::Cube3x3OneHanded,
         Self::Cube4x4,
         Self::Cube5x5,
         Self::Cube6x6,
@@ -41,6 +44,7 @@ impl WcaEvent {
         match self {
             Self::Cube2x2 => "2x2x2",
             Self::Cube3x3 => "3x3x3",
+            Self::Cube3x3OneHanded => "3x3x3 OH",
             Self::Cube4x4 => "4x4x4",
             Self::Cube5x5 => "5x5x5",
             Self::Cube6x6 => "6x6x6",
