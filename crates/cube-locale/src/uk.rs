@@ -241,6 +241,7 @@ pub const STRINGS: Strings = Strings {
     action_copy_solve_link: "Копіювати посилання на вибрану збірку",
     action_open_bluetooth: "Підключити Bluetooth-таймер",
     action_show_help: "Показати ці сполучення",
+    action_focus_search: "Пошук у діалогах",
     unassigned: "Не призначено",
     search_placeholder: "Пошук",
     search_no_results: "Нічого не знайдено.",

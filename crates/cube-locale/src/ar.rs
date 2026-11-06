@@ -241,6 +241,7 @@ pub const STRINGS: Strings = Strings {
     action_copy_solve_link: "نسخ رابط الحل المحدد",
     action_open_bluetooth: "توصيل مؤقت Bluetooth",
     action_show_help: "إظهار هذه الاختصارات",
+    action_focus_search: "البحث في مربعات الحوار",
     unassigned: "غير معيّن",
     search_placeholder: "بحث",
     search_no_results: "لم يتم العثور على نتائج.",

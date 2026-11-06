@@ -241,6 +241,7 @@ pub const STRINGS: Strings = Strings {
     action_copy_solve_link: "Kopírovat odkaz na vybrané složení",
     action_open_bluetooth: "Připojit Bluetooth časovač",
     action_show_help: "Zobrazit tyto zkratky",
+    action_focus_search: "Hledat v dialozích",
     unassigned: "Nepřiřazeno",
     search_placeholder: "Hledat",
     search_no_results: "Nebyly nalezeny žádné výsledky.",

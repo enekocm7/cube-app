@@ -40,7 +40,7 @@ use crate::dialog_submit::{DialogSubmit as _, Submit, close_action, on_press};
 use crate::palette::Palette;
 use crate::panel_resize::{PanelSide, render_grab};
 use crate::scroll_fade::{FadeScroll, fading_scroll};
-use crate::search_bar::{focus_on_slash, new_search, query, search_field};
+use crate::search_bar::{focus_on_search_key, new_search, query, search_field};
 use crate::sidebar::number_width;
 use crate::timer_view::result_text;
 
@@ -321,7 +321,8 @@ impl CubeApp {
             }
             return true;
         }
-        let taken = focus_on_slash(event, &search, window, cx);
+        let keybinds = self.keybinds().clone();
+        let taken = focus_on_search_key(event, &keybinds, &search, window, cx);
         if taken {
             cx.stop_propagation();
         }
@@ -373,6 +374,7 @@ impl CubeApp {
                 | Action::OpenBluetooth
                 | Action::OpenSettings
                 | Action::ShowHelp
+                | Action::FocusSearch
                 | Action::ToggleScramblePreview
         ) {
             return false;
@@ -1046,10 +1048,14 @@ impl CubeApp {
                     .child(count),
             )
             .child(
-                div()
-                    .flex_none()
-                    .w(SEARCH_WIDTH)
-                    .child(search_field(&self.trainer.search, cx).small()),
+                div().flex_none().w(SEARCH_WIDTH).child(
+                    search_field(
+                        &self.trainer.search,
+                        self.keybinds().label(Action::FocusSearch),
+                        cx,
+                    )
+                    .small(),
+                ),
             )
             .child(
                 Button::new("trainer-toggle-all")

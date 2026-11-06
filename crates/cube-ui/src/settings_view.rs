@@ -17,7 +17,7 @@ use cube_core::settings::{
 };
 use cube_core::theme;
 use cube_core::theme::{ThemeColor, ThemeFile};
-use cube_core::{Settings, SettingsCategory};
+use cube_core::{Action, Settings, SettingsCategory};
 use cube_locale::{Language, Strings};
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{Disableable as _, ElementExt as _};
@@ -38,7 +38,7 @@ use crate::dialog_size::{
 };
 use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
 use crate::scroll_fade::FadeScroll;
-use crate::search_bar::{focus_on_slash, new_search, query, search_bar};
+use crate::search_bar::{focus_on_search_key, new_search, query, search_bar};
 
 const ROW_MIN_HEIGHT: Rems = Rems(3.5);
 const HEADER_HEIGHT: Rems = Rems(3.25);
@@ -1672,6 +1672,8 @@ impl Render for SettingsView {
         let app = self.app.read(cx);
         let strings = app.strings();
         let settings = app.settings.clone();
+        let search_keys = app.keybinds().clone();
+        let search_hint = search_keys.label(Action::FocusSearch);
 
         let search = query(&self.search, cx);
         let searching = !search.is_empty();
@@ -1725,8 +1727,8 @@ impl Render for SettingsView {
             .w_full()
             .items_start()
             .track_focus(&self.focus)
-            .on_key_down(cx.listener(|view, event: &KeyDownEvent, window, cx| {
-                if focus_on_slash(event, &view.search, window, cx) {
+            .on_key_down(cx.listener(move |view, event: &KeyDownEvent, window, cx| {
+                if focus_on_search_key(event, &search_keys, &view.search, window, cx) {
                     cx.stop_propagation();
                 }
             }))
@@ -1739,7 +1741,7 @@ impl Render for SettingsView {
                     .border_r_1()
                     .border_color(border)
                     .rounded_l(radius)
-                    .child(search_bar(&self.search, cx))
+                    .child(search_bar(&self.search, search_hint, cx))
                     .child(self.render_categories(&listed, searching, strings, window, cx)),
             )
             .child(

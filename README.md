@@ -86,7 +86,7 @@ for valid bindings.
 | `Shift + H` | Edit the highlighted case's algorithm, in the trainer |
 | `Shift + Y` | Sort cases by slowest, in the trainer |
 | `Shift + Q` | See the highlighted case's attempts, in the trainer |
-| `/` | Search the cases, in the trainer |
+| `/` | Jump to the search field in the shortcuts, settings and trainer |
 | `V` | Show the next charts view |
 | `F` | Filter charts by the next event |
 | `R` / `Shift + R` | Filter charts by the next range, or by custom dates |
@@ -108,7 +108,7 @@ Around the shortcuts:
 - **Rebinding.** In the `F1` panel, **Edit** (opposite **Close**) shows a pencil to rebind an action and a trash can to
   remove its shortcut. You can also edit the `[keybindings]` table in `cube-app.toml` by hand.
 - **Settings.** `Up` and `Down` move through the categories, and `Tab` or `Right` moves into the settings.
-- **Search.** The shortcuts panel and the settings dialog both have a search field. Press `/` to jump to it, or
+- **Search.** The shortcuts panel and the settings dialog both have a search field. Press `/` to jump to it (you can change the key), or
   reach it with `Tab`. Type to filter rows by label or current value, such as `space`, `ctrl` or `unassigned` for
   shortcuts, or `dark` or `off` for settings. Matching ignores case and uses the interface language.
 - **Start hint.** The "press to start" hint is shown only until your first solve, and names whichever key the timer is

@@ -241,6 +241,7 @@ pub const STRINGS: Strings = Strings {
     action_copy_solve_link: "선택한 기록의 링크 복사",
     action_open_bluetooth: "Bluetooth 타이머 연결",
     action_show_help: "이 단축키 표시",
+    action_focus_search: "대화상자에서 검색",
     unassigned: "지정되지 않음",
     search_placeholder: "검색",
     search_no_results: "결과를 찾을 수 없습니다.",

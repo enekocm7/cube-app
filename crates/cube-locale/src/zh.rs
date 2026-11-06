@@ -241,6 +241,7 @@ pub const STRINGS: Strings = Strings {
     action_copy_solve_link: "复制选中成绩的链接",
     action_open_bluetooth: "连接 Bluetooth 计时器",
     action_show_help: "显示这些快捷键",
+    action_focus_search: "在对话框中搜索",
     unassigned: "未分配",
     search_placeholder: "搜索",
     search_no_results: "未找到结果。",

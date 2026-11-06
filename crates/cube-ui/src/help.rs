@@ -16,7 +16,7 @@ use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_tit
 use crate::dialog_submit::{close_action, route_enter};
 use crate::palette::Palette;
 use crate::scroll_fade::FadeScroll;
-use crate::search_bar::{BAR_HEIGHT, focus_on_slash, new_search, query, search_bar};
+use crate::search_bar::{BAR_HEIGHT, focus_on_search_key, new_search, query, search_bar};
 
 /// The panel has action labels, key pills and icon buttons side by side, so it
 /// uses the roomier form size rather than the narrower settings size.
@@ -62,7 +62,8 @@ const AVERAGE_ACTIONS: [Action; 6] = [
     Action::CopyAverage,
     Action::ShareAverage,
 ];
-const SCREEN_ACTIONS: [Action; 8] = [
+const SCREEN_ACTIONS: [Action; 9] = [
+    Action::FocusSearch,
     Action::OpenStats,
     Action::OpenCharts,
     Action::OpenBluetooth,
@@ -345,6 +346,7 @@ impl Render for KeybindsView {
         let app = self.app.read(cx);
         let strings = app.strings();
         let keybinds = app.keybinds().clone();
+        let search_keys = keybinds.clone();
         let colors = Palette::of(cx);
         let max_height = dialog_body_height(DIALOG_SIZE, window);
         let sections = [
@@ -390,11 +392,14 @@ impl Render for KeybindsView {
             .collect();
         let no_results = sections.is_empty();
 
-        let bar = search_bar(&self.search, cx);
+        let bar = search_bar(&self.search, keybinds.label(Action::FocusSearch), cx);
         dialog_body(
             v_flex()
-                .on_key_down(cx.listener(|view, event: &KeyDownEvent, window, cx| {
-                    if focus_on_slash(event, &view.search, window, cx) {
+                .on_key_down(cx.listener(move |view, event: &KeyDownEvent, window, cx| {
+                    // Keys belong to the capture while a key is being rebound.
+                    if view.capturing.is_none()
+                        && focus_on_search_key(event, &search_keys, &view.search, window, cx)
+                    {
                         cx.stop_propagation();
                     }
                 }))
@@ -510,6 +515,7 @@ fn action_label(strings: &'static Strings, action: Action) -> &'static str {
         Action::CopySolveLink => strings.action_copy_solve_link,
         Action::OpenSettings => strings.settings,
         Action::ShowHelp => strings.action_show_help,
+        Action::FocusSearch => strings.action_focus_search,
     }
 }
 

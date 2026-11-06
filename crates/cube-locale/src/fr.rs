@@ -242,6 +242,7 @@ pub const STRINGS: Strings = Strings {
     action_copy_solve_link: "Copier un lien vers le temps sélectionné",
     action_open_bluetooth: "Connecter un chronomètre Bluetooth",
     action_show_help: "Afficher ces raccourcis",
+    action_focus_search: "Rechercher dans les boîtes de dialogue",
     unassigned: "Non attribué",
     search_placeholder: "Rechercher",
     search_no_results: "Aucun résultat.",

@@ -241,6 +241,7 @@ pub const STRINGS: Strings = Strings {
     action_copy_solve_link: "Копировать ссылку на выбранную сборку",
     action_open_bluetooth: "Подключить Bluetooth-таймер",
     action_show_help: "Показать эти сочетания",
+    action_focus_search: "Поиск в диалогах",
     unassigned: "Не назначено",
     search_placeholder: "Поиск",
     search_no_results: "Ничего не найдено.",

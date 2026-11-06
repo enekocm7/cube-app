@@ -1,6 +1,9 @@
 //! The search field of the shortcuts and settings dialogs and the trainer.
 
+use cube_core::{Action, Keybinds};
 use cube_locale::Strings;
+
+use crate::app::key_press;
 use gpui_kit::assets::IconName;
 use gpui_kit::component::input::{Input, InputEvent, InputState};
 use gpui_kit::component::{ActiveTheme as _, Icon};
@@ -27,17 +30,19 @@ pub(crate) fn new_search<V: 'static>(
     input
 }
 
-/// The field, laid out above a dialog's scrolling body.
-pub(crate) fn search_bar(input: &Entity<InputState>, cx: &App) -> Div {
+/// The field, laid out above a dialog's scrolling body. `hint` is the key that
+/// jumps to it, shown while it is empty.
+pub(crate) fn search_bar(input: &Entity<InputState>, hint: Option<String>, cx: &App) -> Div {
     div()
         .h(BAR_HEIGHT)
         .px_4()
         .pt_4()
-        .child(search_field(input, cx))
+        .child(search_field(input, hint, cx))
 }
 
-/// The field on its own, for wherever it is laid out.
-pub(crate) fn search_field(input: &Entity<InputState>, cx: &App) -> Input {
+/// The field on its own, for wherever it is laid out. Without a `hint`, which
+/// is the case when the search key is unbound, no key is shown.
+pub(crate) fn search_field(input: &Entity<InputState>, hint: Option<String>, cx: &App) -> Input {
     let theme = cx.theme();
     let (muted, border) = (theme.muted_foreground, theme.border);
     let mono = theme.mono_font_family.clone();
@@ -46,8 +51,7 @@ pub(crate) fn search_field(input: &Entity<InputState>, cx: &App) -> Input {
         .w_full()
         .cleanable(true)
         .prefix(Icon::new(IconName::Search).text_color(muted))
-        .when(empty, |input| {
-            // Shows which key jumps to the field.
+        .when_some(hint.filter(|_| empty), |input, hint| {
             input.suffix(
                 div()
                     .px_1p5()
@@ -57,28 +61,29 @@ pub(crate) fn search_field(input: &Entity<InputState>, cx: &App) -> Input {
                     .font_family(mono)
                     .text_xs()
                     .text_color(muted)
-                    .child("/"),
+                    .child(hint),
             )
         })
 }
 
-/// Moves focus to the field when `/` is pressed anywhere else in the dialog.
-/// Returns whether the key was taken, so the `/` is not typed into the field.
-pub(crate) fn focus_on_slash(
+/// Moves focus to the field when the configured search key is pressed anywhere
+/// else in the dialog. Returns whether the key was taken, so it is not typed
+/// into the field.
+pub(crate) fn focus_on_search_key(
     event: &KeyDownEvent,
+    keybinds: &Keybinds,
     input: &Entity<InputState>,
     window: &mut Window,
     cx: &mut App,
 ) -> bool {
-    let keystroke = &event.keystroke;
-    let plain =
-        !keystroke.modifiers.control && !keystroke.modifiers.alt && !keystroke.modifiers.platform;
     let focus = input.read(cx).focus_handle(cx);
-    if event.is_held
-        || !plain
-        || keystroke.key_char.as_deref() != Some("/")
-        || focus.is_focused(window)
-    {
+    if event.is_held || focus.is_focused(window) {
+        return false;
+    }
+    let Some(press) = key_press(&event.keystroke) else {
+        return false;
+    };
+    if !keybinds.is_pressed(Action::FocusSearch, &press) {
         return false;
     }
     focus.focus(window, cx);
