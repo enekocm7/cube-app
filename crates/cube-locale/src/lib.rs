@@ -933,7 +933,9 @@ pub struct Strings {
     /// `{error}`: the cause.
     pub toast_relay_save_failed: &'static str,
     pub action_toggle_relay_key_splits: &'static str,
+    /// `{key}`: the timer key.
     pub relays_key_stops: &'static str,
+    /// `{key}`: the timer key.
     pub relays_key_splits: &'static str,
     /// `{current}`, `{total}`, `{event}`: the puzzle. `{key}`: the timer key.
     /// `{split}`: the key that finishes a puzzle.
@@ -1074,6 +1076,8 @@ mod tests {
             for placeholder in ["{current}", "{total}", "{event}", "{key}", "{split}"] {
                 assert!(strings.relays_running_stop.contains(placeholder));
             }
+            assert!(strings.relays_key_stops.contains("{key}"));
+            assert!(strings.relays_key_splits.contains("{key}"));
             assert!(strings.relays_too_few.contains("{min}"));
             assert!(strings.relays_too_many.contains("{max}"));
             assert!(strings.relays_unknown.contains("{name}"));

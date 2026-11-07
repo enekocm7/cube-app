@@ -592,7 +592,7 @@ pub const STRINGS: Strings = Strings {
     toast_relay_load_failed: "Impossible de lire vos relais : {error}",
     toast_relay_save_failed: "Impossible d'enregistrer vos relais : {error}",
     action_toggle_relay_key_splits: "Basculer la touche du chrono entre arrêter le relais et terminer chaque puzzle",
-    relays_key_stops: "La touche arrête le relais",
-    relays_key_splits: "La touche termine chaque puzzle",
+    relays_key_stops: "{key} arrête le relais",
+    relays_key_splits: "{key} termine chaque puzzle",
     relays_running_stop: "Puzzle {current} sur {total} : {event}. Appuyez sur {key} pour arrêter le relais, {split} pour finir ce puzzle.",
 };

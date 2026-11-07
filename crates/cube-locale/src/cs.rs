@@ -591,7 +591,7 @@ pub const STRINGS: Strings = Strings {
     toast_relay_load_failed: "Vaše štafety se nepodařilo přečíst: {error}",
     toast_relay_save_failed: "Vaše štafety se nepodařilo uložit: {error}",
     action_toggle_relay_key_splits: "Přepnout klávesu časovače mezi zastavením štafety a dokončením každého hlavolamu",
-    relays_key_stops: "Klávesa zastaví štafetu",
-    relays_key_splits: "Klávesa dokončí každý hlavolam",
+    relays_key_stops: "{key} zastaví štafetu",
+    relays_key_splits: "{key} dokončí každý hlavolam",
     relays_running_stop: "Hlavolam {current} z {total}: {event}. Stiskněte {key} pro zastavení štafety, {split} pro dokončení tohoto hlavolamu.",
 };

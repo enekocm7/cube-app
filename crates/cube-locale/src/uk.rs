@@ -591,7 +591,7 @@ pub const STRINGS: Strings = Strings {
     toast_relay_load_failed: "Не вдалося прочитати ваші естафети: {error}",
     toast_relay_save_failed: "Не вдалося зберегти ваші естафети: {error}",
     action_toggle_relay_key_splits: "Перемкнути клавішу таймера між зупинкою естафети та завершенням кожної головоломки",
-    relays_key_stops: "Клавіша зупиняє естафету",
-    relays_key_splits: "Клавіша завершує кожну головоломку",
+    relays_key_stops: "{key} зупиняє естафету",
+    relays_key_splits: "{key} завершує кожну головоломку",
     relays_running_stop: "Головоломка {current} з {total}: {event}. Натисніть {key}, щоб зупинити естафету, {split}, щоб завершити цю головоломку.",
 };

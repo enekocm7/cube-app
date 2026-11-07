@@ -591,7 +591,7 @@ pub const STRINGS: Strings = Strings {
     toast_relay_load_failed: "No se pudieron leer tus relevos: {error}",
     toast_relay_save_failed: "No se pudieron guardar tus relevos: {error}",
     action_toggle_relay_key_splits: "Cambiar la tecla del temporizador entre parar el relevo y terminar cada puzzle",
-    relays_key_stops: "La tecla para el relevo",
-    relays_key_splits: "La tecla termina cada puzzle",
+    relays_key_stops: "{key} para el relevo",
+    relays_key_splits: "{key} termina cada puzzle",
     relays_running_stop: "Puzzle {current} de {total}: {event}. Pulsa {key} para parar el relevo, {split} para terminar este puzzle.",
 };

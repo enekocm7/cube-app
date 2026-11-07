@@ -591,7 +591,7 @@ pub const STRINGS: Strings = Strings {
     toast_relay_load_failed: "Bayraklarınız okunamadı: {error}",
     toast_relay_save_failed: "Bayraklarınız kaydedilemedi: {error}",
     action_toggle_relay_key_splits: "Zamanlayıcı tuşunu bayrağı durdurma ve her bulmacayı bitirme arasında değiştir",
-    relays_key_stops: "Tuş bayrağı durdurur",
-    relays_key_splits: "Tuş her bulmacayı bitirir",
+    relays_key_stops: "{key} bayrağı durdurur",
+    relays_key_splits: "{key} her bulmacayı bitirir",
     relays_running_stop: "Bulmaca {current}/{total}: {event}. Bayrağı durdurmak için {key}, bu bulmacayı bitirmek için {split} tuşuna bas.",
 };

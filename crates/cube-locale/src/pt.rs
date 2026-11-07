@@ -591,7 +591,7 @@ pub const STRINGS: Strings = Strings {
     toast_relay_load_failed: "Não foi possível ler seus revezamentos: {error}",
     toast_relay_save_failed: "Não foi possível salvar seus revezamentos: {error}",
     action_toggle_relay_key_splits: "Alternar a tecla do cronômetro entre parar o revezamento e terminar cada puzzle",
-    relays_key_stops: "A tecla para o revezamento",
-    relays_key_splits: "A tecla termina cada puzzle",
+    relays_key_stops: "{key} para o revezamento",
+    relays_key_splits: "{key} termina cada puzzle",
     relays_running_stop: "Puzzle {current} de {total}: {event}. Pressione {key} para parar o revezamento, {split} para terminar este puzzle.",
 };

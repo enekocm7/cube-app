@@ -591,7 +591,7 @@ pub const STRINGS: Strings = Strings {
     toast_relay_load_failed: "无法读取你的接力:{error}",
     toast_relay_save_failed: "无法保存你的接力:{error}",
     action_toggle_relay_key_splits: "在计时键停止接力与结束每个魔方之间切换",
-    relays_key_stops: "按键停止接力",
-    relays_key_splits: "按键结束每个魔方",
+    relays_key_stops: "按 {key} 停止接力",
+    relays_key_splits: "按 {key} 结束每个魔方",
     relays_running_stop: "第 {current}/{total} 个魔方:{event}。按 {key} 停止接力,按 {split} 结束当前魔方。",
 };

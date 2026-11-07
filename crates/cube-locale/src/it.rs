@@ -591,7 +591,7 @@ pub const STRINGS: Strings = Strings {
     toast_relay_load_failed: "Impossibile leggere le tue staffette: {error}",
     toast_relay_save_failed: "Impossibile salvare le tue staffette: {error}",
     action_toggle_relay_key_splits: "Alterna il tasto del timer tra fermare la staffetta e terminare ogni puzzle",
-    relays_key_stops: "Il tasto ferma la staffetta",
-    relays_key_splits: "Il tasto termina ogni puzzle",
+    relays_key_stops: "{key} ferma la staffetta",
+    relays_key_splits: "{key} termina ogni puzzle",
     relays_running_stop: "Puzzle {current} di {total}: {event}. Premi {key} per fermare la staffetta, {split} per finire questo puzzle.",
 };

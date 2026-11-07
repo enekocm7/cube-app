@@ -764,11 +764,16 @@ impl CubeApp {
     /// The button that switches what the timer key does during a relay.
     fn render_relay_mode_button(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
         let strings = self.strings();
+        let timer_key = self
+            .keybinds()
+            .label(Action::Timer)
+            .unwrap_or_else(|| strings.unassigned.to_owned());
         let label = if self.settings.relay_key_splits {
             strings.relays_key_splits
         } else {
             strings.relays_key_stops
-        };
+        }
+        .replace("{key}", &timer_key);
         Button::new("relay-key-mode")
             .ghost()
             .small()

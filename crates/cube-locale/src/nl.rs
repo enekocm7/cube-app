@@ -591,7 +591,7 @@ pub const STRINGS: Strings = Strings {
     toast_relay_load_failed: "Je estafettes konden niet worden gelezen: {error}",
     toast_relay_save_failed: "Je estafettes konden niet worden opgeslagen: {error}",
     action_toggle_relay_key_splits: "De timertoets wisselen tussen de estafette stoppen en elke puzzel afronden",
-    relays_key_stops: "Toets stopt de estafette",
-    relays_key_splits: "Toets rondt elke puzzel af",
+    relays_key_stops: "{key} stopt de estafette",
+    relays_key_splits: "{key} rondt elke puzzel af",
     relays_running_stop: "Puzzel {current} van {total}: {event}. Druk op {key} om de estafette te stoppen, {split} om deze puzzel af te ronden.",
 };

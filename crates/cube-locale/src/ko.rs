@@ -591,7 +591,7 @@ pub const STRINGS: Strings = Strings {
     toast_relay_load_failed: "릴레이를 읽을 수 없습니다: {error}",
     toast_relay_save_failed: "릴레이를 저장할 수 없습니다: {error}",
     action_toggle_relay_key_splits: "타이머 키를 릴레이 정지와 각 퍼즐 종료 사이에서 전환",
-    relays_key_stops: "키로 릴레이 정지",
-    relays_key_splits: "키로 각 퍼즐 종료",
+    relays_key_stops: "{key}(으)로 릴레이 정지",
+    relays_key_splits: "{key}(으)로 각 퍼즐 종료",
     relays_running_stop: "퍼즐 {current}/{total}: {event}. {key}(으)로 릴레이를 멈추고, {split}(으)로 이 퍼즐을 끝냅니다.",
 };

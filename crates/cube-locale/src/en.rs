@@ -591,7 +591,7 @@ pub const STRINGS: Strings = Strings {
     toast_relay_load_failed: "Could not read your relays: {error}",
     toast_relay_save_failed: "Could not save your relays: {error}",
     action_toggle_relay_key_splits: "Switch the timer key between stopping the relay and ending each puzzle",
-    relays_key_stops: "Key stops the relay",
-    relays_key_splits: "Key ends each puzzle",
+    relays_key_stops: "{key} stops the relay",
+    relays_key_splits: "{key} ends each puzzle",
     relays_running_stop: "Puzzle {current} of {total}: {event}. Press {key} to stop the relay, {split} to finish this puzzle.",
 };

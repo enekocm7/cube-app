@@ -591,7 +591,7 @@ pub const STRINGS: Strings = Strings {
     toast_relay_load_failed: "تعذرت قراءة التتابعات: {error}",
     toast_relay_save_failed: "تعذر حفظ التتابعات: {error}",
     action_toggle_relay_key_splits: "تبديل مفتاح المؤقت بين إيقاف التتابع وإنهاء كل لغز",
-    relays_key_stops: "المفتاح يوقف التتابع",
-    relays_key_splits: "المفتاح ينهي كل لغز",
+    relays_key_stops: "{key} يوقف التتابع",
+    relays_key_splits: "{key} ينهي كل لغز",
     relays_running_stop: "اللغز {current} من {total}: {event}. اضغط {key} لإيقاف التتابع، و{split} لإنهاء هذا اللغز.",
 };

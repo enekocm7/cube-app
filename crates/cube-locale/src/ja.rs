@@ -591,7 +591,7 @@ pub const STRINGS: Strings = Strings {
     toast_relay_load_failed: "リレーを読み込めませんでした: {error}",
     toast_relay_save_failed: "リレーを保存できませんでした: {error}",
     action_toggle_relay_key_splits: "タイマーキーの動作をリレーの停止と各パズルの終了で切り替え",
-    relays_key_stops: "キーでリレーを停止",
-    relays_key_splits: "キーで各パズルを終了",
+    relays_key_stops: "{key} でリレーを停止",
+    relays_key_splits: "{key} で各パズルを終了",
     relays_running_stop: "パズル {current}/{total}: {event}。{key} でリレーを停止、{split} でこのパズルを終了します。",
 };

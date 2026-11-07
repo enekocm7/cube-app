@@ -591,7 +591,7 @@ pub const STRINGS: Strings = Strings {
     toast_relay_load_failed: "Nie udało się odczytać Twoich sztafet: {error}",
     toast_relay_save_failed: "Nie udało się zapisać Twoich sztafet: {error}",
     action_toggle_relay_key_splits: "Przełącz klawisz timera między zatrzymaniem sztafety a kończeniem każdej łamigłówki",
-    relays_key_stops: "Klawisz zatrzymuje sztafetę",
-    relays_key_splits: "Klawisz kończy każdą łamigłówkę",
+    relays_key_stops: "{key} zatrzymuje sztafetę",
+    relays_key_splits: "{key} kończy każdą łamigłówkę",
     relays_running_stop: "Łamigłówka {current} z {total}: {event}. Naciśnij {key}, aby zatrzymać sztafetę, {split}, aby zakończyć tę łamigłówkę.",
 };

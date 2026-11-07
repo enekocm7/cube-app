@@ -591,7 +591,7 @@ pub const STRINGS: Strings = Strings {
     toast_relay_load_failed: "Deine Staffeln konnten nicht gelesen werden: {error}",
     toast_relay_save_failed: "Deine Staffeln konnten nicht gespeichert werden: {error}",
     action_toggle_relay_key_splits: "Die Timer-Taste zwischen Staffel stoppen und jedes Puzzle beenden umschalten",
-    relays_key_stops: "Taste stoppt die Staffel",
-    relays_key_splits: "Taste beendet jedes Puzzle",
+    relays_key_stops: "{key} stoppt die Staffel",
+    relays_key_splits: "{key} beendet jedes Puzzle",
     relays_running_stop: "Puzzle {current} von {total}: {event}. Drücke {key}, um die Staffel zu stoppen, {split}, um dieses Puzzle zu beenden.",
 };
