@@ -1714,6 +1714,7 @@ impl SettingsView {
 
         let searching = !query(&self.search, cx).is_empty();
         let set_background = cx.theme().accent.opacity(0.08);
+        let page_background = cx.theme().background;
         let visibility_state = |on: bool| {
             if on {
                 strings.search_on
@@ -1835,11 +1836,20 @@ impl SettingsView {
                         strings.settings_library
                     ));
                     library_rows.push(
+                        // The negative margin hides the hairline the card draws
+                        // above every row, so the sets read as one block. The
+                        // padding is two method indents.
                         div()
-                            .pl_20()
                             .w_full()
-                            .bg(set_background)
-                            .child(self.library_set_row(set, visibility, strings, cx))
+                            .mt(px(-1.))
+                            .pl_12()
+                            .bg(page_background)
+                            .child(
+                                div()
+                                    .w_full()
+                                    .bg(set_background)
+                                    .child(self.library_set_row(set, visibility, strings, cx)),
+                            )
                             .into_any_element(),
                     );
                 }
