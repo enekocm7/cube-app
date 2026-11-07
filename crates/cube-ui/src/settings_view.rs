@@ -299,6 +299,7 @@ impl SettingsView {
             .child(
                 v_flex()
                     .rounded(radius)
+                    .overflow_hidden()
                     .border_1()
                     .border_color(border)
                     .children(rows),
