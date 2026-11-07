@@ -7,7 +7,7 @@ use tnoodle::min2phase::tools::{from_scramble, random_last_layer};
 use tnoodle::min2phase::{INVERSE_SOLUTION, Search};
 
 use super::deck::bounded;
-use super::notation::{self, AlgError, Face, Turn, invert, parse_outer, simplify, to_text};
+use super::notation::{self, AlgError, Face, Turn, parse_outer, simplify, to_text};
 use super::three_by_three::PLL;
 use super::{AlgCase, AlgSet, Step};
 use crate::event::WcaEvent;
@@ -46,10 +46,11 @@ const fn auf(quarters: u8) -> Turn {
 }
 
 /// Returns the turns that set up `case` from a solved cube.
-pub(super) fn setup(case: &AlgCase) -> Result<Vec<Turn>> {
-    let turns = notation::parse(case.algorithm)
+pub(super) fn setup(set: &AlgSet, case: &AlgCase) -> Result<Vec<Turn>> {
+    let text = crate::library::setup(set, case)
         .map_err(|error| anyhow!("Invalid algorithm for {}: {error:?}", case.name))?;
-    Ok(invert(&turns))
+    notation::parse(&text)
+        .map_err(|error| anyhow!("Invalid algorithm for {}: {error:?}", case.name))
 }
 
 /// Returns whether the first two layers are solved.
@@ -94,7 +95,7 @@ impl Step {
     /// orienting never depends on that, and for a pair any last layer at all.
     fn opening(self, set: &AlgSet, random: &mut dyn RandomSource) -> Result<Vec<Turn>> {
         let mut turns = match self {
-            Self::OrientLastLayer => setup(&PLL.cases[bounded(random, PLL.cases.len())])?,
+            Self::OrientLastLayer => setup(&PLL, &PLL.cases[bounded(random, PLL.cases.len())])?,
             Self::RandomLastLayer => solve_facelets(&random_last_layer(random))?,
             _ => Vec::new(),
         };
@@ -152,7 +153,7 @@ pub fn generate_scramble(
         _ => return super::small::generate(set, case, random),
     }
     let mut target = set.step.opening(set, random)?;
-    target.extend(setup(case)?);
+    target.extend(setup(set, case)?);
     target.extend(free_turns(set, random));
 
     let mut opening: Vec<Turn> = Vec::with_capacity(OPENING_TURNS);
@@ -163,7 +164,7 @@ pub fn generate_scramble(
 
     // Solving what remains once the opening is undone gives the turns that
     // lead from the opening to the target.
-    let mut remainder = invert(&opening);
+    let mut remainder = crate::library::invert(&opening);
     remainder.extend_from_slice(&target);
     let solution = solve_facelets(&facelets(&remainder))
         .map_err(|error| anyhow!("{} could not be scrambled: {error}", case.name))?;
@@ -261,7 +262,7 @@ mod tests {
     #[test]
     fn every_pll_keeps_the_first_two_layers_and_the_orientation() {
         for case in PLL.cases {
-            let cube = facelets(&setup(case).unwrap());
+            let cube = facelets(&setup(&PLL, case).unwrap());
             let cube = cube.as_bytes();
             assert!(first_two_layers_solved(cube), "{}", case.name);
             assert!(
@@ -275,7 +276,7 @@ mod tests {
     #[test]
     fn every_oll_keeps_the_first_two_layers() {
         for case in OLL.cases {
-            let cube = facelets(&setup(case).unwrap());
+            let cube = facelets(&setup(&OLL, case).unwrap());
             assert!(first_two_layers_solved(cube.as_bytes()), "{}", case.name);
         }
     }
@@ -285,7 +286,7 @@ mod tests {
         let solved = canonical_orientation(&[]);
         let mut seen = HashSet::from([solved]);
         for case in OLL.cases {
-            let pattern = canonical_orientation(&setup(case).unwrap());
+            let pattern = canonical_orientation(&setup(&OLL, case).unwrap());
             assert!(seen.insert(pattern), "{} repeats a case", case.name);
         }
         assert_eq!(seen.len(), 58);
@@ -295,7 +296,7 @@ mod tests {
     fn every_pll_case_is_distinct() {
         let mut seen = HashSet::from([canonical_permutation(&[])]);
         for case in PLL.cases {
-            let pattern = canonical_permutation(&setup(case).unwrap());
+            let pattern = canonical_permutation(&setup(&PLL, case).unwrap());
             assert!(seen.insert(pattern), "{} repeats a case", case.name);
         }
         assert_eq!(seen.len(), 22);
@@ -304,11 +305,11 @@ mod tests {
     #[test]
     fn oll_groups_match_their_shape() {
         let edges_oriented = |case: &AlgCase| {
-            let (top, _) = orientation(&setup(case).unwrap());
+            let (top, _) = orientation(&setup(&OLL, case).unwrap());
             [1, 3, 5, 7].iter().filter(|&&edge| top[edge]).count()
         };
         let corners_oriented = |case: &AlgCase| {
-            let (top, _) = orientation(&setup(case).unwrap());
+            let (top, _) = orientation(&setup(&OLL, case).unwrap());
             [0, 2, 4, 6].iter().filter(|&&corner| top[corner]).count()
         };
         for case in OLL.cases {
@@ -329,13 +330,13 @@ mod tests {
     #[test]
     fn well_known_cases_have_their_shape() {
         let edges = |name: &str| {
-            let (top, _) = orientation(&setup(OLL.case(name).unwrap()).unwrap());
+            let (top, _) = orientation(&setup(&OLL, OLL.case(name).unwrap()).unwrap());
             [1, 3, 5, 7].map(|edge| top[edge])
         };
         // Sune and antisune: a cross and one corner.
         for name in ["OLL 26", "OLL 27"] {
             assert_eq!(edges(name), [true; 4]);
-            let (top, _) = orientation(&setup(OLL.case(name).unwrap()).unwrap());
+            let (top, _) = orientation(&setup(&OLL, OLL.case(name).unwrap()).unwrap());
             let corners = [0, 2, 4, 6].iter().filter(|&&corner| top[corner]);
             assert_eq!(corners.count(), 1);
         }
@@ -399,7 +400,7 @@ mod tests {
                     match set.step {
                         // The pattern is the case's, at some angle.
                         Step::OrientLastLayer => {
-                            let expected = canonical_orientation(&setup(case).unwrap());
+                            let expected = canonical_orientation(&setup(set, case).unwrap());
                             assert_eq!(canonical_orientation(&turns), expected, "{}", case.name);
                             assert!(
                                 first_two_layers_solved(facelets(&turns).as_bytes()),
@@ -439,7 +440,7 @@ mod tests {
     fn scrambles_are_not_the_literal_inverse_of_the_algorithm() {
         let mut random = JavaRandom::new(13);
         let case = OLL.case("OLL 27").unwrap();
-        let inverse = to_text(&setup(case).unwrap());
+        let inverse = to_text(&setup(&OLL, case).unwrap());
         for _ in 0..50 {
             let scramble = generate_scramble(&OLL, case, &mut random).unwrap();
             assert!(!scramble.contains(&inverse));

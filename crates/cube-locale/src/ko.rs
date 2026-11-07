@@ -494,6 +494,7 @@ pub const STRINGS: Strings = Strings {
     library_grade_good: "좋음",
     library_grade_easy: "쉬움",
     library_add_algorithm: "알고리즘 추가",
+    library_setup: "셋업",
     library_train: "연습",
     library_add_hint: "저장하기 전에 케이스와 대조합니다.",
     library_edit_note: "메모 편집",

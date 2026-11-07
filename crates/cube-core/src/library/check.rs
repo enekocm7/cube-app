@@ -2,7 +2,31 @@
 //! an algorithm solves it.
 
 use super::model::{Model, Op, State};
+use crate::event::WcaEvent;
+use crate::trainer::notation::{self, AlgError, Turn};
 use crate::trainer::{AlgCase, AlgSet, CustomAlgError};
+
+/// Returns the turns that undo `turns`, for the outer turns of a 3x3x3.
+pub fn invert(turns: &[Turn]) -> Vec<Turn> {
+    turns
+        .iter()
+        .rev()
+        .map(|turn| Turn::new(turn.face, 4 - turn.quarters))
+        .collect()
+}
+
+/// Returns the setup moves of `case`: the moves that leave a solved puzzle in
+/// it, written in the puzzle's notation. On a 3x3x3 they are outer turns, the
+/// ones the trainer scrambles with.
+pub fn setup(set: &AlgSet, case: &AlgCase) -> Result<String, AlgError> {
+    if set.event == WcaEvent::Cube3x3 {
+        let turns = notation::parse(case.algorithm)?;
+        return Ok(notation::to_text(&invert(&turns)));
+    }
+    let model = set.model();
+    let ops = model.inverse(&model.parse(case.algorithm)?);
+    Ok(model.write(&ops))
+}
 
 /// How many times a move of `turn` can usefully be repeated.
 fn turn_limit(model: &Model, op: Op) -> u8 {
