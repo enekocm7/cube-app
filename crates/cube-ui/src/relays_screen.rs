@@ -892,7 +892,7 @@ impl CubeApp {
 
         let rows = FadeScroll::new("relay-scrambles", background)
             .flex_none()
-            .max_h(relative(0.5))
+            .max_h(relative(0.35))
             .gap_1()
             .children(scrambles.iter().enumerate().map(|(index, scramble)| {
                 let finished = index < splits.marked() && running;
@@ -942,9 +942,18 @@ impl CubeApp {
             }));
 
         v_flex()
+            .relative()
             .flex_1()
             .min_h_0()
             .gap_2()
+            .child(v_flex().absolute().inset_0().child(digits_panel(
+                text,
+                color,
+                &hint,
+                muted,
+                mono.clone(),
+                window,
+            )))
             .when(!active, |column| {
                 column.child(
                     h_flex()
@@ -966,14 +975,6 @@ impl CubeApp {
                 )
             })
             .child(rows)
-            .child(v_flex().flex_1().min_h_0().child(digits_panel(
-                text,
-                color,
-                &hint,
-                muted,
-                mono.clone(),
-                window,
-            )))
             .into_any_element()
     }
 }
