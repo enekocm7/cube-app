@@ -1836,7 +1836,7 @@ impl SettingsView {
                     ));
                     library_rows.push(
                         div()
-                            .pl_12()
+                            .pl_20()
                             .w_full()
                             .bg(set_background)
                             .child(self.library_set_row(set, visibility, strings, cx))
