@@ -1715,6 +1715,7 @@ impl SettingsView {
         let searching = !query(&self.search, cx).is_empty();
         let set_background = cx.theme().accent.opacity(0.08);
         let page_background = cx.theme().background;
+        let row_border = cx.theme().border;
         let visibility_state = |on: bool| {
             if on {
                 strings.search_on
@@ -1837,7 +1838,7 @@ impl SettingsView {
                     ));
                     library_rows.push(
                         // The negative margin hides the hairline the card draws
-                        // above every row, so the sets read as one block. The
+                        // across the indent, and the band draws its own. The
                         // padding is two method indents.
                         div()
                             .w_full()
@@ -1848,6 +1849,8 @@ impl SettingsView {
                                 div()
                                     .w_full()
                                     .bg(set_background)
+                                    .border_t_1()
+                                    .border_color(row_border)
                                     .child(self.library_set_row(set, visibility, strings, cx)),
                             )
                             .into_any_element(),
