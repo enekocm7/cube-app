@@ -76,12 +76,11 @@ switches:
 | Include in training | On | Offers the set and its cases in the trainer's picker, including the shortcuts that select the cases you are learning or those due |
 
 Click a puzzle or method, or focus its chevron and press `Enter` or `Space`, to
-reach their sets. Rows are labelled **Puzzle**, **Method** or **Set** so it is
-clear what a switch changes. The switches of a puzzle or method apply to every
-set inside it, so one switch can hide all of Megaminx or a whole method such as
-ZB. The switches of a set only change that set, and are independent: a set can be
-hidden from the library but still trained, or the other way round. Both are saved
-in `cube-app.toml` under `[set_visibility.<set-id>]` once changed.
+reach their sets. The switches of a puzzle or method apply to every set inside
+it, so one switch can hide all of Megaminx or a whole method such as ZB. The
+switches of a set only change that set, and are independent: a set can be hidden
+from the library but still trained, or the other way round. Both are saved in
+`cube-app.toml` under `[set_visibility.<set-id>]` once changed.
 
 Hiding a set does not delete its statuses, algorithms, notes or review dates;
 they come back when the set does.
