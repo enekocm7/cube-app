@@ -24,6 +24,9 @@ it and close the other puzzles.
 The search field looks through the cases of every set, by case, group, set,
 method and puzzle. Press `/` to reach it and `Esc` to clear it.
 
+The cases are drawn at their usual size. **Appearance → Library size** makes
+the rows, drawings and panels smaller or larger.
+
 ## A case
 
 The panel on the right shows the highlighted case: its drawing, what to look

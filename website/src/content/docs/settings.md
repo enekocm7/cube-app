@@ -56,6 +56,7 @@ Light, dark, or system — plus your theme files. See [Themes](/cube-app/docs/th
 | Timer size, per event (**Appearance → Sizes per event**) | The general size | The same sizes for one event, with its own Custom points. Saved in `cube-app.toml` under `[timer_sizes]` for events that differ from the general size |
 | Scramble size | Normal | Small / Normal / Large / Largest / Custom (6–120 pt) |
 | Scramble size, per event (**Appearance → Sizes per event**) | The general size | The same sizes for one event, with its own Custom points. Saved in `cube-app.toml` under `[scramble_sizes]` for events that differ from the general size |
+| Library size | Normal | Small / Normal / Big for the case rows, drawings and panels in the library |
 
 ### Solve list
 
