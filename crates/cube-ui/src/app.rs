@@ -2577,7 +2577,7 @@ impl Render for CubeApp {
             Screen::Charts => self.render_charts(cx),
             Screen::Goals => self.render_goals(cx),
             Screen::Trainer => self.render_trainer(window, cx),
-            Screen::Library => self.render_library(cx),
+            Screen::Library => self.render_library(window, cx),
             Screen::MultiBlind => self.render_multi_blind(window, cx),
             Screen::Relays => self.render_relays(window, cx),
         };

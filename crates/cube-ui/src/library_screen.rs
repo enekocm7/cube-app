@@ -54,6 +54,31 @@ const ROW_DIAGRAM: Rems = Rems(4.25);
 const DETAIL_DIAGRAM: Rems = Rems(9.);
 /// The drawing of the case under review.
 const REVIEW_DIAGRAM: Rems = Rems(12.);
+/// Room kept for the case list between the library's side panels.
+const MIN_LIST_WIDTH: Rems = Rems(16.);
+
+/// `base` scaled by the library size setting, kept in rems so it still follows
+/// the text size.
+fn library_rem(base: Rems, scale: f32) -> Rems {
+    Rems(base.0 * scale)
+}
+
+/// The nav and detail panel widths at the chosen library size, narrowed
+/// together when the window cannot hold them and a readable case list.
+fn library_panel_widths(window: &Window, scale: f32) -> (Rems, Rems) {
+    let (nav, detail) = (
+        library_rem(NAV_WIDTH, scale),
+        library_rem(DETAIL_WIDTH, scale),
+    );
+    let rem = f32::from(window.rem_size()).max(1.);
+    let room = f32::from(window.viewport_size().width) / rem - MIN_LIST_WIDTH.0;
+    let total = nav.0 + detail.0;
+    if room <= 0. || total <= room {
+        return (nav, detail);
+    }
+    let fit = room / total;
+    (Rems(nav.0 * fit), Rems(detail.0 * fit))
+}
 
 /// A case's drawing at `height`, as wide as the set's drawings are, or as the
 /// space it is placed in.
@@ -882,15 +907,16 @@ impl CubeApp {
     }
 
     /// The library screen: a review, or the sets to browse.
-    pub(crate) fn render_library(&self, cx: &mut Context<Self>) -> AnyElement {
+    pub(crate) fn render_library(&self, window: &mut Window, cx: &mut Context<Self>) -> AnyElement {
         if self.library.review.is_some() {
             return self.render_library_review(cx).into_any_element();
         }
+        let (nav, detail) = library_panel_widths(window, self.settings.library_scale());
         h_flex()
             .flex_1()
             .min_h_0()
             .items_start()
-            .child(self.render_library_nav(cx))
+            .child(self.render_library_nav(nav, cx))
             .child(
                 v_flex()
                     .flex_1()
@@ -899,12 +925,12 @@ impl CubeApp {
                     .child(self.render_library_header(cx))
                     .child(self.render_library_list(cx)),
             )
-            .child(self.render_library_detail(cx))
+            .child(self.render_library_detail(detail, cx))
             .into_any_element()
     }
 
     /// The puzzles, each a dropdown of its methods and those of their sets.
-    fn render_library_nav(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
+    fn render_library_nav(&self, width: Rems, cx: &mut Context<Self>) -> impl IntoElement + use<> {
         let theme = cx.theme();
         let (border, background) = (theme.border, theme.background);
         let puzzles = visible_catalog(&self.settings);
@@ -914,7 +940,7 @@ impl CubeApp {
             .map(|(index, puzzle)| self.render_nav_puzzle(index, puzzle, cx))
             .collect();
         FadeScroll::new("library-nav", background)
-            .w(NAV_WIDTH)
+            .w(width)
             .flex_none()
             .h_full()
             .p_2()
@@ -1157,6 +1183,7 @@ impl CubeApp {
         let theme = cx.theme();
         let (muted, selected_bg) = (theme.muted_foreground, theme.accent);
         let mono = theme.mono_font_family.clone();
+        let scale = self.settings.library_scale();
         let searching = !self.library.query.is_empty();
         range
             .filter_map(|row| {
@@ -1176,7 +1203,7 @@ impl CubeApp {
                     h_flex()
                         .id(("library-case", row))
                         .w_full()
-                        .h(ROW_HEIGHT)
+                        .h(library_rem(ROW_HEIGHT, scale))
                         .px_2()
                         .gap_2()
                         .when(self.library.cursor == row, |line| line.bg(selected_bg))
@@ -1186,11 +1213,9 @@ impl CubeApp {
                             app.focus.focus(window, cx);
                             cx.notify();
                         }))
-                        .children(
-                            self.library
-                                .thumbnail(set, case)
-                                .map(|image| img(image).size(ROW_DIAGRAM).flex_none()),
-                        )
+                        .children(self.library.thumbnail(set, case).map(|image| {
+                            img(image).size(library_rem(ROW_DIAGRAM, scale)).flex_none()
+                        }))
                         .child(
                             v_flex()
                                 .flex_1()
@@ -1271,13 +1296,18 @@ impl CubeApp {
 
     /// The highlighted case: its drawing, what to look for, its algorithms
     /// and the user's note.
-    fn render_library_detail(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
+    fn render_library_detail(
+        &self,
+        width: Rems,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement + use<> {
         let strings = self.strings();
         let language = self.language();
         let theme = cx.theme();
         let (border, muted, background) = (theme.border, theme.muted_foreground, theme.background);
+        let scale = self.settings.library_scale();
         let panel = FadeScroll::new("library-detail", background)
-            .w(DETAIL_WIDTH)
+            .w(width)
             .flex_none()
             .h_full()
             .p_3()
@@ -1304,7 +1334,7 @@ impl CubeApp {
             .children(
                 self.library
                     .diagram(set, case)
-                    .map(|image| full_diagram(image, set, DETAIL_DIAGRAM)),
+                    .map(|image| full_diagram(image, set, library_rem(DETAIL_DIAGRAM, scale))),
             )
             .child(div().text_center().child(case.name))
             .children(hint.map(|hint| {
@@ -1320,6 +1350,7 @@ impl CubeApp {
                 h_flex()
                     .w_full()
                     .gap_1()
+                    .flex_wrap()
                     .child(
                         Button::new("library-add")
                             .ghost()
@@ -1457,6 +1488,7 @@ impl CubeApp {
         let theme = cx.theme();
         let (muted, background) = (theme.muted_foreground, theme.background);
         let mono = theme.mono_font_family.clone();
+        let scale = self.settings.library_scale();
         let review = self.library.review.as_ref();
         let current = review.and_then(|review| review.queue.first().copied());
         let revealed = review.is_some_and(|review| review.revealed);
@@ -1491,7 +1523,7 @@ impl CubeApp {
         .children(
             self.library
                 .diagram(set, case)
-                .map(|image| full_diagram(image, set, REVIEW_DIAGRAM)),
+                .map(|image| full_diagram(image, set, library_rem(REVIEW_DIAGRAM, scale))),
         )
         .child(div().text_center().child(case.name))
         .child(div().text_xs().text_color(muted).child(format!(

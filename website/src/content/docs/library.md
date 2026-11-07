@@ -24,6 +24,9 @@ it and close the other puzzles.
 The search field looks through the cases of every set, by case, group, set,
 method and puzzle. Press `/` to reach it and `Esc` to clear it.
 
+The cases are drawn at their usual size. **Appearance → Library size** makes
+the rows, drawings and panels smaller or larger.
+
 ## Hiding a set
 
 Some sets are huge or already learned. In [Settings](/cube-app/docs/settings/#library),
