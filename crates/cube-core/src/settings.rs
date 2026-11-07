@@ -533,6 +533,33 @@ impl UpdateSettings {
     }
 }
 
+/// Whether a set of the algorithm library appears in the library and in the
+/// trainer. Both are on until the user turns them off.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SetVisibility {
+    /// Shows the set in the library: its tree, search results and reviews.
+    pub library: bool,
+    /// Offers the set in the trainer's picker.
+    pub training: bool,
+}
+
+impl Default for SetVisibility {
+    fn default() -> Self {
+        Self {
+            library: true,
+            training: true,
+        }
+    }
+}
+
+impl SetVisibility {
+    /// Returns whether neither switch was touched, so nothing needs saving.
+    fn is_default(self) -> bool {
+        self == Self::default()
+    }
+}
+
 /// Persisted user preferences. Unknown keys are ignored, missing keys default.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
@@ -628,6 +655,10 @@ pub struct Settings {
     /// Action name to keystroke overrides; see [`crate::keybind`].
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub keybindings: BTreeMap<String, String>,
+    /// The sets hidden from the library or left out of the trainer, by stable
+    /// set id. A set missing here is shown in both.
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub set_visibility: BTreeMap<String, SetVisibility>,
     /// Width of the session and solve list, in pixels. Clamped to the window
     /// when drawn; see [`crate::panels`].
     pub sidebar_width: u32,
@@ -683,6 +714,7 @@ impl Default for Settings {
             active_tags: Vec::new(),
             user_backup_dir: String::new(),
             keybindings: BTreeMap::new(),
+            set_visibility: BTreeMap::new(),
             sidebar_width: DEFAULT_SIDEBAR_WIDTH,
             stats_panel_width: DEFAULT_STATS_WIDTH,
             window: None,
@@ -861,6 +893,42 @@ impl Settings {
     /// Builds the effective key bindings, defaults plus configured overrides.
     pub fn keybinds(&self) -> Keybinds {
         Keybinds::from_overrides(&self.keybindings)
+    }
+
+    /// Returns whether the set `id` appears in the library.
+    pub fn shows_set_in_library(&self, id: &str) -> bool {
+        self.set_visibility
+            .get(id)
+            .is_none_or(|visibility| visibility.library)
+    }
+
+    /// Returns whether the set `id` is offered in the trainer.
+    pub fn includes_set_in_training(&self, id: &str) -> bool {
+        self.set_visibility
+            .get(id)
+            .is_none_or(|visibility| visibility.training)
+    }
+
+    /// Shows or hides the set `id` in the library.
+    pub fn show_set_in_library(&mut self, id: &str, show: bool) {
+        self.change_set_visibility(id, |visibility| visibility.library = show);
+    }
+
+    /// Includes or leaves out the set `id` in the trainer.
+    pub fn include_set_in_training(&mut self, id: &str, include: bool) {
+        self.change_set_visibility(id, |visibility| visibility.training = include);
+    }
+
+    /// Changes one set's visibility, dropping the entry once both switches are
+    /// back at their defaults.
+    fn change_set_visibility(&mut self, id: &str, change: impl FnOnce(&mut SetVisibility)) {
+        let mut visibility = self.set_visibility.get(id).copied().unwrap_or_default();
+        change(&mut visibility);
+        if visibility.is_default() {
+            self.set_visibility.remove(id);
+        } else {
+            self.set_visibility.insert(id.to_owned(), visibility);
+        }
     }
 
     /// Treats an existing history as having used the start hint, so users who
@@ -1098,6 +1166,55 @@ mod tests {
         assert!(!settings.inspection);
         assert_eq!(settings.inspection_limit_ms, 15_000);
         assert!(settings.shows_start_hint());
+    }
+
+    #[test]
+    fn library_sets_are_visible_and_offered_by_default() {
+        let settings = Settings::default();
+        assert!(settings.shows_set_in_library("pll"));
+        assert!(settings.includes_set_in_training("pll"));
+        assert!(
+            !toml::to_string(&settings)
+                .unwrap()
+                .contains("set_visibility")
+        );
+        let old: Settings = toml::from_str("inspection = false").unwrap();
+        assert!(old.shows_set_in_library("pll"));
+        assert!(old.includes_set_in_training("pll"));
+    }
+
+    #[test]
+    fn each_set_hides_from_the_library_and_from_training_separately() {
+        let mut settings = Settings::default();
+        settings.show_set_in_library("pll", false);
+        assert!(!settings.shows_set_in_library("pll"));
+        assert!(settings.includes_set_in_training("pll"));
+        settings.include_set_in_training("pll", false);
+        let text = toml::to_string(&settings).unwrap();
+        let loaded: Settings = toml::from_str(&text).unwrap();
+        assert!(!loaded.shows_set_in_library("pll"));
+        assert!(!loaded.includes_set_in_training("pll"));
+        // The other sets keep the defaults.
+        assert!(loaded.shows_set_in_library("oll"));
+
+        let mut settings = loaded;
+        settings.show_set_in_library("pll", true);
+        assert!(settings.shows_set_in_library("pll"));
+        assert!(!settings.includes_set_in_training("pll"));
+        settings.include_set_in_training("pll", true);
+        assert!(settings.set_visibility.is_empty());
+    }
+
+    #[test]
+    fn a_stored_set_visibility_may_name_only_one_switch() {
+        let settings: Settings = toml::from_str(
+            "[set_visibility.pll]\nlibrary = false\n\n[set_visibility.future]\ntraining = false\n",
+        )
+        .unwrap();
+        assert!(!settings.shows_set_in_library("pll"));
+        assert!(settings.includes_set_in_training("pll"));
+        assert!(settings.shows_set_in_library("future"));
+        assert!(!settings.includes_set_in_training("future"));
     }
 
     #[test]

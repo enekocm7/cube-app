@@ -79,6 +79,8 @@ nothing is selected.
 | Add algorithm | `Shift + I` | Works in the library, for the highlighted case |
 | Edit note | `.` | Works in the library, for the highlighted case |
 | Start the review | `Shift + W` | Works in the library |
+| Show or hide the set in the library | `Ctrl + Shift + B` | Works on the highlighted set, in the library or the trainer. Saved as a per-set setting |
+| Include or exclude the set in training | `Ctrl + Shift + P` | Works on the highlighted set, in the library or the trainer. Saved as a per-set setting |
 | Again | `6` | Grades a case in a review, once its algorithm is showing |
 | Hard | `7` | Grades a case in a review, once its algorithm is showing |
 | Good | `8` | Grades a case in a review, once its algorithm is showing |
@@ -133,6 +135,10 @@ penalties work on its attempts. Selecting, deleting and the penalties work the
 same on a case's attempts. `Esc` goes back to the cases. See
 [Algorithm trainer](/cube-app/docs/trainer/).
 
+`Ctrl + Shift + B` hides the highlighted set from the library and
+`Ctrl + Shift + P` leaves it out of the trainer. The set list follows those
+settings, and moving to the next set skips any left out.
+
 ## Library
 
 In the library, the bindings of selecting solves move through the cases and
@@ -141,6 +147,10 @@ the next set and deleting a solve removes the highlighted algorithm if it is
 yours. In a review, showing the case, `Enter` and the timer key show the
 algorithm. `Esc` ends a review, then clears the search, then returns to the
 timer. See [Algorithm library](/cube-app/docs/library/).
+
+`Ctrl + Shift + B` shows or hides the highlighted set in the library, and
+`Ctrl + Shift + P` includes or leaves it out of the trainer. Both are per-set
+settings; the library tree, search, counts and review queue follow them.
 
 ## Relays
 

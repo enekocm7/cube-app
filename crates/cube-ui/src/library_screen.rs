@@ -12,14 +12,14 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use cube_core::library::{
-    Grade, LibraryData, LibraryPuzzle, Status, catalog, check, find_set, recognition, search_cases,
-    setup,
+    Grade, LibraryData, LibraryPuzzle, Status, check, find_set, first_visible_set, recognition,
+    search_visible_cases, setup, visible_catalog,
 };
 use cube_core::trainer::notation::AlgError;
 use cube_core::trainer::{
     AlgCase, AlgSet, CustomAlgError, PLL, Step, case_diagram, case_thumbnail, diagram_ratio,
 };
-use cube_core::{Action, WcaEvent, persistence};
+use cube_core::{Action, Settings, WcaEvent, persistence};
 use cube_locale::Strings;
 use gpui_kit::assets::IconName;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
@@ -134,11 +134,16 @@ impl LibraryState {
         data: LibraryData,
         path: Option<PathBuf>,
         search: Entity<InputState>,
+        settings: &Settings,
     ) -> Self {
         let mut state = Self {
             data,
             path,
-            set: &PLL,
+            set: if settings.shows_set_in_library(PLL.id) {
+                &PLL
+            } else {
+                first_visible_set(settings).unwrap_or(&PLL)
+            },
             open_puzzles: HashSet::new(),
             open_methods: HashSet::new(),
             search,
@@ -151,7 +156,7 @@ impl LibraryState {
             diagrams: RefCell::default(),
             thumbnails: RefCell::default(),
         };
-        state.refresh_rows();
+        state.refresh_rows(settings);
         state.reveal_set();
         state
     }
@@ -165,17 +170,40 @@ impl LibraryState {
         self.open_methods.insert((set.event, set.method));
     }
 
+    /// Drops cases of sets that the library no longer shows, then moves off a
+    /// hidden set.
+    pub(crate) fn adopt_visibility(&mut self, settings: &Settings) {
+        let empty = if let Some(review) = &mut self.review {
+            review
+                .queue
+                .retain(|(set, _)| settings.shows_set_in_library(set.id));
+            review.queue.is_empty()
+        } else {
+            false
+        };
+        if empty {
+            self.review = None;
+        }
+        if settings.shows_set_in_library(self.set.id) {
+            self.refresh_rows(settings);
+            return;
+        }
+        if let Some(set) = first_visible_set(settings) {
+            self.set = set;
+            self.reveal_set();
+        }
+        self.refresh_rows(settings);
+    }
+
     /// Opens or closes a puzzle. Opening one shows the way to the current set,
     /// and a method with no others to choose from.
-    fn toggle_puzzle(&mut self, puzzle: &LibraryPuzzle) {
-        let event = puzzle.event;
+    fn toggle_puzzle(&mut self, event: WcaEvent, only_method: Option<&'static str>) {
         if self.open_puzzles.remove(&event) {
             return;
         }
         self.open_puzzles.insert(event);
-        let methods = puzzle.methods();
-        if let [(only, _)] = methods.as_slice() {
-            self.open_methods.insert((event, only));
+        if let Some(method) = only_method {
+            self.open_methods.insert((event, method));
         }
         if self.set.event == event {
             self.open_methods.insert((event, self.set.method));
@@ -189,12 +217,12 @@ impl LibraryState {
     }
 
     /// Lists what the search or the set calls for.
-    fn refresh_rows(&mut self) {
+    fn refresh_rows(&mut self, settings: &Settings) {
         self.rows = if self.query.trim().is_empty() {
             let set = self.set;
             set.cases.iter().map(|case| (set, case)).collect()
         } else {
-            search_cases(&self.query)
+            search_visible_cases(settings, &self.query)
         };
         self.cursor = 0;
         self.algorithm = 0;
@@ -222,9 +250,9 @@ impl LibraryState {
         entry.clone()
     }
 
-    /// Returns the cases due now that the library still has.
-    fn due(&self) -> Vec<Row> {
-        let due = self.data.due(now_unix_ms());
+    /// Returns the cases due now that the library still has and shows.
+    fn due(&self, settings: &Settings) -> Vec<Row> {
+        let due = self.data.due(now_unix_ms(), settings);
         due.iter()
             .filter_map(|due| {
                 let set = find_set(&due.set)?;
@@ -247,7 +275,7 @@ pub(crate) fn new_library_search(
         |app: &mut CubeApp, input, event: &InputEvent, window, cx| match event {
             InputEvent::Change => {
                 app.library.query = query(input, cx);
-                app.library.refresh_rows();
+                app.library.refresh_rows(&app.settings);
             }
             InputEvent::PressEnter { .. } => app.focus.focus(window, cx),
             _ => {}
@@ -418,7 +446,7 @@ impl CubeApp {
             .search
             .update(cx, |search, cx| search.set_value("", window, cx));
         self.library.query.clear();
-        self.library.refresh_rows();
+        self.library.refresh_rows(&self.settings);
         cx.notify();
         true
     }
@@ -479,8 +507,30 @@ impl CubeApp {
             Action::DeleteSolve => self.remove_library_algorithm(window, cx),
             Action::StartLibraryReview => self.start_library_review(window, cx),
             Action::TrainLibraryCase => self.train_library_case(window, cx),
+            Action::ToggleSetInLibrary => self.toggle_set_in_library(window, cx),
+            Action::ToggleSetInTraining => self.toggle_set_in_training(window, cx),
             _ => {}
         }
+    }
+
+    /// Shows or hides the library's set in the library.
+    fn toggle_set_in_library(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let set = self.library.set;
+        let show = !self.settings.shows_set_in_library(set.id);
+        self.update_settings(window, cx, |settings| {
+            settings.show_set_in_library(set.id, show);
+        });
+        cx.notify();
+    }
+
+    /// Includes or leaves out the library's set in the trainer.
+    fn toggle_set_in_training(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let set = self.library.set;
+        let include = !self.settings.includes_set_in_training(set.id);
+        self.update_settings(window, cx, |settings| {
+            settings.include_set_in_training(set.id, include);
+        });
+        cx.notify();
     }
 
     /// Starts training the highlighted case in the trainer.
@@ -567,7 +617,7 @@ impl CubeApp {
     ) {
         self.library.set = set;
         if !self.clear_library_search(window, cx) {
-            self.library.refresh_rows();
+            self.library.refresh_rows(&self.settings);
         }
         self.library
             .list_scroll
@@ -578,10 +628,11 @@ impl CubeApp {
     /// Moves on to the next set of the puzzle, going around.
     fn next_library_set(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let current = self.library.set;
-        let puzzle = catalog()
-            .iter()
-            .find(|puzzle| puzzle.event == current.event);
-        let Some(puzzle) = puzzle else {
+        let puzzles = visible_catalog(&self.settings);
+        let Some(puzzle) = puzzles.iter().find(|puzzle| puzzle.event == current.event) else {
+            if let Some(set) = first_visible_set(&self.settings) {
+                self.select_library_set(set, window, cx);
+            }
             return;
         };
         let at = puzzle.sets.iter().position(|set| set.id == current.id);
@@ -592,7 +643,10 @@ impl CubeApp {
 
     /// Moves on to the first set of the next puzzle, going around.
     fn next_library_puzzle(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let puzzles = catalog();
+        let puzzles = visible_catalog(&self.settings);
+        if puzzles.is_empty() {
+            return;
+        }
         let event = self.library.set.event;
         let at = puzzles.iter().position(|puzzle| puzzle.event == event);
         let next = at.map_or(0, |at| (at + 1) % puzzles.len());
@@ -810,7 +864,7 @@ impl CubeApp {
     }
 
     fn start_library_review(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let queue = self.library.due();
+        let queue = self.library.due(&self.settings);
         if queue.is_empty() {
             self.toast(self.strings().library_review_empty, window, cx);
             return;
@@ -879,7 +933,8 @@ impl CubeApp {
     fn render_library_nav(&self, width: Rems, cx: &mut Context<Self>) -> impl IntoElement + use<> {
         let theme = cx.theme();
         let (border, background) = (theme.border, theme.background);
-        let items: Vec<AnyElement> = catalog()
+        let puzzles = visible_catalog(&self.settings);
+        let items: Vec<AnyElement> = puzzles
             .iter()
             .enumerate()
             .map(|(index, puzzle)| self.render_nav_puzzle(index, puzzle, cx))
@@ -899,11 +954,17 @@ impl CubeApp {
     fn render_nav_puzzle(
         &self,
         index: usize,
-        puzzle: &'static LibraryPuzzle,
+        puzzle: &LibraryPuzzle,
         cx: &mut Context<Self>,
     ) -> AnyElement {
         let language = self.language();
         let open = self.library.open_puzzles.contains(&puzzle.event);
+        let event = puzzle.event;
+        let methods = puzzle.methods();
+        let only_method = match methods.as_slice() {
+            [(only, _)] => Some(*only),
+            _ => None,
+        };
         let learned: usize = puzzle
             .sets
             .iter()
@@ -927,17 +988,16 @@ impl CubeApp {
             )
             .child(tree_count(count, cx))
             .on_click(cx.listener(move |app, _, window, cx| {
-                app.library.toggle_puzzle(puzzle);
+                app.library.toggle_puzzle(event, only_method);
                 app.focus.focus(window, cx);
                 cx.notify();
             }));
         let methods = open.then(|| {
-            let methods = puzzle.methods();
             let rows: Vec<AnyElement> = methods
                 .into_iter()
                 .enumerate()
                 .map(|(at, (method, sets))| {
-                    self.render_nav_method(index * 16 + at, puzzle.event, method, &sets, cx)
+                    self.render_nav_method(index * 16 + at, event, method, &sets, cx)
                 })
                 .collect();
             tree_children(cx).children(rows)
@@ -1033,7 +1093,7 @@ impl CubeApp {
             .library_progress
             .replace("{learned}", &language.format_count(progress.learned as u64))
             .replace("{total}", &language.format_count(set.cases.len() as u64));
-        let due = self.library.due().len();
+        let due = self.library.due(&self.settings).len();
         let due_label = strings
             .library_due
             .replace("{count}", &language.format_count(due as u64));

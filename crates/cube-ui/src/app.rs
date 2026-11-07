@@ -562,7 +562,6 @@ impl CubeApp {
             timer_link: None,
             stats: SessionStats::compute(sessions[0].solves()),
             blind_stats: None,
-            settings,
             sessions,
             current: 0,
             event,
@@ -597,8 +596,9 @@ impl CubeApp {
             goals_day: now.date_naive(),
             selected_goal: None,
             goals_scroll: UniformListScrollHandle::new(),
-            trainer: TrainerState::new(trainer, trainer_path, trainer_search),
-            library: LibraryState::new(library, library_path, library_search),
+            trainer: TrainerState::new(trainer, trainer_path, trainer_search, &settings),
+            library: LibraryState::new(library, library_path, library_search, &settings),
+            settings,
             multi_blind: MultiBlindState::new(multi_blind, multi_blind_path),
             relays: RelayState::new(relays, relays_path),
             tags_available,
@@ -1046,7 +1046,9 @@ impl CubeApp {
             | Action::GradeEasy
             | Action::TrainerCaseAttempts
             | Action::SelectLearningCases
-            | Action::SelectDueCases => {}
+            | Action::SelectDueCases
+            | Action::ToggleSetInLibrary
+            | Action::ToggleSetInTraining => {}
         }
     }
 
@@ -2095,7 +2097,12 @@ impl CubeApp {
     ) {
         let accurate_3x3 = self.settings.accurate_3x3;
         let user_backups = self.settings.user_backups();
+        let set_visibility = self.settings.set_visibility.clone();
         change(&mut self.settings);
+        if self.settings.set_visibility != set_visibility {
+            self.library.adopt_visibility(&self.settings);
+            self.trainer.adopt_visibility(&self.settings);
+        }
         if let Some(writer) = &self.history_writer
             && self.settings.user_backups() != user_backups
         {

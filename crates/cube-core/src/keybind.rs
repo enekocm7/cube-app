@@ -58,6 +58,8 @@ pub enum Action {
     EditLibraryNote,
     StartLibraryReview,
     TrainLibraryCase,
+    ToggleSetInLibrary,
+    ToggleSetInTraining,
     GradeAgain,
     GradeHard,
     GradeGood,
@@ -101,7 +103,7 @@ pub enum Action {
 
 impl Action {
     /// Every action, in the order the help dialog lists them.
-    pub const ALL: [Self; 83] = [
+    pub const ALL: [Self; 85] = [
         Self::Timer,
         Self::Cancel,
         Self::NextScramble,
@@ -148,6 +150,8 @@ impl Action {
         Self::EditLibraryNote,
         Self::StartLibraryReview,
         Self::TrainLibraryCase,
+        Self::ToggleSetInLibrary,
+        Self::ToggleSetInTraining,
         Self::GradeAgain,
         Self::GradeHard,
         Self::GradeGood,
@@ -236,6 +240,8 @@ impl Action {
             Self::EditLibraryNote => "edit_library_note",
             Self::StartLibraryReview => "start_library_review",
             Self::TrainLibraryCase => "train_library_case",
+            Self::ToggleSetInLibrary => "toggle_set_in_library",
+            Self::ToggleSetInTraining => "toggle_set_in_training",
             Self::GradeAgain => "grade_again",
             Self::GradeHard => "grade_hard",
             Self::GradeGood => "grade_good",
@@ -487,6 +493,8 @@ impl Default for Keybinds {
             (Action::EditLibraryNote, "."),
             (Action::StartLibraryReview, "Shift+W"),
             (Action::TrainLibraryCase, "5"),
+            (Action::ToggleSetInLibrary, "Ctrl+Shift+B"),
+            (Action::ToggleSetInTraining, "Ctrl+Shift+P"),
             (Action::GradeAgain, "6"),
             (Action::GradeHard, "7"),
             (Action::GradeGood, "8"),
@@ -1032,6 +1040,20 @@ mod tests {
         assert_eq!(
             binds.action_for(&shifted("l")),
             Some(Action::NextCompareTag)
+        );
+    }
+
+    #[test]
+    fn the_set_visibility_actions_have_their_default_keys() {
+        let binds = Keybinds::default();
+        let press = |key: &str| KeyPress::new(key, true, false, true).unwrap();
+        assert_eq!(
+            binds.action_for(&press("b")),
+            Some(Action::ToggleSetInLibrary)
+        );
+        assert_eq!(
+            binds.action_for(&press("p")),
+            Some(Action::ToggleSetInTraining)
         );
     }
 

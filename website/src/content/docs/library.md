@@ -27,6 +27,24 @@ method and puzzle. Press `/` to reach it and `Esc` to clear it.
 The cases are drawn at their usual size. **Appearance → Library size** makes
 the rows, drawings and panels smaller or larger.
 
+## Hiding a set
+
+Some sets are huge or already learned. In [Settings](/cube-app/docs/settings/#library),
+the library is grouped by puzzle and then by method. Each puzzle, method and set
+has two switches:
+
+- **Show in library** keeps the group or set out of the tree, the search, the
+  counts and the review queue when off.
+- **Include in training** keeps it out of the trainer's picker when off,
+  including the shortcuts that select cases from the library.
+
+A puzzle's or method's switches change every set inside it, so one switch can
+hide all of Megaminx or all of a method such as ZB. Open the dropdowns to reach a
+single set. Both switches are on by default and work separately. From the
+library, `Ctrl + Shift + B` switches the highlighted set's library visibility and
+`Ctrl + Shift + P` switches its place in the trainer; the same keys work in the
+trainer. The set's data is kept while it is hidden.
+
 ## A case
 
 The panel on the right shows the highlighted case: its drawing, what to look

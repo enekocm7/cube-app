@@ -20,6 +20,11 @@ What you select is remembered for next time.
 Each case shows its attempts, best time, mean, and the mean of its latest five
 timed attempts. The sort button above the grid lists the slowest cases first.
 
+Sets you leave out of training in [Settings](/cube-app/docs/settings/#library)
+do not appear in this list, and moving to the next set skips them. Their cases
+and attempts are kept, so they come back when you include the set again.
+`Ctrl + Shift + P` includes or leaves out the highlighted set.
+
 Two shortcuts select cases from the library instead of by hand: the star button
 or `3` selects the cases you are learning, and the refresh button or `4` selects
 those due for review. Each replaces the selection, and tells you if the set has

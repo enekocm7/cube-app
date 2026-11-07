@@ -8,6 +8,7 @@ pub enum SettingsCategory {
     General,
     Timer,
     Appearance,
+    Library,
     Shortcuts,
     Data,
     Updates,
@@ -15,10 +16,11 @@ pub enum SettingsCategory {
 
 impl SettingsCategory {
     /// Every category, in the order the list shows them.
-    pub const ALL: [Self; 6] = [
+    pub const ALL: [Self; 7] = [
         Self::General,
         Self::Timer,
         Self::Appearance,
+        Self::Library,
         Self::Shortcuts,
         Self::Data,
         Self::Updates,

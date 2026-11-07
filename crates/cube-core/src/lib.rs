@@ -45,7 +45,7 @@ pub use history::History;
 pub use keybind::{Action, BindingError, KeyBinding, KeyPress, Keybinds};
 pub use manual_entry::{ManualEntry, ManualError};
 pub use merge::MergeSummary;
-pub use settings::{Settings, UpdateChannel, UpdateFrequency, UpdateSettings};
+pub use settings::{SetVisibility, Settings, UpdateChannel, UpdateFrequency, UpdateSettings};
 pub use settings_category::SettingsCategory;
 pub use solve::{Modifier, Solve, SolveChange, SolveSnapshot};
 pub use tags::{TagChange, TagError};

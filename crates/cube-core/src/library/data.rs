@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 use super::review::{Grade, Review};
+use crate::settings::Settings;
 use crate::trainer::{AlgCase, AlgSet, TrainerData, puzzles};
 
 /// How far along learning a case is.
@@ -254,10 +255,14 @@ impl LibraryData {
         progress
     }
 
-    /// Returns the learned cases due at `now_unix_ms`, the most overdue first.
-    pub fn due(&self, now_unix_ms: u64) -> Vec<DueCase> {
+    /// Returns the learned cases due at `now_unix_ms` that the library still
+    /// shows, the most overdue first.
+    pub fn due(&self, now_unix_ms: u64, settings: &Settings) -> Vec<DueCase> {
         let mut due = Vec::new();
         for (set, cases) in &self.cases {
+            if !settings.shows_set_in_library(set) {
+                continue;
+            }
             for (case, entry) in cases {
                 if let Some(review) = entry.review.filter(|review| review.is_due(now_unix_ms)) {
                     due.push(DueCase {
@@ -384,10 +389,10 @@ mod tests {
         let mut data = LibraryData::default();
         data.set_status(&PLL, "T", Status::Learning, NOW);
         data.set_status(&PLL, "Z", Status::Learned, NOW);
-        let due = data.due(NOW + DAY_MS);
+        let due = data.due(NOW + DAY_MS, &Settings::default());
         assert_eq!(due.len(), 1);
         assert_eq!(due[0].case, "Z");
-        assert_eq!(data.due(NOW), Vec::new());
+        assert_eq!(data.due(NOW, &Settings::default()), Vec::new());
     }
 
     #[test]
@@ -395,7 +400,10 @@ mod tests {
         let mut data = LibraryData::default();
         data.set_status(&PLL, "T", Status::Learned, NOW);
         data.set_status(&PLL, "T", Status::Learning, NOW);
-        assert_eq!(data.due(NOW + 10 * DAY_MS), Vec::new());
+        assert_eq!(
+            data.due(NOW + 10 * DAY_MS, &Settings::default()),
+            Vec::new()
+        );
     }
 
     #[test]
@@ -413,7 +421,7 @@ mod tests {
         let mut data = LibraryData::default();
         data.set_status(&PLL, "T", Status::Learned, NOW + 5);
         data.set_status(&OLL, "OLL 27", Status::Learned, NOW);
-        let due = data.due(NOW + 2 * DAY_MS);
+        let due = data.due(NOW + 2 * DAY_MS, &Settings::default());
         let names: Vec<&str> = due.iter().map(|case| case.case.as_str()).collect();
         assert_eq!(names, ["OLL 27", "T"]);
     }
@@ -423,9 +431,22 @@ mod tests {
         let mut data = LibraryData::default();
         data.set_status(&PLL, "T", Status::Learned, NOW);
         let later = NOW + DAY_MS;
-        assert_eq!(data.due(later).len(), 1);
+        assert_eq!(data.due(later, &Settings::default()).len(), 1);
         data.grade("pll", "T", Grade::Good, later);
-        assert_eq!(data.due(later), Vec::new());
+        assert_eq!(data.due(later, &Settings::default()), Vec::new());
+    }
+
+    #[test]
+    fn a_set_hidden_from_the_library_leaves_the_review_queue() {
+        let mut data = LibraryData::default();
+        data.set_status(&PLL, "T", Status::Learned, NOW);
+        data.set_status(&OLL, "OLL 27", Status::Learned, NOW);
+        let later = NOW + DAY_MS;
+        let mut settings = Settings::default();
+        settings.show_set_in_library("pll", false);
+        let due = data.due(later, &settings);
+        assert_eq!(due.len(), 1);
+        assert_eq!(due[0].set, "oll");
     }
 
     #[test]
@@ -505,7 +526,10 @@ mod tests {
         let mut data = LibraryData::default();
         data.record_attempt(&PLL, "T", outcome(Some(2_000), None, 1), NOW);
         assert_eq!(data.status(&PLL, "T"), Status::Learning);
-        assert_eq!(data.due(NOW + 30 * DAY_MS), Vec::new());
+        assert_eq!(
+            data.due(NOW + 30 * DAY_MS, &Settings::default()),
+            Vec::new()
+        );
     }
 
     #[test]
@@ -516,7 +540,7 @@ mod tests {
         assert_eq!(data.status(&PLL, "T"), Status::Learning);
         data.record_attempt(&PLL, "T", outcome(Some(2_000), None, 3), NOW);
         assert_eq!(data.status(&PLL, "T"), Status::Learned);
-        assert_eq!(data.due(NOW + DAY_MS).len(), 1);
+        assert_eq!(data.due(NOW + DAY_MS, &Settings::default()).len(), 1);
     }
 
     #[test]
