@@ -584,7 +584,6 @@ pub const STRINGS: Strings = Strings {
     relays_running: "اللغز {current} من {total}: {event}. اضغط {key} عند حله.",
     relays_empty: "ستظهر محاولات التتابع هنا.",
     relays_unavailable: "تعذرت قراءة التتابعات، لذا لا يمكن تعديلها حاليًا.",
-    relays_summary: "{relay} · المحاولات {attempts} · الأفضل {best} · المتوسط {mean}",
     relays_total: "المجموع",
     relays_too_few: "يحتاج التتابع إلى {min} فعاليات على الأقل.",
     relays_too_many: "يمكن أن يضم التتابع {max} فعاليات كحد أقصى.",

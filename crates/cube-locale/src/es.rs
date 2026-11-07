@@ -584,7 +584,6 @@ pub const STRINGS: Strings = Strings {
     relays_running: "Puzzle {current} de {total}: {event}. Pulsa {key} al terminarlo.",
     relays_empty: "Tus intentos de relevo aparecerán aquí.",
     relays_unavailable: "No se pudieron leer tus relevos, así que por ahora no se pueden cambiar.",
-    relays_summary: "{relay} · Intentos {attempts} · Mejor {best} · Media {mean}",
     relays_total: "Total",
     relays_too_few: "Un relevo necesita al menos {min} eventos.",
     relays_too_many: "Un relevo puede tener como máximo {max} eventos.",

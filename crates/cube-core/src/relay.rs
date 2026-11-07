@@ -149,10 +149,34 @@ pub fn name(events: &[WcaEvent]) -> String {
     names.join(" + ")
 }
 
-/// The relays offered without being created: the cubes from 2x2x2 up to 4x4x4,
-/// 5x5x5, 6x6x6 and 7x7x7.
+/// The relays offered without being created: runs of cubes, the cubes with a
+/// pair of puzzles, and the other puzzles together.
 pub fn presets() -> Vec<Vec<WcaEvent>> {
-    (4..=7).map(|last| CUBES[..last - 1].to_vec()).collect()
+    let cubes = |first: usize, last: usize| CUBES[first - 2..=last - 2].to_vec();
+    vec![
+        cubes(2, 4),
+        cubes(2, 5),
+        cubes(2, 6),
+        cubes(2, 7),
+        cubes(3, 5),
+        cubes(3, 7),
+        cubes(4, 7),
+        cubes(2, 3),
+        vec![WcaEvent::Cube3x3, WcaEvent::Cube3x3OneHanded],
+        vec![
+            WcaEvent::Cube2x2,
+            WcaEvent::Cube3x3,
+            WcaEvent::Pyraminx,
+            WcaEvent::Skewb,
+        ],
+        vec![WcaEvent::Megaminx, WcaEvent::Pyraminx, WcaEvent::Skewb],
+        vec![
+            WcaEvent::Cube3x3,
+            WcaEvent::Square1,
+            WcaEvent::Clock,
+            WcaEvent::Megaminx,
+        ],
+    ]
 }
 
 /// One relay attempt, recorded.
@@ -343,7 +367,11 @@ mod tests {
     #[test]
     fn presets_run_from_2x2x2_to_4x4x4_up_to_7x7x7() {
         let presets = presets();
-        assert_eq!(presets.len(), 4);
+        assert_eq!(name(&presets[4]), "3x3x3 to 5x5x5");
+        assert_eq!(name(&presets[6]), "4x4x4 to 7x7x7");
+        let mut distinct = presets.clone();
+        distinct.dedup();
+        assert_eq!(distinct.len(), presets.len());
         assert_eq!(name(&presets[0]), "2x2x2 to 4x4x4");
         assert_eq!(name(&presets[3]), "2x2x2 to 7x7x7");
         assert_eq!(presets[3].len(), 6);
@@ -473,7 +501,7 @@ mod tests {
             custom: vec![presets()[0].clone(), vec![WcaEvent::Skewb, WcaEvent::Clock]],
             attempts: Vec::new(),
         };
-        assert_eq!(data.relays().len(), 5);
+        assert_eq!(data.relays().len(), presets().len() + 1);
     }
 
     #[test]

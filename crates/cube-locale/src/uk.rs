@@ -584,7 +584,6 @@ pub const STRINGS: Strings = Strings {
     relays_running: "Головоломка {current} з {total}: {event}. Натисніть {key}, коли її зібрано.",
     relays_empty: "Тут з'являться ваші спроби в естафетах.",
     relays_unavailable: "Не вдалося прочитати ваші естафети, тому поки що їх не можна змінювати.",
-    relays_summary: "{relay} · Спроб {attempts} · Найкраща {best} · Середнє {mean}",
     relays_total: "Разом",
     relays_too_few: "Для естафети потрібно щонайменше {min} дисциплін.",
     relays_too_many: "В естафеті може бути щонайбільше {max} дисциплін.",

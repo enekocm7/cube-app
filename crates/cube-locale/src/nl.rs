@@ -584,7 +584,6 @@ pub const STRINGS: Strings = Strings {
     relays_running: "Puzzel {current} van {total}: {event}. Druk op {key} als hij opgelost is.",
     relays_empty: "Je estafettepogingen verschijnen hier.",
     relays_unavailable: "Je estafettes konden niet worden gelezen en kunnen voorlopig niet worden gewijzigd.",
-    relays_summary: "{relay} · Pogingen {attempts} · Beste {best} · Gemiddelde {mean}",
     relays_total: "Totaal",
     relays_too_few: "Een estafette heeft minstens {min} onderdelen nodig.",
     relays_too_many: "Een estafette kan hoogstens {max} onderdelen hebben.",

@@ -14,9 +14,11 @@ use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use cube_core::format::format_ms;
 use cube_core::relay::{self, RelayAttempt, RelayData, RelayError};
 use cube_core::{Action, Modifier, Readiness, TimerOutcome, TimerPhase, WcaEvent, persistence};
-use gpui_kit::component::button::Button;
+use gpui_kit::assets::IconName;
+use gpui_kit::component::button::{Button, ButtonVariants as _};
+use gpui_kit::component::menu::{DropdownMenu as _, PopupMenuItem};
 use gpui_kit::component::notification::Notification;
-use gpui_kit::component::{ActiveTheme as _, Sizable as _, WindowExt as _, h_flex, v_flex};
+use gpui_kit::component::{ActiveTheme as _, Icon, Sizable as _, WindowExt as _, h_flex, v_flex};
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
@@ -232,7 +234,7 @@ impl CubeApp {
     }
 
     /// Asks for the events of a custom relay.
-    fn open_new_relay(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn open_new_relay(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let strings = self.strings();
         if self.relays.path.is_none() {
             window.push_notification(Notification::warning(strings.relays_unavailable), cx);
@@ -435,16 +437,119 @@ impl CubeApp {
         format!("{total} · {}", splits.join(" / "))
     }
 
-    /// The line summarizing the chosen relay.
-    fn relay_summary_text(&self) -> String {
+    /// The attempts, best and mean of the chosen relay, as small cards.
+    fn render_relay_stats(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
+        let strings = self.strings();
+        let theme = cx.theme();
+        let (border, muted) = (theme.border, theme.muted_foreground);
+        let mono = theme.mono_font_family.clone();
         let summary = self.relays.data.summary(&self.relays.current);
         let show = |ms: Option<u64>| ms.map_or_else(|| "–".to_owned(), format_ms);
-        self.strings()
-            .relays_summary
-            .replace("{relay}", &relay::name(&self.relays.current))
-            .replace("{attempts}", &summary.attempts.to_string())
-            .replace("{best}", &show(summary.best))
-            .replace("{mean}", &show(summary.mean))
+        let card = |label: &'static str, value: String| {
+            v_flex()
+                .flex_1()
+                .min_w_0()
+                .px_3()
+                .py_2()
+                .gap_1()
+                .border_1()
+                .border_color(border)
+                .rounded_md()
+                .child(
+                    div()
+                        .text_xs()
+                        .text_color(muted)
+                        .whitespace_nowrap()
+                        .child(label),
+                )
+                .child(
+                    div()
+                        .text_lg()
+                        .font_family(mono.clone())
+                        .font_weight(FontWeight::SEMIBOLD)
+                        .truncate()
+                        .child(value),
+                )
+        };
+        h_flex()
+            .flex_none()
+            .gap_2()
+            .child(card(strings.stat_solves, summary.attempts.to_string()))
+            .child(card(strings.stat_single, show(summary.best)))
+            .child(card(strings.stat_mean, show(summary.mean)))
+    }
+
+    /// The relay picker and the button that creates a relay.
+    fn render_relay_controls(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
+        let strings = self.strings();
+        let entity = cx.entity().downgrade();
+        let current = self.relays.current.clone();
+        let relays = self.relays.data.relays();
+        h_flex()
+            .flex_none()
+            .gap_2()
+            .child(
+                Button::new("relay-select")
+                    .outline()
+                    .small()
+                    .child(
+                        h_flex()
+                            .gap_1()
+                            .items_center()
+                            .child(
+                                div()
+                                    .max_w(Rems(16.))
+                                    .truncate()
+                                    .child(relay::name(&current)),
+                            )
+                            .child(Icon::new(IconName::ChevronDown).size(px(14.))),
+                    )
+                    .tab_stop(false)
+                    .dropdown_menu(move |menu, window, _| {
+                        let mut menu = menu
+                            .scrollable(true)
+                            .max_h(window.viewport_size().height * 0.6);
+                        for events in &relays {
+                            let entity = entity.clone();
+                            let chosen = events.clone();
+                            menu = menu.item(
+                                PopupMenuItem::new(relay::name(events))
+                                    .checked(*events == current)
+                                    .on_click(move |_, window, cx| {
+                                        let chosen = chosen.clone();
+                                        entity
+                                            .update(cx, |app, cx| {
+                                                app.choose_relay(chosen, cx);
+                                                app.focus.focus(window, cx);
+                                            })
+                                            .ok();
+                                    }),
+                            );
+                        }
+                        menu
+                    }),
+            )
+            .child(
+                Button::new("relay-new")
+                    .primary()
+                    .small()
+                    .icon(IconName::Plus)
+                    .label(strings.relays_new_title)
+                    .tab_stop(false)
+                    .on_click(cx.listener(|app, _, window, cx| {
+                        app.open_new_relay(window, cx);
+                    })),
+            )
+    }
+
+    /// Chooses the relay to run.
+    fn choose_relay(&mut self, events: Vec<WcaEvent>, cx: &mut Context<Self>) {
+        if matches!(self.relays.phase, Phase::Idle) {
+            self.relays.current = events;
+            self.relays.selected = None;
+            self.relays.puzzle = 0;
+            cx.notify();
+        }
     }
 
     /// The Relays screen.
@@ -491,19 +596,24 @@ impl CubeApp {
             .py_4()
             .gap_2()
             .child(
-                div()
+                h_flex()
                     .flex_none()
-                    .text_lg()
-                    .font_weight(FontWeight::SEMIBOLD)
-                    .child(strings.nav_relays),
+                    .justify_between()
+                    .items_center()
+                    .gap_2()
+                    .child(
+                        div()
+                            .text_lg()
+                            .font_weight(FontWeight::SEMIBOLD)
+                            .child(strings.nav_relays),
+                    )
+                    .when(matches!(self.relays.phase, Phase::Idle), |row| {
+                        row.child(self.render_relay_controls(cx))
+                    }),
             )
-            .child(
-                div()
-                    .flex_none()
-                    .text_sm()
-                    .text_color(muted)
-                    .child(self.relay_summary_text()),
-            )
+            .when(matches!(self.relays.phase, Phase::Idle), |column| {
+                column.child(self.render_relay_stats(cx))
+            })
             .child(body)
             .into_any_element()
     }
@@ -515,6 +625,7 @@ impl CubeApp {
         let strings = self.strings();
         let theme = cx.theme();
         let (background, muted, accent) = (theme.background, theme.muted_foreground, theme.accent);
+        let border = theme.border;
         let mono = theme.mono_font_family.clone();
         let colors = Palette::of(cx);
         let language = self.language();
@@ -587,6 +698,10 @@ impl CubeApp {
                     .map_or_else(|| "DNF".to_owned(), format_ms);
                 v_flex()
                     .flex_none()
+                    .p_1()
+                    .border_1()
+                    .border_color(border)
+                    .rounded_md()
                     .child(
                         h_flex()
                             .h(ROW_HEIGHT)

@@ -584,7 +584,6 @@ pub const STRINGS: Strings = Strings {
     relays_running: "Головоломка {current} из {total}: {event}. Нажмите {key}, когда она собрана.",
     relays_empty: "Здесь появятся ваши попытки в эстафетах.",
     relays_unavailable: "Не удалось прочитать ваши эстафеты, поэтому пока их нельзя менять.",
-    relays_summary: "{relay} · Попыток {attempts} · Лучшая {best} · Среднее {mean}",
     relays_total: "Итого",
     relays_too_few: "Для эстафеты нужно не меньше {min} дисциплин.",
     relays_too_many: "В эстафете может быть не больше {max} дисциплин.",

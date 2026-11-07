@@ -157,7 +157,7 @@ Around the shortcuts:
 
 **Relays**
 
-- Time several puzzles as one attempt, with a split for each: presets from 2x2x2 to 4x4x4 up to 7x7x7, or a custom list of events.
+- Time several puzzles as one attempt, with a split for each: a dropdown of presets such as 2x2x2 to 7x7x7, or a custom list of events.
 - See every scramble before starting, one inspection for the whole relay, and a key press at the end of each puzzle.
 - Total, splits, best and mean per relay, with a `+2` or DNF on any puzzle.
 

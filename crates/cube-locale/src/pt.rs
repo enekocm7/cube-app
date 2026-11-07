@@ -584,7 +584,6 @@ pub const STRINGS: Strings = Strings {
     relays_running: "Puzzle {current} de {total}: {event}. Pressione {key} ao resolvê-lo.",
     relays_empty: "Suas tentativas de revezamento aparecerão aqui.",
     relays_unavailable: "Não foi possível ler seus revezamentos, então eles não podem ser alterados por enquanto.",
-    relays_summary: "{relay} · Tentativas {attempts} · Melhor {best} · Média {mean}",
     relays_total: "Total",
     relays_too_few: "Um revezamento precisa de pelo menos {min} eventos.",
     relays_too_many: "Um revezamento pode ter no máximo {max} eventos.",

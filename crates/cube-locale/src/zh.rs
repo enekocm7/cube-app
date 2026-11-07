@@ -584,7 +584,6 @@ pub const STRINGS: Strings = Strings {
     relays_running: "第 {current}/{total} 个魔方:{event}。还原后按 {key}。",
     relays_empty: "你的接力记录将显示在这里。",
     relays_unavailable: "无法读取你的接力,因此暂时无法修改。",
-    relays_summary: "{relay} · 尝试 {attempts} · 最佳 {best} · 平均 {mean}",
     relays_total: "总计",
     relays_too_few: "接力至少需要 {min} 个项目。",
     relays_too_many: "接力最多可有 {max} 个项目。",

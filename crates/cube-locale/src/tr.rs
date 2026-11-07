@@ -584,7 +584,6 @@ pub const STRINGS: Strings = Strings {
     relays_running: "Bulmaca {current}/{total}: {event}. Çözülünce {key} tuşuna bas.",
     relays_empty: "Bayrak denemelerin burada görünecek.",
     relays_unavailable: "Bayraklarınız okunamadı, bu yüzden şimdilik değiştirilemez.",
-    relays_summary: "{relay} · Deneme {attempts} · En iyi {best} · Ortalama {mean}",
     relays_total: "Toplam",
     relays_too_few: "Bir bayrak en az {min} kategori gerektirir.",
     relays_too_many: "Bir bayrakta en fazla {max} kategori olabilir.",

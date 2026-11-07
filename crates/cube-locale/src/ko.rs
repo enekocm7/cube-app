@@ -584,7 +584,6 @@ pub const STRINGS: Strings = Strings {
     relays_running: "퍼즐 {current}/{total}: {event}. 풀었으면 {key}을(를) 누르세요.",
     relays_empty: "릴레이 기록이 여기에 표시됩니다.",
     relays_unavailable: "릴레이를 읽을 수 없어 당분간 변경할 수 없습니다.",
-    relays_summary: "{relay} · 시도 {attempts} · 최고 {best} · 평균 {mean}",
     relays_total: "합계",
     relays_too_few: "릴레이에는 최소 {min}개 종목이 필요합니다.",
     relays_too_many: "릴레이는 최대 {max}개 종목까지 가능합니다.",

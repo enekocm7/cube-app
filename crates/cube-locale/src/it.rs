@@ -584,7 +584,6 @@ pub const STRINGS: Strings = Strings {
     relays_running: "Puzzle {current} di {total}: {event}. Premi {key} quando è risolto.",
     relays_empty: "I tuoi tentativi di staffetta appariranno qui.",
     relays_unavailable: "Impossibile leggere le tue staffette, quindi per ora non si possono modificare.",
-    relays_summary: "{relay} · Tentativi {attempts} · Migliore {best} · Media {mean}",
     relays_total: "Totale",
     relays_too_few: "Una staffetta richiede almeno {min} eventi.",
     relays_too_many: "Una staffetta può avere al massimo {max} eventi.",

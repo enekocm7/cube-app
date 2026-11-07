@@ -922,8 +922,6 @@ pub struct Strings {
     pub relays_running: &'static str,
     pub relays_empty: &'static str,
     pub relays_unavailable: &'static str,
-    /// `{relay}`: the name. `{attempts}`, `{best}` and `{mean}`: the figures.
-    pub relays_summary: &'static str,
     pub relays_total: &'static str,
     /// `{min}`: the fewest events.
     pub relays_too_few: &'static str,
@@ -1074,9 +1072,6 @@ mod tests {
             assert!(strings.relays_ready.contains("{key}"));
             for placeholder in ["{current}", "{total}", "{event}", "{key}"] {
                 assert!(strings.relays_running.contains(placeholder));
-            }
-            for placeholder in ["{relay}", "{attempts}", "{best}", "{mean}"] {
-                assert!(strings.relays_summary.contains(placeholder));
             }
             assert!(strings.relays_too_few.contains("{min}"));
             assert!(strings.relays_too_many.contains("{max}"));

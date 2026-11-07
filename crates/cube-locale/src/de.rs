@@ -584,7 +584,6 @@ pub const STRINGS: Strings = Strings {
     relays_running: "Puzzle {current} von {total}: {event}. Drücke {key}, wenn es gelöst ist.",
     relays_empty: "Deine Staffelversuche erscheinen hier.",
     relays_unavailable: "Deine Staffeln konnten nicht gelesen werden und lassen sich vorerst nicht ändern.",
-    relays_summary: "{relay} · Versuche {attempts} · Beste {best} · Mittel {mean}",
     relays_total: "Gesamt",
     relays_too_few: "Eine Staffel braucht mindestens {min} Disziplinen.",
     relays_too_many: "Eine Staffel kann höchstens {max} Disziplinen haben.",

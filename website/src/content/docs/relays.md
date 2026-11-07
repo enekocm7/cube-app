@@ -10,10 +10,14 @@ a total. Open the screen with `Ctrl + R` or the Relays tab, beside Multi-Blind. 
 
 ## Choosing a relay
 
-The presets are **2x2x2 to 4x4x4**, **2x2x2 to 5x5x5**, **2x2x2 to 6x6x6** and **2x2x2 to 7x7x7**. Press `1` to select
-the next relay.
+Pick a relay from the dropdown at the top right of the screen, or press `1` to select the next one. The presets are:
 
-To make your own, press `Ctrl + E` and type its events separated by commas, in any case, such as
+- Runs of cubes: **2x2x2 to 4x4x4**, **2x2x2 to 5x5x5**, **2x2x2 to 6x6x6**, **2x2x2 to 7x7x7**, **3x3x3 to 5x5x5**,
+  **3x3x3 to 7x7x7** and **4x4x4 to 7x7x7**.
+- Short ones: 2x2x2 + 3x3x3, 3x3x3 + 3x3x3 OH, and 2x2x2 + 3x3x3 + Pyraminx + Skewb.
+- Other puzzles: Megaminx + Pyraminx + Skewb, and 3x3x3 + Square-1 + Clock + Megaminx.
+
+To make your own, press the **New relay** button or `Ctrl + E` and type its events separated by commas, in any case, such as
 `3x3x3, Pyraminx, Skewb`. A range of cubes such as `2x2x2-5x5x5` stands for each cube in it. A relay has 2 to 16
 puzzles, and the blindfolded events can't be part of one. Press `Ctrl + D` to delete the selected custom relay; the
 attempts you made at it stay.

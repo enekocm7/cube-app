@@ -584,7 +584,6 @@ pub const STRINGS: Strings = Strings {
     relays_running: "Hlavolam {current} z {total}: {event}. Stiskněte {key}, až je složený.",
     relays_empty: "Zde se zobrazí vaše pokusy ve štafetách.",
     relays_unavailable: "Vaše štafety se nepodařilo přečíst, takže je zatím nelze měnit.",
-    relays_summary: "{relay} · Pokusy {attempts} · Nejlepší {best} · Průměr {mean}",
     relays_total: "Celkem",
     relays_too_few: "Štafeta potřebuje alespoň {min} disciplín.",
     relays_too_many: "Štafeta může mít nejvýše {max} disciplín.",

@@ -585,7 +585,6 @@ pub const STRINGS: Strings = Strings {
     relays_running: "Puzzle {current} sur {total} : {event}. Appuyez sur {key} une fois résolu.",
     relays_empty: "Vos tentatives de relais apparaîtront ici.",
     relays_unavailable: "Vos relais n'ont pas pu être lus, ils ne peuvent donc pas être modifiés pour l'instant.",
-    relays_summary: "{relay} · Tentatives {attempts} · Meilleur {best} · Moyenne {mean}",
     relays_total: "Total",
     relays_too_few: "Un relais nécessite au moins {min} épreuves.",
     relays_too_many: "Un relais peut avoir au plus {max} épreuves.",

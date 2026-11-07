@@ -584,7 +584,6 @@ pub const STRINGS: Strings = Strings {
     relays_running: "Łamigłówka {current} z {total}: {event}. Naciśnij {key}, gdy będzie ułożona.",
     relays_empty: "Tutaj pojawią się Twoje próby sztafet.",
     relays_unavailable: "Nie udało się odczytać Twoich sztafet, więc na razie nie można ich zmieniać.",
-    relays_summary: "{relay} · Próby {attempts} · Najlepszy {best} · Średnia {mean}",
     relays_total: "Razem",
     relays_too_few: "Sztafeta wymaga co najmniej {min} konkurencji.",
     relays_too_many: "Sztafeta może mieć najwyżej {max} konkurencji.",

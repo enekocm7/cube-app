@@ -584,7 +584,6 @@ pub const STRINGS: Strings = Strings {
     relays_running: "パズル {current}/{total}: {event}。完成したら {key} を押します。",
     relays_empty: "リレーの記録がここに表示されます。",
     relays_unavailable: "リレーを読み込めなかったため、当面は変更できません。",
-    relays_summary: "{relay} · 試行 {attempts} · ベスト {best} · 平均 {mean}",
     relays_total: "合計",
     relays_too_few: "リレーには少なくとも {min} 種目が必要です。",
     relays_too_many: "リレーは最大 {max} 種目までです。",
