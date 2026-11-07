@@ -903,6 +903,43 @@ pub struct Strings {
     pub toast_multi_blind_save_failed: &'static str,
     /// `{error}`: the cause.
     pub toast_multi_blind_scrambles_failed: &'static str,
+    pub nav_relays: &'static str,
+    pub action_open_relays: &'static str,
+    pub action_next_relay: &'static str,
+    pub action_new_relay: &'static str,
+    pub action_delete_relay: &'static str,
+    pub action_copy_relay_scrambles: &'static str,
+    pub relays_new_title: &'static str,
+    pub relays_new_label: &'static str,
+    pub relays_create: &'static str,
+    /// `{count}`: the number of scrambles.
+    pub relays_preparing: &'static str,
+    /// `{current}`: the puzzle being solved. `{total}`: how many. `{event}`: its name. `{key}`: the timer key.
+    pub relays_running: &'static str,
+    pub relays_empty: &'static str,
+    pub relays_unavailable: &'static str,
+    pub relays_total: &'static str,
+    /// `{min}`: the fewest events.
+    pub relays_too_few: &'static str,
+    /// `{max}`: the most events.
+    pub relays_too_many: &'static str,
+    /// `{name}`: the text that is no event.
+    pub relays_unknown: &'static str,
+    /// `{name}`: the event.
+    pub relays_blindfolded: &'static str,
+    pub relays_scrambles_copied: &'static str,
+    /// `{error}`: the cause.
+    pub toast_relay_load_failed: &'static str,
+    /// `{error}`: the cause.
+    pub toast_relay_save_failed: &'static str,
+    pub action_toggle_relay_key_splits: &'static str,
+    /// `{key}`: the timer key.
+    pub relays_key_stops: &'static str,
+    /// `{key}`: the timer key.
+    pub relays_key_splits: &'static str,
+    /// `{current}`, `{total}`, `{event}`: the puzzle. `{key}`: the timer key.
+    /// `{split}`: the key that finishes a puzzle.
+    pub relays_running_stop: &'static str,
 }
 
 #[cfg(test)]
@@ -1032,6 +1069,21 @@ mod tests {
                     .toast_multi_blind_scrambles_failed
                     .contains("{error}")
             );
+            assert!(strings.relays_preparing.contains("{count}"));
+            for placeholder in ["{current}", "{total}", "{event}", "{key}"] {
+                assert!(strings.relays_running.contains(placeholder));
+            }
+            for placeholder in ["{current}", "{total}", "{event}", "{key}", "{split}"] {
+                assert!(strings.relays_running_stop.contains(placeholder));
+            }
+            assert!(strings.relays_key_stops.contains("{key}"));
+            assert!(strings.relays_key_splits.contains("{key}"));
+            assert!(strings.relays_too_few.contains("{min}"));
+            assert!(strings.relays_too_many.contains("{max}"));
+            assert!(strings.relays_unknown.contains("{name}"));
+            assert!(strings.relays_blindfolded.contains("{name}"));
+            assert!(strings.toast_relay_load_failed.contains("{error}"));
+            assert!(strings.toast_relay_save_failed.contains("{error}"));
         }
     }
 

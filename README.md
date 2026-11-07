@@ -46,7 +46,7 @@ for valid bindings.
 | `Space` | Start inspection, hold and release to start the solve, press to stop |
 | Any other key | Stop a running solve |
 | Left mouse button or touch on the digits | Same as the timer key when **Timer → Touch the digits** is on (off by default) |
-| `Esc` | Cancel the current attempt without recording it, or leave the stats, charts, goals, trainer, library or Multi-Blind screen |
+| `Esc` | Cancel the current attempt without recording it, or leave the stats, charts, goals, trainer, library, Multi-Blind or Relays screen |
 | `N` | New scramble (hold to keep generating) |
 | `I` | Turn WCA inspection on or off |
 | `P` | Show or hide the scramble preview |
@@ -100,6 +100,12 @@ for valid bindings.
 | `Shift + M` | Show Multi-Blind, or return to the timer |
 | `Shift + C` | Copy the Multi-Blind scrambles |
 | `Shift + V` | Save the Multi-Blind scrambles to a text file |
+| `Ctrl + R` | Show Relays, or return to the timer |
+| `1` | Select the next relay, on the Relays screen |
+| `Ctrl + E` | Create a custom relay, on the Relays screen |
+| `Ctrl + D` | Delete the selected custom relay, on the Relays screen |
+| `Ctrl + B` | Copy the relay's scrambles, on the Relays screen |
+| `Ctrl + L` | Switch the timer key between stopping the relay and ending each puzzle |
 | `/` | Jump to the search field in the shortcuts, settings, trainer and library |
 | `V` | Show the next charts view |
 | `F` | Filter charts by the next event |
@@ -149,6 +155,12 @@ Around the shortcuts:
 - 3x3x3, 4x4x4 and 5x5x5 Blindfolded, with no inspection and a key press to split memo from execution.
 - Success rate, best single, mean of 3 and memo and execution averages in place of ao5 and longer.
 - Multi-Blind: pick the cubes, copy or save the scrambles, time the attempt and enter how many you solved, scored under WCA rules. Attempts can be edited or deleted.
+
+**Relays**
+
+- Time several puzzles as one attempt, with a split for each: a dropdown of presets such as 2x2x2 to 7x7x7, or a custom list of events.
+- See every scramble before starting, one inspection for the whole relay, and a key to end each puzzle or to stop the whole relay.
+- Total, splits, best and mean per relay, with a `+2` or DNF on any puzzle.
 
 **Trainer**
 

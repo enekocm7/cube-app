@@ -18,6 +18,7 @@ use cube_core::history_writer::{HistoryWriter, Merge, WriterEvent};
 use cube_core::library::LibraryData;
 use cube_core::multi_blind::MultiBlindData;
 use cube_core::persistence::{self, HistoryStore};
+use cube_core::relay::RelayData;
 use cube_core::scramble::{self, ScrambleQueue};
 use cube_core::stats::{self, Average, SessionStats};
 use cube_core::tags::{self, TagUsage};
@@ -47,6 +48,7 @@ use crate::multi_blind_screen::MultiBlindState;
 use crate::palette;
 use crate::panel_resize::{PanelSide, render_grab};
 use crate::preview::PreviewCache;
+use crate::relays_screen::RelayState;
 use crate::scoped_rem::ScopedRem;
 use crate::stats_screen::StatsView;
 use crate::trainer_screen::{TrainerState, new_trainer_search};
@@ -72,6 +74,7 @@ pub enum Screen {
     Trainer,
     Library,
     MultiBlind,
+    Relays,
 }
 
 /// Everything read from disk at startup.
@@ -101,6 +104,10 @@ pub struct Loaded {
     /// `None` when the Multi-Blind attempts could not be loaded, which keeps
     /// saving off so a file this version cannot read is never overwritten.
     multi_blind_path: Option<PathBuf>,
+    relays: RelayData,
+    /// `None` when the relays could not be loaded, which keeps saving off so
+    /// a file this version cannot read is never overwritten.
+    relays_path: Option<PathBuf>,
 }
 
 /// What went wrong reading from disk at startup.
@@ -121,6 +128,8 @@ struct LoadProblems {
     library: Option<String>,
     /// Why the Multi-Blind attempts could not be loaded.
     multi_blind: Option<String>,
+    /// Why the relays could not be loaded.
+    relays: Option<String>,
 }
 
 impl LoadProblems {
@@ -155,6 +164,10 @@ impl LoadProblems {
             let message = strings
                 .toast_multi_blind_load_failed
                 .replace("{error}", &error);
+            notify_when_ready(Notification::error(message), window);
+        }
+        if let Some(error) = self.relays {
+            let message = strings.toast_relay_load_failed.replace("{error}", &error);
             notify_when_ready(Notification::error(message), window);
         }
         if let Some(aside) = self.settings_aside {
@@ -199,6 +212,7 @@ impl Loaded {
         let (mut library, library_path, library_error) = load_library();
         library.adopt_trainer(&trainer);
         let (multi_blind, multi_blind_path, multi_blind_error) = load_multi_blind();
+        let (relays, relays_path, relays_error) = load_relays();
         let tags_available = history.as_ref().is_some_and(HistoryStore::tags_available);
         let tags_error = history
             .as_mut()
@@ -218,6 +232,7 @@ impl Loaded {
                 trainer: trainer_error,
                 library: library_error,
                 multi_blind: multi_blind_error,
+                relays: relays_error,
             },
             goals,
             goals_path,
@@ -228,6 +243,8 @@ impl Loaded {
             library_path,
             multi_blind,
             multi_blind_path,
+            relays,
+            relays_path,
         }
     }
 }
@@ -277,6 +294,18 @@ fn load_multi_blind() -> (MultiBlindData, Option<PathBuf>, Option<String>) {
     match persistence::load_multi_blind(&path) {
         Ok(data) => (data, Some(path), None),
         Err(error) => (MultiBlindData::default(), None, Some(format!("{error:#}"))),
+    }
+}
+
+/// Loads the relays. A file that cannot be read stays where it is and saving
+/// turns off, as for the goals.
+fn load_relays() -> (RelayData, Option<PathBuf>, Option<String>) {
+    let Ok(path) = persistence::relays_file() else {
+        return (RelayData::default(), None, None);
+    };
+    match persistence::load_relays(&path) {
+        Ok(data) => (data, Some(path), None),
+        Err(error) => (RelayData::default(), None, Some(format!("{error:#}"))),
     }
 }
 
@@ -413,6 +442,8 @@ pub struct CubeApp {
     pub(crate) library: LibraryState,
     /// The Multi-Blind screen and its attempts.
     pub(crate) multi_blind: MultiBlindState,
+    /// The Relays screen and its attempts.
+    pub(crate) relays: RelayState,
     /// Whether changes to tags can be saved.
     pub(crate) tags_available: bool,
     /// Every tag and how many solves have it, sorted.
@@ -504,6 +535,8 @@ impl CubeApp {
             library_path,
             multi_blind,
             multi_blind_path,
+            relays,
+            relays_path,
         } = loaded;
         let strings = language_of(&settings).strings();
         let trainer_search = new_trainer_search(strings, window, cx);
@@ -567,6 +600,7 @@ impl CubeApp {
             trainer: TrainerState::new(trainer, trainer_path, trainer_search),
             library: LibraryState::new(library, library_path, library_search),
             multi_blind: MultiBlindState::new(multi_blind, multi_blind_path),
+            relays: RelayState::new(relays, relays_path),
             tags_available,
             tag_usage,
             compare_tag: None,
@@ -784,8 +818,17 @@ impl CubeApp {
             cx.stop_propagation();
             self.key_down = false;
             self.stop_repeat_key = Some(press.key().to_owned());
-            if self.keybinds.action_for(&press) == Some(Action::Cancel) {
+            let action = self.keybinds.action_for(&press);
+            if action == Some(Action::Cancel) {
                 self.cancel(window, cx);
+            } else if self.screen == Screen::Relays
+                && !self.timer.mark_on_press
+                && action == Some(Action::OpenSolve)
+            {
+                // The key stops the relay, so this one ends the puzzle.
+                self.timer.mark(Instant::now());
+                self.stop_repeat_key = None;
+                cx.notify();
             } else if !self.hardware_timing()
                 && let Some(outcome) = self.timer.press(Instant::now())
             {
@@ -825,6 +868,13 @@ impl CubeApp {
                 }
                 return;
             }
+            // Relays start with the key, then split with it.
+            if self.screen == Screen::Relays {
+                if !event.is_held && !self.key_down && !self.pointer_down {
+                    self.relay_timer_key(window, cx);
+                }
+                return;
+            }
             // Manual mode types times in instead of timing them, and a
             // Bluetooth timer is started and stopped by hand.
             if self.manual_mode() || self.hardware_timing() {
@@ -859,6 +909,9 @@ impl CubeApp {
             return;
         }
         if self.screen == Screen::MultiBlind && self.multi_blind_action(action, window, cx) {
+            return;
+        }
+        if self.screen == Screen::Relays && self.relay_action(action, window, cx) {
             return;
         }
         match action {
@@ -932,6 +985,7 @@ impl CubeApp {
             Action::OpenTrainer => self.toggle_screen(Screen::Trainer, cx),
             Action::OpenLibrary => self.toggle_screen(Screen::Library, cx),
             Action::OpenMultiBlind => self.toggle_screen(Screen::MultiBlind, cx),
+            Action::OpenRelays => self.toggle_screen(Screen::Relays, cx),
             Action::CopyMultiBlindScrambles => self.copy_multi_blind_scrambles(window, cx),
             Action::SaveMultiBlindScrambles => self.save_multi_blind_scrambles(window, cx),
             Action::NewGoal => self.open_goal_form(None, window, cx),
@@ -962,7 +1016,13 @@ impl CubeApp {
             Action::CopySolveLink => self.copy_target_solve_link(window, cx),
             Action::OpenSettings => self.open_settings(window, cx),
             Action::ShowHelp => self.open_help(window, cx),
+            // The relay actions only mean something on the Relays screen.
             Action::Timer
+            | Action::NextRelay
+            | Action::NewRelay
+            | Action::DeleteRelay
+            | Action::CopyRelayScrambles
+            | Action::ToggleRelayKeySplits
             | Action::Cancel
             | Action::NextTrainerSet
             | Action::ToggleTrainerCase
@@ -1082,6 +1142,7 @@ impl CubeApp {
             self.toast(self.strings().toast_cancelled, window, cx);
             cx.notify();
         } else if self.leave_multi_blind_attempt(cx)
+            || self.leave_relay_attempt(cx)
             || self.leave_trainer_drill(cx)
             || self.leave_case_attempts(cx)
             || self.clear_trainer_search(window, cx)
@@ -1117,7 +1178,7 @@ impl CubeApp {
         // An attempt needs a scramble to record against. Multi-Blind keeps its
         // own, a whole list of them.
         if !self.timer.is_active()
-            && self.screen != Screen::MultiBlind
+            && !matches!(self.screen, Screen::MultiBlind | Screen::Relays)
             && self.shown_scramble().is_none()
         {
             return;
@@ -1127,6 +1188,9 @@ impl CubeApp {
             // A drill times one case, and Multi-Blind one long attempt; neither
             // has an inspection, nor a memo of its own to mark.
             let separate = self.drilling() || self.screen == Screen::MultiBlind;
+            let relaying = self.screen == Screen::Relays;
+            self.timer.puzzles = if relaying { self.relay_puzzles() } else { 1 };
+            self.timer.mark_on_press = self.settings.relay_key_splits;
             self.timer.inspection = self.settings.timer().inspection && !separate;
             self.timer.blindfolded = self.shown_event().is_blindfolded() && !separate;
         }
@@ -1149,6 +1213,10 @@ impl CubeApp {
         }
         if self.screen == Screen::MultiBlind {
             self.finish_multi_blind_attempt(outcome, window, cx);
+            return;
+        }
+        if self.screen == Screen::Relays {
+            self.finish_relay_attempt(outcome, window, cx);
             return;
         }
         let TimerOutcome {
@@ -1362,7 +1430,7 @@ impl CubeApp {
         self.manual.is_some()
             && !matches!(
                 self.screen,
-                Screen::Trainer | Screen::Library | Screen::MultiBlind
+                Screen::Trainer | Screen::Library | Screen::MultiBlind | Screen::Relays
             )
     }
 
@@ -2393,6 +2461,12 @@ impl CubeApp {
                                         strings.nav_multi_blind,
                                         Screen::MultiBlind,
                                         cx,
+                                    ))
+                                    .child(tab(
+                                        "nav-relays",
+                                        strings.nav_relays,
+                                        Screen::Relays,
+                                        cx,
                                     )),
                             ),
                     )
@@ -2401,7 +2475,7 @@ impl CubeApp {
                     .children(
                         (!matches!(
                             self.screen,
-                            Screen::Trainer | Screen::Library | Screen::MultiBlind
+                            Screen::Trainer | Screen::Library | Screen::MultiBlind | Screen::Relays
                         ))
                         .then(|| self.render_event_picker(cx)),
                     )
@@ -2498,6 +2572,7 @@ impl Render for CubeApp {
             Screen::Trainer => self.render_trainer(window, cx),
             Screen::Library => self.render_library(cx),
             Screen::MultiBlind => self.render_multi_blind(window, cx),
+            Screen::Relays => self.render_relays(window, cx),
         };
         let theme = cx.theme();
         v_flex()
