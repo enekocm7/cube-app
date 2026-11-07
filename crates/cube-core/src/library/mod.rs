@@ -16,7 +16,10 @@ mod review;
 #[cfg(test)]
 mod tests;
 
-pub use catalog::{LibraryPuzzle, catalog, find_set, library_sets, search_cases};
+pub use catalog::{
+    LibraryPuzzle, catalog, find_set, first_visible_set, library_sets, search_cases,
+    search_visible_cases, visible_catalog, visible_sets,
+};
 pub use check::{
     Recognition, case_origins, case_state, check, free_turns, recognition, solves_from,
 };

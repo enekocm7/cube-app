@@ -24,6 +24,7 @@
 use std::sync::{LazyLock, OnceLock};
 
 use crate::event::WcaEvent;
+use crate::settings::Settings;
 use crate::trainer::{AlgCase, AlgSet, Step};
 
 /// A puzzle and the sets of its library.
@@ -219,12 +220,67 @@ pub fn library_sets() -> impl Iterator<Item = &'static AlgSet> {
     puzzles.flat_map(|puzzle| puzzle.sets.iter().copied())
 }
 
+/// Returns every puzzle with the sets shown in the library, leaving out a
+/// puzzle whose every set is hidden.
+#[must_use]
+pub fn visible_catalog(settings: &Settings) -> Vec<LibraryPuzzle> {
+    catalog()
+        .iter()
+        .filter_map(|puzzle| {
+            let sets: Vec<&'static AlgSet> = puzzle
+                .sets
+                .iter()
+                .copied()
+                .filter(|set| settings.shows_set_in_library(set.id))
+                .collect();
+            (!sets.is_empty()).then_some(LibraryPuzzle {
+                event: puzzle.event,
+                sets,
+            })
+        })
+        .collect()
+}
+
+/// Returns every set shown in the library.
+pub fn visible_sets(settings: &Settings) -> impl Iterator<Item = &'static AlgSet> + '_ {
+    catalog()
+        .iter()
+        .flat_map(move |puzzle| puzzle.sets.iter().copied())
+        .filter(move |set| settings.shows_set_in_library(set.id))
+}
+
+/// Returns the first set shown in the library, if any.
+pub fn first_visible_set(settings: &Settings) -> Option<&'static AlgSet> {
+    visible_sets(settings).next()
+}
+
+/// Finds the cases of every set shown in the library whose names, groups, sets
+/// or methods have all the words of `query`.
+#[must_use]
+pub fn search_visible_cases(
+    settings: &Settings,
+    query: &str,
+) -> Vec<(&'static AlgSet, &'static AlgCase)> {
+    search_cases_with(query, |set| settings.shows_set_in_library(set.id))
+}
+
 /// Finds the cases of every set whose names, groups, sets or methods have all
 /// the words of `query`.
 pub fn search_cases(query: &str) -> Vec<(&'static AlgSet, &'static AlgCase)> {
+    search_cases_with(query, |_| true)
+}
+
+/// Finds the cases of the sets that `keep` accepts.
+fn search_cases_with(
+    query: &str,
+    keep: impl Fn(&AlgSet) -> bool,
+) -> Vec<(&'static AlgSet, &'static AlgCase)> {
     let mut found = Vec::new();
     for puzzle in catalog() {
         for &set in &puzzle.sets {
+            if !keep(set) {
+                continue;
+            }
             let event = puzzle.event.name();
             for case in set.cases {
                 let fields = [case.name, case.group, set.name, set.method, event];
@@ -273,5 +329,55 @@ mod tests {
         let sets = read_file(WcaEvent::Cube3x3, text);
         assert_eq!(sets.len(), 2);
         assert_eq!(sets[1].cases[0].group, "");
+    }
+
+    #[test]
+    fn a_hidden_set_leaves_the_tree_search_and_neighbouring_puzzles() {
+        let mut settings = Settings::default();
+        settings.show_set_in_library("pll", false);
+        let puzzles = visible_catalog(&settings);
+        assert!(
+            puzzles
+                .iter()
+                .flat_map(|puzzle| &puzzle.sets)
+                .all(|set| set.id != "pll")
+        );
+        assert!(visible_sets(&settings).all(|set| set.id != "pll"));
+        assert!(
+            search_visible_cases(&settings, "pll")
+                .iter()
+                .all(|(set, _)| set.id != "pll")
+        );
+        // The rest of the puzzle is still there.
+        assert!(
+            puzzles
+                .iter()
+                .flat_map(|puzzle| &puzzle.sets)
+                .any(|set| set.id == "oll")
+        );
+    }
+
+    #[test]
+    fn a_puzzle_with_every_set_hidden_is_left_out() {
+        let mut settings = Settings::default();
+        for set in &catalog()
+            .iter()
+            .find(|puzzle| puzzle.event == WcaEvent::Cube2x2)
+            .unwrap()
+            .sets
+        {
+            settings.show_set_in_library(set.id, false);
+        }
+        let puzzles = visible_catalog(&settings);
+        assert!(
+            puzzles
+                .iter()
+                .all(|puzzle| puzzle.event != WcaEvent::Cube2x2)
+        );
+        assert!(
+            puzzles
+                .iter()
+                .any(|puzzle| puzzle.event == WcaEvent::Cube3x3)
+        );
     }
 }

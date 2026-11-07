@@ -96,6 +96,8 @@ for valid bindings.
 | `Shift + I` | Add an algorithm, in the library |
 | `.` | Edit the highlighted case's note, in the library |
 | `Shift + W` | Start the library's review |
+| `Ctrl + Shift + B` | Show or hide the set in the library |
+| `Ctrl + Shift + P` | Include or exclude the set in training |
 | `6` / `7` / `8` / `9` | Grade a review: again, hard, good or easy |
 | `Shift + M` | Show Multi-Blind, or return to the timer |
 | `Shift + C` | Copy the Multi-Blind scrambles |
@@ -177,6 +179,7 @@ Around the shortcuts:
 - Algorithm sets for every puzzle, browsed by puzzle, method and set, with search.
 - A drawing, algorithms and a status for each case, with your own algorithms, favourite and note.
 - A spaced-repetition review of the cases you have learned.
+- Hide a set from the library or leave it out of the trainer, per set, in settings.
 
 **Sharing**
 
@@ -236,6 +239,7 @@ Pick a category on the left to see its settings on the right.
 | **General** | Sixteen languages, including English and Spanish, notifications, and confirmation before deleting |
 | **Timer** | WCA inspection, its 8 s and 12 s audio cues, personal best celebrations, touching the digits to start or stop, shorter 3x3x3 scrambles (slower to generate) and the scramble preview |
 | **Appearance** | Light, dark or system and your theme files (see [Themes](#themes)), font and sizes with presets and a custom point size, ao5 in the solve list, and an always-visible solve list scrollbar |
+| **Library** | Show each algorithm set in the library, include it in the trainer, or both. See [Algorithm library](#algorithm-library) |
 | **Keyboard shortcuts** | Opens the `F1` panel, where shortcuts are rebound. See [Keyboard shortcuts](#keyboard-shortcuts) |
 | **Data** | Import and export csTimer sessions, and choose your own backup folder. See [Your data](#your-data) |
 | **Updates** | Automatic checks, release channel and check frequency. See [Updates](#updates) |
@@ -255,6 +259,8 @@ Details worth knowing:
   or toggle it with `P`.
 - **Sizes per event.** **Appearance → Sizes per event** opens a dialog that sets the preview, timer and scramble size
   of each event.
+- **Set visibility.** **Library** lists every algorithm set with two switches: **Show in library** and **Include in
+  training**. Both are on by default. Turn one off to keep a large or already learned set out of that surface.
 - **Scrollbar.** The solve list scrollbar appears only while you scroll. Turn on **Appearance → Always show the solve
   list scrollbar** to keep it visible.
 

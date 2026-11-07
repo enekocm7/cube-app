@@ -5,6 +5,7 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use cube_core::dialogs::{reveal_shift, settings_nav_width};
+use cube_core::library::catalog;
 use cube_core::persistence;
 use cube_core::settings::{
     DEFAULT_BEST_MIN_SOLVES, MAX_BEST_MIN_SOLVES, parse_best_min_solves, parse_scramble_pt,
@@ -17,7 +18,8 @@ use cube_core::settings::{
 };
 use cube_core::theme;
 use cube_core::theme::{ThemeColor, ThemeFile};
-use cube_core::{Action, Settings, SettingsCategory};
+use cube_core::trainer::AlgSet;
+use cube_core::{Action, SetVisibility, Settings, SettingsCategory};
 use cube_locale::{Language, Strings};
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{Disableable as _, ElementExt as _};
@@ -493,6 +495,44 @@ impl SettingsView {
                     view.change(window, cx, move |settings| set(settings, value));
                 },
             )),
+            cx,
+        )
+    }
+
+    /// One of the library's sets, with its switches for the library and the
+    /// trainer.
+    fn library_set_row(
+        &self,
+        set: &'static AlgSet,
+        visibility: SetVisibility,
+        strings: &'static Strings,
+        cx: &mut Context<Self>,
+    ) -> AnyElement {
+        let id = set.id;
+        let library = Switch::new(format!("library-show-{id}"))
+            .checked(visibility.library)
+            .label(strings.setting_show_in_library)
+            .accessibility_label(strings.setting_show_in_library)
+            .on_click(cx.listener(move |view, value: &bool, window, cx| {
+                let value = *value;
+                view.change(window, cx, move |settings| {
+                    settings.show_set_in_library(id, value);
+                });
+            }));
+        let training = Switch::new(format!("library-train-{id}"))
+            .checked(visibility.training)
+            .label(strings.setting_include_in_training)
+            .accessibility_label(strings.setting_include_in_training)
+            .on_click(cx.listener(move |view, value: &bool, window, cx| {
+                let value = *value;
+                view.change(window, cx, move |settings| {
+                    settings.include_set_in_training(id, value);
+                });
+            }));
+        row(
+            format!("{} · {}", set.name, set.event.name()),
+            set.method,
+            h_flex().gap_4().child(library).child(training),
             cx,
         )
     }
@@ -1498,6 +1538,38 @@ impl SettingsView {
             )],
         );
 
+        let mut library_texts = Vec::new();
+        let mut library_rows = Vec::new();
+        for puzzle in catalog() {
+            for &set in &puzzle.sets {
+                let visibility = settings
+                    .set_visibility
+                    .get(set.id)
+                    .copied()
+                    .unwrap_or_default();
+                let state = |on: bool| {
+                    if on {
+                        strings.search_on
+                    } else {
+                        strings.search_off
+                    }
+                };
+                library_texts.push(format!(
+                    "{} {} {} {} {} {} {} {}",
+                    set.name,
+                    puzzle.event.name(),
+                    set.method,
+                    strings.setting_show_in_library,
+                    state(visibility.library),
+                    strings.setting_include_in_training,
+                    state(visibility.training),
+                    strings.settings_library
+                ));
+                library_rows.push(self.library_set_row(set, visibility, strings, cx));
+            }
+        }
+        let library = tagged(library_texts, library_rows);
+
         let transfer = tagged(
             [
                 text(
@@ -1581,6 +1653,7 @@ impl SettingsView {
                 strings.settings_solve_list,
                 solve_list,
             ),
+            (Category::Library, strings.settings_library, library),
             (Category::Shortcuts, strings.settings_keybindings, shortcuts),
             (Category::Data, strings.settings_import_export, transfer),
             (Category::Data, strings.settings_backups, backups),
@@ -1814,6 +1887,7 @@ fn category_label(strings: &'static Strings, category: SettingsCategory) -> &'st
         SettingsCategory::General => strings.settings_general,
         SettingsCategory::Timer => strings.settings_timer,
         SettingsCategory::Appearance => strings.settings_appearance,
+        SettingsCategory::Library => strings.settings_library,
         SettingsCategory::Shortcuts => strings.settings_keybindings,
         SettingsCategory::Data => strings.settings_data,
         SettingsCategory::Updates => strings.settings_updates,
@@ -1826,6 +1900,7 @@ fn category_icon(category: SettingsCategory) -> IconName {
         SettingsCategory::General => IconName::Settings,
         SettingsCategory::Timer => IconName::Timer,
         SettingsCategory::Appearance => IconName::Palette,
+        SettingsCategory::Library => IconName::BookOpen,
         SettingsCategory::Shortcuts => IconName::Keyboard,
         SettingsCategory::Data => IconName::Database,
         SettingsCategory::Updates => IconName::RefreshCw,

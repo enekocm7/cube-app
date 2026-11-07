@@ -15,10 +15,10 @@ use cube_core::format::format_ms;
 use cube_core::library::{Outcome, Status};
 use cube_core::trainer::{
     AlgCase, AlgSet, Attempt, CaseGroup, CaseStats, Drill, GridStep, PLL, TrainerData,
-    TrainerPuzzle, case_diagram, grid_step, next_set, puzzles, rows_before, set_event,
-    slowest_first, weighted_cases,
+    TrainerPuzzle, case_diagram, first_trainable_set, grid_step, next_set_for, puzzles_for,
+    rows_before, set_event, slowest_first, weighted_cases,
 };
-use cube_core::{Action, Modifier, TimerOutcome, WcaEvent, persistence};
+use cube_core::{Action, Modifier, Settings, TimerOutcome, WcaEvent, persistence};
 use cube_locale::Strings;
 use gpui_kit::assets::IconName;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
@@ -116,11 +116,17 @@ impl TrainerState {
         data: TrainerData,
         path: Option<PathBuf>,
         search: Entity<InputState>,
+        settings: &Settings,
     ) -> Self {
+        let set = if settings.includes_set_in_training(PLL.id) {
+            &PLL
+        } else {
+            first_trainable_set(settings).unwrap_or(&PLL)
+        };
         Self {
             data,
             path,
-            set: &PLL,
+            set,
             cursor: 0,
             by_slowest: false,
             search,
@@ -130,9 +136,22 @@ impl TrainerState {
             grid_scroll: ScrollHandle::default(),
             history_scroll: UniformListScrollHandle::new(),
             sets_scroll: ScrollHandle::default(),
-            open_puzzles: HashSet::from([PLL.event]),
-            open_methods: HashSet::from([(PLL.event, PLL.method)]),
+            open_puzzles: HashSet::from([set.event]),
+            open_methods: HashSet::from([(set.event, set.method)]),
             diagrams: RefCell::default(),
+        }
+    }
+
+    /// Moves the trainer off a set it no longer offers.
+    pub(crate) fn adopt_visibility(&mut self, settings: &Settings) {
+        if settings.includes_set_in_training(self.set.id) {
+            return;
+        }
+        if let Some(set) = first_trainable_set(settings) {
+            self.set = set;
+            self.cursor = 0;
+            self.open_puzzles.insert(set.event);
+            self.open_methods.insert((set.event, set.method));
         }
     }
 
@@ -402,7 +421,11 @@ impl CubeApp {
             Action::NextSolve => self.move_cursor(GridStep::Down, window, cx),
             Action::PreviousAverage => self.move_cursor(GridStep::Left, window, cx),
             Action::NextAverage => self.move_cursor(GridStep::Right, window, cx),
-            Action::NextTrainerSet => self.select_trainer_set(next_set(self.trainer.set), cx),
+            Action::NextTrainerSet => {
+                if let Some(set) = next_set_for(&self.settings, self.trainer.set) {
+                    self.select_trainer_set(set, cx);
+                }
+            }
             Action::ToggleTrainerCase => self.toggle_trainer_case(window, cx),
             Action::ToggleTrainerGroup => self.toggle_cursor_group(window, cx),
             Action::ToggleTrainerSet => self.toggle_trainer_set(window, cx),
@@ -415,6 +438,8 @@ impl CubeApp {
             Action::SortTrainerCases => self.toggle_trainer_sort(cx),
             Action::SelectLearningCases => self.select_library_cases(false, window, cx),
             Action::SelectDueCases => self.select_library_cases(true, window, cx),
+            Action::ToggleSetInLibrary => self.toggle_trainer_set_in_library(window, cx),
+            Action::ToggleSetInTraining => self.toggle_trainer_set_in_training(window, cx),
             Action::TrainerCaseAttempts => {
                 if let Some(case) = self.trainer.cursor_case() {
                     self.open_case_attempts(case, cx);
@@ -541,11 +566,31 @@ impl CubeApp {
         self.trainer.open_puzzles.insert(set.event);
         self.trainer.open_methods.insert((set.event, set.method));
         // Each puzzle is one row of the scrolling list, with its sets inside.
-        let row = puzzles()
+        let row = puzzles_for(&self.settings)
             .iter()
             .position(|puzzle| puzzle.event == set.event)
             .unwrap_or(0);
         self.trainer.sets_scroll.scroll_to_item(row);
+        cx.notify();
+    }
+
+    /// Shows or hides the trainer's set in the library.
+    fn toggle_trainer_set_in_library(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let set = self.trainer.set;
+        let show = !self.settings.shows_set_in_library(set.id);
+        self.update_settings(window, cx, |settings| {
+            settings.show_set_in_library(set.id, show);
+        });
+        cx.notify();
+    }
+
+    /// Includes or leaves out the trainer's set in the trainer.
+    fn toggle_trainer_set_in_training(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let set = self.trainer.set;
+        let include = !self.settings.includes_set_in_training(set.id);
+        self.update_settings(window, cx, |settings| {
+            settings.include_set_in_training(set.id, include);
+        });
         cx.notify();
     }
 
@@ -555,7 +600,7 @@ impl CubeApp {
         let set = self.trainer.set;
         let strings = self.strings();
         let data = &self.library.data;
-        let due_now = data.due(now_unix_ms());
+        let due_now = data.due(now_unix_ms(), &self.settings);
         let cases: Vec<usize> = set
             .cases
             .iter()
@@ -992,7 +1037,8 @@ impl CubeApp {
     fn render_set_list(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
         let theme = cx.theme();
         let (border, background) = (theme.border, theme.background);
-        let items: Vec<AnyElement> = puzzles()
+        let puzzles = puzzles_for(&self.settings);
+        let items: Vec<AnyElement> = puzzles
             .iter()
             .enumerate()
             .map(|(index, puzzle)| self.render_trainer_nav_puzzle(index, puzzle, cx))
@@ -1013,7 +1059,7 @@ impl CubeApp {
     fn render_trainer_nav_puzzle(
         &self,
         index: usize,
-        puzzle: &'static TrainerPuzzle,
+        puzzle: &TrainerPuzzle,
         cx: &mut Context<Self>,
     ) -> AnyElement {
         let open = self.trainer.open_puzzles.contains(&puzzle.event);

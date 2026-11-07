@@ -64,6 +64,19 @@ Light, dark, or system — plus your theme files. See [Themes](/cube-app/docs/th
 | ao5 in the solve list | Off | Adds a rolling ao5 column next to each solve |
 | Always show the solve list scrollbar | Off | Keeps it visible instead of only while scrolling |
 
+## Library
+
+| Option | Default | What it does |
+|---|---|---|
+| Show in library | On | Lists the set in the library's tree, its search results, its counts and its review queue |
+| Include in training | On | Offers the set and its cases in the trainer's picker, including the shortcuts that select the cases you are learning or those due |
+
+Every set of every puzzle has both switches, listed by puzzle, method and set.
+They are independent: a set can be hidden from the library but still trained, or
+the other way round. Both are saved in `cube-app.toml` under
+`[set_visibility.<set-id>]` once changed. Hiding a set does not delete its
+statuses, algorithms, notes or review dates; they come back when the set does.
+
 ## Keyboard shortcuts
 
 Opens the `F1` panel, where shortcuts are rebound. See [Keyboard shortcuts](/cube-app/docs/keybinds/).

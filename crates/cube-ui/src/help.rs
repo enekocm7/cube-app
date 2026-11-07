@@ -99,7 +99,7 @@ const TRAINER_ACTIONS: [Action; 11] = [
     Action::SelectLearningCases,
     Action::SelectDueCases,
 ];
-const LIBRARY_ACTIONS: [Action; 12] = [
+const LIBRARY_ACTIONS: [Action; 14] = [
     Action::OpenLibrary,
     Action::NextLibraryPuzzle,
     Action::CycleCaseStatus,
@@ -108,6 +108,8 @@ const LIBRARY_ACTIONS: [Action; 12] = [
     Action::EditLibraryNote,
     Action::StartLibraryReview,
     Action::TrainLibraryCase,
+    Action::ToggleSetInLibrary,
+    Action::ToggleSetInTraining,
     Action::GradeAgain,
     Action::GradeHard,
     Action::GradeGood,
@@ -534,6 +536,8 @@ fn action_label(strings: &'static Strings, action: Action) -> &'static str {
         Action::EditLibraryNote => strings.library_edit_note,
         Action::StartLibraryReview => strings.action_start_library_review,
         Action::TrainLibraryCase => strings.library_train,
+        Action::ToggleSetInLibrary => strings.action_toggle_set_in_library,
+        Action::ToggleSetInTraining => strings.action_toggle_set_in_training,
         Action::GradeAgain => strings.library_grade_again,
         Action::GradeHard => strings.library_grade_hard,
         Action::GradeGood => strings.library_grade_good,

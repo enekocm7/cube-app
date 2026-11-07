@@ -34,6 +34,7 @@ use std::sync::{LazyLock, OnceLock};
 use crate::event::WcaEvent;
 use crate::library::catalog;
 use crate::library::model::{Model, Region};
+use crate::settings::Settings;
 
 /// What solving a set's cases achieves, which decides how a case is set up,
 /// when an algorithm counts as solving it, and how it is drawn.
@@ -245,6 +246,51 @@ pub fn all_sets() -> impl Iterator<Item = &'static AlgSet> {
         .flat_map(|puzzle| puzzle.sets.iter().copied())
 }
 
+/// Returns the puzzles and sets the trainer offers, without the sets the user
+/// left out of training.
+#[must_use]
+pub fn puzzles_for(settings: &Settings) -> Vec<TrainerPuzzle> {
+    puzzles()
+        .iter()
+        .filter_map(|puzzle| {
+            let sets: Vec<&'static AlgSet> = puzzle
+                .sets
+                .iter()
+                .copied()
+                .filter(|set| settings.includes_set_in_training(set.id))
+                .collect();
+            (!sets.is_empty()).then_some(TrainerPuzzle {
+                event: puzzle.event,
+                sets,
+            })
+        })
+        .collect()
+}
+
+/// Returns every set the trainer offers.
+pub fn all_sets_for(settings: &Settings) -> impl Iterator<Item = &'static AlgSet> + '_ {
+    puzzles_for(settings)
+        .into_iter()
+        .flat_map(|puzzle| puzzle.sets.into_iter())
+}
+
+/// Returns the first set the trainer offers, if any.
+pub fn first_trainable_set(settings: &Settings) -> Option<&'static AlgSet> {
+    all_sets_for(settings).next()
+}
+
+/// Returns the set that follows `set` in the trainer, going back to the first
+/// after the last. `None` when the trainer offers no set.
+#[must_use]
+pub fn next_set_for(settings: &Settings, set: &AlgSet) -> Option<&'static AlgSet> {
+    let sets: Vec<&'static AlgSet> = all_sets_for(settings).collect();
+    if sets.is_empty() {
+        return None;
+    }
+    let index = sets.iter().position(|other| other.id == set.id);
+    Some(sets[index.map_or(0, |index| (index + 1) % sets.len())])
+}
+
 /// Returns the event of the puzzle `set` belongs to.
 pub const fn set_event(set: &AlgSet) -> WcaEvent {
     set.event
@@ -397,5 +443,37 @@ mod tests {
     #[test]
     fn a_set_knows_its_event() {
         assert_eq!(set_event(&OLL), WcaEvent::Cube3x3);
+    }
+
+    #[test]
+    fn a_set_left_out_of_training_is_not_offered() {
+        let mut settings = Settings::default();
+        settings.include_set_in_training("pll", false);
+        let offered: Vec<&str> = all_sets_for(&settings).map(|set| set.id).collect();
+        assert!(!offered.contains(&"pll"));
+        assert!(offered.contains(&"oll"));
+        let puzzles = puzzles_for(&settings);
+        assert!(
+            puzzles
+                .iter()
+                .flat_map(|puzzle| &puzzle.sets)
+                .all(|set| set.id != "pll")
+        );
+        // Moving on from OLL skips PLL, wherever the two sit in the list.
+        let oll = crate::library::find_set("oll").unwrap();
+        let sets: Vec<&AlgSet> = all_sets_for(&settings).collect();
+        let at = sets.iter().position(|set| set.id == "oll").unwrap();
+        assert_eq!(next_set_for(&settings, oll).unwrap().id, sets[at + 1].id);
+        assert_ne!(next_set_for(&settings, oll).unwrap().id, "pll");
+    }
+
+    #[test]
+    fn moving_on_with_every_set_in_training_keeps_coming_round() {
+        let settings = Settings::default();
+        let sets: Vec<&AlgSet> = all_sets_for(&settings).collect();
+        for (index, set) in sets.iter().enumerate() {
+            let next = sets[(index + 1) % sets.len()];
+            assert_eq!(next_set_for(&settings, set).unwrap().id, next.id);
+        }
     }
 }
