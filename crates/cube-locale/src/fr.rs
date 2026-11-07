@@ -579,7 +579,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_title: "Nouveau relais",
     relays_new_label: "Épreuves séparées par des virgules (par exemple 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "Créer",
-    relays_start_hint: "Appuyez sur {key} pour obtenir les mélanges de {relay}.",
     relays_preparing: "Préparation de {count} mélanges…",
     relays_ready: "Appuyez sur {key} pour démarrer, puis après chaque puzzle résolu.",
     relays_running: "Puzzle {current} sur {total} : {event}. Appuyez sur {key} une fois résolu.",
@@ -591,7 +590,6 @@ pub const STRINGS: Strings = Strings {
     relays_unknown: "« {name} » n'est pas une épreuve.",
     relays_blindfolded: "{name} ne peut pas faire partie d'un relais.",
     relays_scrambles_copied: "Mélanges copiés",
-    relays_penalty_hint: "Utilisez les flèches pour choisir un puzzle et les touches de pénalité pour la changer.",
     toast_relay_load_failed: "Impossible de lire vos relais : {error}",
     toast_relay_save_failed: "Impossible d'enregistrer vos relais : {error}",
 };

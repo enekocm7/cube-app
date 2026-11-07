@@ -267,7 +267,7 @@ impl CubeApp {
             app.relays.current = events;
             app.relays.selected = None;
             app.relays.puzzle = 0;
-            cx.notify();
+            app.prepare_relay(window, cx);
             Ok(())
         });
         self.open_number_prompt(prompt, accept, window, cx);
@@ -485,6 +485,7 @@ impl CubeApp {
         let entity = cx.entity().downgrade();
         let current = self.relays.current.clone();
         let relays = self.relays.data.relays();
+        let custom_label = strings.action_new_relay;
         h_flex()
             .flex_none()
             .gap_2()
@@ -526,7 +527,15 @@ impl CubeApp {
                                     }),
                             );
                         }
-                        menu
+                        let custom = entity.clone();
+                        menu.separator()
+                            .item(PopupMenuItem::new(custom_label).on_click(
+                                move |_, window, cx| {
+                                    custom
+                                        .update(cx, |app, cx| app.open_new_relay(window, cx))
+                                        .ok();
+                                },
+                            ))
                     }),
             )
             .child(
@@ -537,7 +546,8 @@ impl CubeApp {
                     .label(strings.relays_new_title)
                     .tab_stop(false)
                     .on_click(cx.listener(|app, _, window, cx| {
-                        app.open_new_relay(window, cx);
+                        app.prepare_relay(window, cx);
+                        app.focus.focus(window, cx);
                     })),
             )
     }
@@ -564,11 +574,7 @@ impl CubeApp {
         let key_hint = |text: &str| text.replace("{key}", &timer_key);
 
         let body = match &self.relays.phase {
-            Phase::Idle => {
-                let hint = key_hint(strings.relays_start_hint)
-                    .replace("{relay}", &relay::name(&self.relays.current));
-                self.render_relay_attempts(&hint, cx)
-            }
+            Phase::Idle => self.render_relay_attempts(cx),
             Phase::Preparing { .. } => empty_message_owned(
                 strings
                     .relays_preparing
@@ -621,7 +627,7 @@ impl CubeApp {
     /// The attempts at the chosen relay, newest first, with the splits of the
     /// selected one.
     #[allow(clippy::too_many_lines, reason = "one list and one detail view")]
-    fn render_relay_attempts(&self, hint: &str, cx: &mut Context<Self>) -> AnyElement {
+    fn render_relay_attempts(&self, cx: &mut Context<Self>) -> AnyElement {
         let strings = self.strings();
         let theme = cx.theme();
         let (background, muted, accent) = (theme.background, theme.muted_foreground, theme.accent);
@@ -763,20 +769,6 @@ impl CubeApp {
             .flex_1()
             .min_h_0()
             .gap_2()
-            .child(
-                div()
-                    .flex_none()
-                    .text_sm()
-                    .text_color(muted)
-                    .child(hint.to_owned()),
-            )
-            .child(
-                div()
-                    .flex_none()
-                    .text_sm()
-                    .text_color(muted)
-                    .child(strings.relays_penalty_hint),
-            )
             .children(detail)
             .child(list)
             .into_any_element()

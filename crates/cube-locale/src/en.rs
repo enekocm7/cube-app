@@ -578,7 +578,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_title: "New relay",
     relays_new_label: "Events, separated by commas (for example 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "Create",
-    relays_start_hint: "Press {key} to get the scrambles for {relay}.",
     relays_preparing: "Preparing {count} scrambles…",
     relays_ready: "Press {key} to start, then press it as each puzzle is solved.",
     relays_running: "Puzzle {current} of {total}: {event}. Press {key} when it is solved.",
@@ -590,7 +589,6 @@ pub const STRINGS: Strings = Strings {
     relays_unknown: "“{name}” is not an event.",
     relays_blindfolded: "{name} can't be part of a relay.",
     relays_scrambles_copied: "Scrambles copied",
-    relays_penalty_hint: "Use the arrow keys to pick a puzzle and the penalty keys to change it.",
     toast_relay_load_failed: "Could not read your relays: {error}",
     toast_relay_save_failed: "Could not save your relays: {error}",
 };

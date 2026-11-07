@@ -578,7 +578,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_title: "새 릴레이",
     relays_new_label: "종목을 쉼표로 구분 (예: 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "만들기",
-    relays_start_hint: "{key}을(를) 눌러 {relay}의 스크램블을 받으세요.",
     relays_preparing: "스크램블 {count}개 준비 중…",
     relays_ready: "{key}을(를) 눌러 시작하고, 퍼즐을 풀 때마다 다시 누르세요.",
     relays_running: "퍼즐 {current}/{total}: {event}. 풀었으면 {key}을(를) 누르세요.",
@@ -590,7 +589,6 @@ pub const STRINGS: Strings = Strings {
     relays_unknown: "“{name}”은(는) 종목이 아닙니다.",
     relays_blindfolded: "{name}은(는) 릴레이에 포함할 수 없습니다.",
     relays_scrambles_copied: "스크램블을 복사했습니다",
-    relays_penalty_hint: "방향키로 퍼즐을 고르고 페널티 키로 바꿉니다.",
     toast_relay_load_failed: "릴레이를 읽을 수 없습니다: {error}",
     toast_relay_save_failed: "릴레이를 저장할 수 없습니다: {error}",
 };

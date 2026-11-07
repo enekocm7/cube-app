@@ -578,7 +578,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_title: "Новая эстафета",
     relays_new_label: "Дисциплины через запятую (например, 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "Создать",
-    relays_start_hint: "Нажмите {key}, чтобы получить скрамблы для {relay}.",
     relays_preparing: "Готовим скрамблы: {count}…",
     relays_ready: "Нажмите {key}, чтобы начать, и затем после каждой собранной головоломки.",
     relays_running: "Головоломка {current} из {total}: {event}. Нажмите {key}, когда она собрана.",
@@ -590,7 +589,6 @@ pub const STRINGS: Strings = Strings {
     relays_unknown: "«{name}» не дисциплина.",
     relays_blindfolded: "{name} нельзя включить в эстафету.",
     relays_scrambles_copied: "Скрамблы скопированы",
-    relays_penalty_hint: "Стрелками выберите головоломку, а клавишами штрафа измените штраф.",
     toast_relay_load_failed: "Не удалось прочитать ваши эстафеты: {error}",
     toast_relay_save_failed: "Не удалось сохранить ваши эстафеты: {error}",
 };

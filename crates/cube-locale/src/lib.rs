@@ -912,8 +912,6 @@ pub struct Strings {
     pub relays_new_title: &'static str,
     pub relays_new_label: &'static str,
     pub relays_create: &'static str,
-    /// `{key}`: the timer key. `{relay}`: the relay's name.
-    pub relays_start_hint: &'static str,
     /// `{count}`: the number of scrambles.
     pub relays_preparing: &'static str,
     /// `{key}`: the timer key.
@@ -932,7 +930,6 @@ pub struct Strings {
     /// `{name}`: the event.
     pub relays_blindfolded: &'static str,
     pub relays_scrambles_copied: &'static str,
-    pub relays_penalty_hint: &'static str,
     /// `{error}`: the cause.
     pub toast_relay_load_failed: &'static str,
     /// `{error}`: the cause.
@@ -1066,8 +1063,6 @@ mod tests {
                     .toast_multi_blind_scrambles_failed
                     .contains("{error}")
             );
-            assert!(strings.relays_start_hint.contains("{key}"));
-            assert!(strings.relays_start_hint.contains("{relay}"));
             assert!(strings.relays_preparing.contains("{count}"));
             assert!(strings.relays_ready.contains("{key}"));
             for placeholder in ["{current}", "{total}", "{event}", "{key}"] {

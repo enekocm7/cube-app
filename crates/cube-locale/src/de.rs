@@ -578,7 +578,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_title: "Neue Staffel",
     relays_new_label: "Disziplinen, durch Kommas getrennt (z. B. 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "Erstellen",
-    relays_start_hint: "Drücke {key}, um die Scrambles für {relay} zu erhalten.",
     relays_preparing: "{count} Scrambles werden vorbereitet…",
     relays_ready: "Drücke {key} zum Starten und danach nach jedem gelösten Puzzle.",
     relays_running: "Puzzle {current} von {total}: {event}. Drücke {key}, wenn es gelöst ist.",
@@ -590,7 +589,6 @@ pub const STRINGS: Strings = Strings {
     relays_unknown: "„{name}“ ist keine Disziplin.",
     relays_blindfolded: "{name} kann nicht Teil einer Staffel sein.",
     relays_scrambles_copied: "Scrambles kopiert",
-    relays_penalty_hint: "Wähle mit den Pfeiltasten ein Puzzle und ändere die Strafe mit den Straftasten.",
     toast_relay_load_failed: "Deine Staffeln konnten nicht gelesen werden: {error}",
     toast_relay_save_failed: "Deine Staffeln konnten nicht gespeichert werden: {error}",
 };

@@ -578,7 +578,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_title: "Nuova staffetta",
     relays_new_label: "Eventi separati da virgole (ad esempio 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "Crea",
-    relays_start_hint: "Premi {key} per ottenere gli scramble di {relay}.",
     relays_preparing: "Preparazione di {count} scramble…",
     relays_ready: "Premi {key} per iniziare, poi dopo ogni puzzle risolto.",
     relays_running: "Puzzle {current} di {total}: {event}. Premi {key} quando è risolto.",
@@ -590,7 +589,6 @@ pub const STRINGS: Strings = Strings {
     relays_unknown: "«{name}» non è un evento.",
     relays_blindfolded: "{name} non può far parte di una staffetta.",
     relays_scrambles_copied: "Scramble copiati",
-    relays_penalty_hint: "Usa le frecce per scegliere un puzzle e i tasti penalità per cambiarla.",
     toast_relay_load_failed: "Impossibile leggere le tue staffette: {error}",
     toast_relay_save_failed: "Impossibile salvare le tue staffette: {error}",
 };

@@ -578,7 +578,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_title: "Novo revezamento",
     relays_new_label: "Eventos separados por vírgulas (por exemplo 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "Criar",
-    relays_start_hint: "Pressione {key} para obter os embaralhamentos de {relay}.",
     relays_preparing: "Preparando {count} embaralhamentos…",
     relays_ready: "Pressione {key} para começar e depois a cada puzzle resolvido.",
     relays_running: "Puzzle {current} de {total}: {event}. Pressione {key} ao resolvê-lo.",
@@ -590,7 +589,6 @@ pub const STRINGS: Strings = Strings {
     relays_unknown: "“{name}” não é um evento.",
     relays_blindfolded: "{name} não pode fazer parte de um revezamento.",
     relays_scrambles_copied: "Embaralhamentos copiados",
-    relays_penalty_hint: "Use as setas para escolher um puzzle e as teclas de penalidade para alterá-la.",
     toast_relay_load_failed: "Não foi possível ler seus revezamentos: {error}",
     toast_relay_save_failed: "Não foi possível salvar seus revezamentos: {error}",
 };

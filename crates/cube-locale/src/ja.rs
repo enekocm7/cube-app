@@ -578,7 +578,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_title: "新しいリレー",
     relays_new_label: "種目をカンマ区切りで入力(例: 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "作成",
-    relays_start_hint: "{key} を押して {relay} のスクランブルを取得します。",
     relays_preparing: "{count} 個のスクランブルを準備中…",
     relays_ready: "{key} を押して開始し、各パズルが完成するたびに押します。",
     relays_running: "パズル {current}/{total}: {event}。完成したら {key} を押します。",
@@ -590,7 +589,6 @@ pub const STRINGS: Strings = Strings {
     relays_unknown: "「{name}」は種目ではありません。",
     relays_blindfolded: "{name} はリレーに含められません。",
     relays_scrambles_copied: "スクランブルをコピーしました",
-    relays_penalty_hint: "矢印キーでパズルを選び、ペナルティキーで変更します。",
     toast_relay_load_failed: "リレーを読み込めませんでした: {error}",
     toast_relay_save_failed: "リレーを保存できませんでした: {error}",
 };

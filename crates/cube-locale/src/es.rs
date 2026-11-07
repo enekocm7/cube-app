@@ -578,7 +578,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_title: "Nuevo relevo",
     relays_new_label: "Eventos separados por comas (por ejemplo 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "Crear",
-    relays_start_hint: "Pulsa {key} para obtener las mezclas de {relay}.",
     relays_preparing: "Preparando {count} mezclas…",
     relays_ready: "Pulsa {key} para empezar y de nuevo al terminar cada puzzle.",
     relays_running: "Puzzle {current} de {total}: {event}. Pulsa {key} al terminarlo.",
@@ -590,7 +589,6 @@ pub const STRINGS: Strings = Strings {
     relays_unknown: "«{name}» no es un evento.",
     relays_blindfolded: "{name} no puede formar parte de un relevo.",
     relays_scrambles_copied: "Mezclas copiadas",
-    relays_penalty_hint: "Usa las flechas para elegir un puzzle y las teclas de penalización para cambiarla.",
     toast_relay_load_failed: "No se pudieron leer tus relevos: {error}",
     toast_relay_save_failed: "No se pudieron guardar tus relevos: {error}",
 };
