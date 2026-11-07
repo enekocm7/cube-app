@@ -1715,7 +1715,7 @@ impl SettingsView {
         let searching = !query(&self.search, cx).is_empty();
         let set_background = cx.theme().accent.opacity(0.08);
         let page_background = cx.theme().background;
-        let row_border = cx.theme().border;
+        let set_rail = cx.theme().accent.opacity(0.6);
         let visibility_state = |on: bool| {
             if on {
                 strings.search_on
@@ -1837,20 +1837,28 @@ impl SettingsView {
                         strings.settings_library
                     ));
                     library_rows.push(
-                        // The negative margin hides the hairline the card draws
-                        // across the indent, and the band draws its own. The
-                        // padding is two method indents.
+                        // The overlay hides the hairline the card draws across
+                        // the indent (two method indents), so only the band keeps
+                        // its dividers, behind a rail on its left edge.
                         div()
+                            .relative()
                             .w_full()
-                            .mt(px(-1.))
                             .pl_12()
-                            .bg(page_background)
+                            .child(
+                                div()
+                                    .absolute()
+                                    .top(px(-1.))
+                                    .left_0()
+                                    .w_12()
+                                    .h(px(1.))
+                                    .bg(page_background),
+                            )
                             .child(
                                 div()
                                     .w_full()
                                     .bg(set_background)
-                                    .border_t_1()
-                                    .border_color(row_border)
+                                    .border_l_1()
+                                    .border_color(set_rail)
                                     .child(self.library_set_row(set, visibility, strings, cx)),
                             )
                             .into_any_element(),
