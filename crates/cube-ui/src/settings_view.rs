@@ -577,6 +577,15 @@ impl SettingsView {
         strings: &'static Strings,
         cx: &mut Context<Self>,
     ) -> AnyElement {
+        let theme = cx.theme();
+        let (background, weight, accent) = match group {
+            LibraryGroup::Puzzle(_) => (theme.sidebar, FontWeight::SEMIBOLD, None),
+            LibraryGroup::Method(..) => (
+                theme.accent.opacity(0.08),
+                FontWeight::MEDIUM,
+                Some(theme.accent.opacity(0.6)),
+            ),
+        };
         let name = format!("{label} · {}", strings.settings_library);
         let icon = if open {
             IconName::ChevronDown
@@ -599,6 +608,8 @@ impl SettingsView {
             .py_2()
             .gap_2()
             .items_center()
+            .bg(background)
+            .when_some(accent, |row, color| row.border_l_1().border_color(color))
             .child(chevron)
             .child(
                 div()
@@ -606,6 +617,7 @@ impl SettingsView {
                     .flex_1()
                     .min_w_0()
                     .truncate()
+                    .font_weight(weight)
                     .cursor_pointer()
                     .on_click(cx.listener(move |view, _, _, cx| {
                         view.toggle_library_group(group, cx);
@@ -1787,7 +1799,7 @@ impl SettingsView {
                 library_texts.push(row_text);
                 library_rows.push(
                     div()
-                        .pl_5()
+                        .pl_6()
                         .child(self.library_group_row(
                             &format!("library-method-{index}-{at}"),
                             method,
@@ -1822,7 +1834,7 @@ impl SettingsView {
                     ));
                     library_rows.push(
                         div()
-                            .pl_10()
+                            .pl_16()
                             .child(self.library_set_row(set, visibility, strings, cx))
                             .into_any_element(),
                     );
