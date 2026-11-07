@@ -1,0 +1,175 @@
+# The Pyraminx sets. See library/catalog.rs for the format.
+
+set pyra-first
+name First layer
+method Layer by layer
+before above:D:-0.5 -layer:U -layer:R -layer:u -layer:l -layer:r -layer:b
+after all -layer:U -layer:u -layer:l -layer:r -layer:b
+turn U
+show all
+view solid
+source generated
+case First 1 |  | R | R U' R' U' R | R U R' U R
+case First 2 |  | R' | R' U R U R' | R' U' R U' R'
+case First 3 |  | R' U' R | R' U R
+case First 4 |  | R U' R' | R U R'
+case First 5 |  | R' U R' | R U' R U' R' | R' U' R U' R
+case First 6 |  | R' U' R' | R U R U R' | R' U R U R
+case First 7 |  | R U' R | R U R' U R' | R' U R' U R
+case First 8 |  | R U R | R U' R' U' R' | R' U' R' U' R
+case First 9 |  | L R L' | L U R U' L' | R' B' R B R | R' U R L R L'
+case First 10 |  | L R' L' | L U R' U' L'
+case First 11 |  | L' U' L | L' U L
+case First 12 |  | B U' B' | B U B'
+case First 13 |  | B' R B | R L R L' R'
+case First 14 |  | B' R' B | R L R' L' R' | B' U' R' U B | R U L R' L' R'
+case First 15 |  | R' L' U L | B U B' R' | R' U' L' U' L | B U' B' U' R'
+case First 16 |  | L' U' L R | R B U' B' | L' U L U R | R U B U B'
+case First 17 |  | L R' L' R' | R U R' U' R | R U' R' U R | R' B' R' B
+case First 18 |  | R L R L' | R' U R U' R' | R' U' R U R' | B' R B R
+case First 19 |  | R L R' L' | B' R' B R | L' B U' B' L
+case First 20 |  | L' U L R | L' U' L U' R | L' U L U' R | L' U' L U R
+case First 21 |  | R L' U L | R U' L' U' L | R' B U' B' U' R'
+case First 22 |  | L' U' L R' | L' U L U R'
+case First 23 |  | L R L' R' | R' B' R B
+case First 24 |  | R L' U' L | B U' B' R | R U L' U L
+case First 25 |  | L' U L R' | R' B U B' | L' U' L U' R'
+case First 26 |  | L R L' R
+case First 27 |  | R U R U' R' | R U' R U R' | L U R' U' R' L' | L R' U R' U' L'
+case First 28 |  | R' U R' U' R' | R' U' R' U R'
+case First 29 |  | R' U R' U' R | R' U' R' U R | R U' L R' L' R' | R U R U R' U' R
+case First 30 |  | R U R U' R | R U' R U R | R U R U' R' U' R'
+case First 31 |  | R U' R U' R | R' U R' U R'
+case First 32 |  | R U R U R | R' U' R' U' R'
+case First 33 |  | B U B' R | B U' B' U' R
+case First 34 |  | R' B U' B' | R' U B U B' | R L' U L U R | L' R' U R L R'
+case First 35 |  | B U' B' R' | B U B' U R'
+case First 36 |  | B' R' B R' | R L R' L' U R
+case First 37 |  | L R L' U' R' | R' U' B' R B | R L' U' L R U R | L U R U' L' U' R'
+case First 38 |  | L' R' U R L | R' B U' B' R | R' U' R L' U' L | L' U' R' U R L
+case First 39 |  | R L' U' L R' | B R U R' B' | R U L' U' L R'
+case First 40 |  | R U L R' L' | B' R' B U R | R' U' R' L' U L R' | R U L U R' U' L'
+case First 41 |  | R U L R L'
+case First 42 |  | R U' L R L' | B' R B U' R | R L U R U' L'
+case First 43 |  | L' R' U' R L | R' B U B' R | L' U L R' U R | L' R' U' R U L
+case First 44 |  | R L' U L R' | B R U' R' B' | R L' U L U' R' | R U R' B U B'
+case First 45 |  | R L' U' L R | L R L' U' R | R U L' U' L R
+case First 46 |  | L R' L' U R' | R' U B' R' B | L U R' U' L' R'
+case First 47 |  | R' U L R L' | R U' B' R' B | L R L U L R'
+case First 48 |  | R' U' L R L'
+case First 49 |  | R L R' L' R | B' R' B R U' R
+case First 50 |  | R U L' U' L | R U' L' U L | B U B' U' R
+case First 51 |  | R L' U L R | L R L U L R | B' R' B' U' B'
+case First 52 |  | L' U L U' R' | L' U' L U R'
+case First 53 |  | L R L' U R | R U L' U' L U R
+case First 54 |  | L R' L U L | B U B R' B
+case First 55 |  | L' U' L' R L' | B' R B' U' B'
+case First 56 |  | L R L U L | R' B U' B' R' | R L' U L R U' R'
+case First 57 |  | L R L U' L
+case First 58 |  | B' R' B U R' | R' B U B' R' | L' R' U' R L R | L' U L R' U R'
+case First 59 |  | R' U' B' R' B
+case First 60 |  | R U B' R' B | R' L R' L' U R'
+case First 61 |  | R L' U L U R' | R U' L' U' L R' | L' U R' U R L | L' R' U' R U' L
+case First 62 |  | L R L' R' U' R | R' B' R B U R | R U' R L' U L R' | L R L' U R' U R
+case First 63 |  | R' U R L R' L' | R' U' B' R' B R | R L' U' L R' U R' | R' U' R U' L R' L'
+case First 64 |  | R' U' R' L' U' L | L R L' R U' R' | R' U' R B' R B
+case First 65 |  | R U R L' U L | R U' R L' U L
+case First 66 |  | L' U L R U R' | R U' R' L' U' L | R U R' L R' L' R | R' L R L' R U' R'
+case First 67 |  | R U L R L' R' | R U' R' B' R B | L' R' U' R U L R | L' R' U' R L U R
+case First 68 |  | R L R' L' U' R' | B' R' B R U R' | R' L' U' R' U R L | R' U' L' R' U R L
+case First 69 |  | L' U' L R' U' R' | L' U' L R' U R'
+case First 70 |  | L' U L R U R | R U R' L R' L' | B' R' B R' U R | R U R B U B'
+case First 71 |  | R' U R' L R' L' | R L' U L R U R
+case First 72 |  | L R L' R U' R | R' U' R' L' U' L R'
+case First 73 |  | R' U L R L' R | L R' L U L R' | R U' R U L R' L'
+case First 74 |  | L' U' L R' U' R | R' U R L' U L | L' U' R' U' R L | L' R' U R U L
+case First 75 |  | R L' U L U' R | R' U' R B' R' B | B R U' R' B' R'
+case First 76 |  | R U R U' R U R | R U' R U R U' R | B' L R L' B | L B' R B L'
+case First 77 |  | R' U' R' U R' U' R' | R' U R' U' R' U R' | B' L R' L' B | L B' R' B L'
+case First 78 |  | R U R U' R' U R' | R U' R U R' U' R' | R' U R' U' R U R | R' U' R' U R U' R
+case First 79 |  | R L' U L' R' L' | L R L U' L R'
+case First 80 |  | R L' U L' R L' | R U' B' R' B R' | R U R L R' L' R
+case First 81 |  | L R L U' L R | R U R' L R L' R | R L' U L' R' L' R' | L R L U L U R
+case First 82 |  | L R' L U L R
+case First 83 |  | R' U R B U B' | B U' B' R' U' R | R' U R' L R L' R | R' L R' L' R U' R
+case First 84 |  | B' R' B R' U R' | R L R' L' R U' R' | R U' L' U' L' R' L' | R U R B U B' R
+case First 85 |  | R B' U' R' U B
+case First 86 |  | R L' U L R U R' | L' R U' R U R' L | R' U R' L R' L' R | L' R' U R L' R L'
+case First 87 |  | L R' U R U' R' L' | R' U R U' L R' L' | R' U' R U L R' L'
+case First 88 |  | R L' U L R' U R | R U' L' R' U' R L | R L' R' U' R U L | L R' L U L U R'
+case First 89 |  | R' U' R L' U' L R' | L' R' U R L U R' | L' U' R' U R L R' | R U' L' U' L' R L'
+case First 90 |  | R' U' R L' U L R | R' L U R U' L' R | R U L R L' U R'
+case First 91 |  | L' U' R U' R U R' L | R' U R' L R' L' U' R | R U R L' U L' R' L' | R' U' R L' U' L' R L'
+case First 92 |  | L' R U' R' U R' U L | R' U L R L' R U' R | L R L U' L R' U' R' | L R' L U L R' U R
+case First 93 |  | L R L' R U' R U R | R U R U' R B' R B | L R' L' U' R' L' U' L | R L' B' U L' B L'
+case First 94 |  | R' U' R' U R' L R' L' | B' R' B R' U R' U' R' | L' U L R U L R L' | L B' L U' B L R'
+case First 95 |  | R L' R U' R' U R' L | L' R U' R U R' L R' | R' U R' L' U L' R' L' | L R L U' L R U' R
+
+set pyra-ll
+name L3E
+method Layer by layer
+before all -layer:U -layer:u -layer:l -layer:r -layer:b
+after all -layer:u -layer:l -layer:r -layer:b
+turn U y
+show all
+view solid
+source speedcubedb
+case Sune |  | R U R' U R U R' | L U L' U L U L' | R' U R U R' U R | L' U L U L' U L
+case AntiSune |  | R' U' R U' R' U' R | L' U' L U' L' U' L | R U' R' U' R U' R' | L U' L' U' L U' L'
+case Lefty Bars |  | R' U' L' U L R | U L R U R' U' L'
+case Righty Bars |  | U' R' L' U' L U R | L U R U' R' L'
+case 2 Flip |  | L R' L' R U' R U R' | R' L R L' U L' U' L | R' U L' U' L U' R | L U' R U R' U L'
+
+set pyra-l4e
+name L4E
+method L4E
+before touching:3
+after all -layer:u -layer:l -layer:r -layer:b
+turn U y
+show all
+view solid
+source speedcubedb
+group Last Layer
+case Sune |  | R U R' U R U R' | L U L' U L U L' | L' U L U L' U L | R' U R U R' U R
+case AntiSune |  | R U' R' U' R U' R' | L' U' L U' L' U' L | L U' L' U' L U' L' | R' U' R U' R' U' R
+case Lefty Bars |  | R' U' L' U L R | U L R U R' U' L'
+case Righty Bars |  | L U R U' R' L' | U' R' L' U' L U R
+group L3E
+case Sledge |  | R' L R L' | L U' R' L R L | U' L R U' R' U L' | U R' U L' U' L R | U R L R L' U' R
+case Hedge |  | L R' L' R | U' L U' R U R' L' | U' L' R' L' R U L' | R' U L R' L' R' | U R' L' U L U' R
+case Clockwise |  | L R' L' R' U' R' | R U' R' U' L' U' L | U' R U' R' L R' L' R | U L' U' L' R' L' R | U' L' R' L' R L' | L U' R U' R' U' L' | U R' L R' L' R' | R' U' L' U' L U' R
+case Counterclockwise |  | R' L R L U L | U L' U L R' L R L' | U R' L R L' R U R' | U' L R' L R L | L U R U R' U L' | U R L R L' R | R' U L' U L U R
+case Righty |  | R U' R' | L U' L'
+case Lefty |  | L' U L | R' U R
+case Sexy |  | U' R U R' | U' L U L'
+case Left Sexy |  | U L' U' L | U R' U' R
+group Flipped Edges
+case 2 Flip |  | R' L R L' U L' U' L | R' U L' U' L U' R | L U' R U R' U L' | U' R' U L' U L U' R
+case DR Flip |  | L' U L U' R U' R' | L R' L' R L' U L | R U R' L R' L' R | L U' L R' L' R L' | L' R' L' R' U' R' U' L' | R' U' L' U' L' R' L' R' | U' R U R' L R' L' R
+case DL Flip |  | R' L R L' R U' R' | R U' R' U L' U L | L' U' L R' L R L' | L U R U R L R L | R' U R' L R L' R | R L R L U L U R
+case DB Flip |  | R U R' U L' U' L | L' U' L U' R U R' | L R' L R L' U L' | R' L R' L' R U' R
+case 4 Flip |  | L' U L R U' R' L' U L R U' R' | R U' R' L' U L R U' R' L' U L | L R U' R' L' U L R U' R' L' | R' L' U L R U' R' L' U L R
+group Polish Flip
+case Right Polish Flip |  | R U' R' L' U' L | U L' U' L U R U' R' | U R U' R' U' L R' L' R | U' L R' L' R U' L' U' L | U' L R U' R' L' U' L U L' | R' L' U L R U' R' U R
+case Left Polish Flip |  | L' U L R U R' | U' R U R' U' L' U L | U' L' U L U R' L R L' | U R' L R L' U R U R' | L R U' R' L' U L U' L' | U R' L' U L R U R' U' R
+case SUS |  | R' L R L' U' R' L R L' | R U' R L R L U' L | L' U' L R U' R L R L' | L R U' R L R L | R L R L U' L R
+case Anti SUS |  | L R' L' R U L R' L' R | L' U L' R' L' R' U R' | R U R' L' U L' R' L' R | L' R' L' R' U R' L' | R' L' U L' R' L' R'
+group Separated Bar
+case Good Niky |  | R U' R' L' U L | U R U R' L' U' L | L' B' U B L | R B U B' R' | L R U R' L' | R' L' U L R
+case Good Sochi |  | L' U L R U' R' | U' L' U' L R U R' | L' B' U' B L | R B U' B' R' | L R U' R' L' | R' L' U' L R
+case Super Sledge |  | R U' R L R L' | U' L R' L' R' U R' | R' L R' U R' U' L' | L U R U' R L' R | L U R' L R L | U L' R' L' R U' L' | R' L' U L' R' L' R U' R
+case Super Hedge |  | L' U L' R' L' R | U R' L R L U' L | R' U' L' U L' R L' | L R' L U' L U R | L R U' R L R L' U L' | R' U' L R' L' R'
+case Bad Niky |  | R U' R' U' L' U L | U R U R' U' L' U' L | U L U R U' R' U' L' | R' U' L' U' L U R
+case Bad Sochi |  | L' U L U R U' R' | U' L' U' L U R U R' | L U R U R' U' L' | U' R' U' L' U L U R
+group Connected Bar
+case Right Spam |  | R U R' U R' L R L' | U R U' R' L' U L R U' R' | U' L' U' L' R' L' R' U R' | U' L R' L' R' U R' L' U' L | L U R U' R' U L' | U L U' R U' R' L' | R' L' U L' R' L' R U R
+case Left Spam |  | L' U' L U' L R' L' R | U' L' U L R U' R' L' U L | U R U R L R L U' L | U R' L R L U' L R U R' | L R U' R L R L' U' L' | R' U' L' U L U' R | U' R' U L' U L R | U' R' U' L R L' U' L' U L
+case Bad Sledge |  | L R' L' R U' R U' R' | U R U R' L' U' L R U R' | R U' R L R L U L | U' L R' L' R' U R' U' L' U L | L R U R' U L' | U' L U' R U R' U' L' | R' U' R' L R L U' L R | U' R L R L U' L U' R
+case Bad Hedge |  | R' L R L' U L' U L | U' L' U' L R U R' L' U' L | L' U L' R' L' R' U' R' | U R' L R L U' L U R U' R' | L U L R' L' R' U R' L' | U L' R' L' R' U R' U L' | R' L' U' L U' R | U R' U L' U' L U R
+group No Bar
+case Bad Sexy |  | L' U' L U' R U' R' | U L' R' L' R' U' R' L' | R' L' U' L' R' L' R'
+case Bad Ugly |  | R U R' U L' U L | L R U R L R L | U' R L R L U L R
+case Bad Righty |  | L' U L U' R U R' | R' L R L' U R' L R L' | L U' L R' L' R U' L' | U L U' L' U L R U' R' L' | R' U' L R' L' R U' R
+case Bad Lefty |  | R U' R' U L' U' L | L R' L' R U' L R' L' R | L U R' L R L' U L' | R' U R' L R L' U R | U' R' U R U' R' L' U L R
+case Double Sexy |  | R U' R' U' R U R' | L' U' L U R' L R L' | U' R U' R' U R U R' | U R U R' U' R U' R' | L U' L' U' L U L' | U L U L' U' L U' L' | U' L U' L' U L U L'
+case Double Ugly |  | L' U L U L' U' L | R U R' U' L R' L' R | U L' U L U' L' U' L | U' L' U' L U L' U L | R' U R U R' U' R | U R' U R U' R' U' R | U' R' U' R U R' U R

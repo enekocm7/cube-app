@@ -10,18 +10,9 @@ show all
 view top
 source standard
 group Parity
-case Try 0 |  | 3Rw2 U2 3Rw2 3Uw2 3Rw2 3Uw2
-case Try 1 |  | 3Rw2 U2 3Rw2 U2 3U2 3Rw2 3U2
-case Try 2 |  | 3Rw2 U2 3Rw2 3Uw2 3Rw2 3U2
-case Try 3 |  | Rw2 U2 Rw2 Uw2 Rw2 Uw2
-case Try 4 |  | 3R2 2R2 U2 3R2 2R2 3Uw2 3R2 2R2 3Uw2
-case Try 5 |  | 3R2 U2 3R2 3Uw2 3R2 3Uw2
-case Try 6 |  | 2R2 3R2 U2 2R2 3R2 U2 3U2 2U2 2R2 3R2 3U2 2U2
-case Try 7 |  | 3R2 U2 3R2 U2 3U2 2U2 3R2 3U2 2U2
 case OLL parity (layer 2) |  | 2R2 B2 U2 2L U2 2R' U2 2R U2 F2 2R F2 2L' B2 2R2
 case OLL parity (layer 3) |  | 3R2 B2 U2 3L U2 3R' U2 3R U2 F2 3R F2 3L' B2 3R2
-case PLL parity (layer 2) |  | 2R2 U2 2R2 U2 2U2 2R2 2U2
-case PLL parity (layer 3) |  | 3R2 U2 3R2 U2 3U2 3R2 3U2
+case PLL parity |  | 3R2 U2 3R2 U2 3U2 2U2 3R2 3U2 2U2
 
 set 6x6-edges
 name Last edges

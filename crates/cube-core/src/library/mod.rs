@@ -13,8 +13,10 @@ mod data;
 pub mod geometry;
 pub mod model;
 mod review;
+#[cfg(test)]
+mod tests;
 
-pub use catalog::{LibraryPuzzle, catalog, find_set, library_sets};
-pub use check::{case_state, check, free_turns};
+pub use catalog::{LibraryPuzzle, catalog, find_set, library_sets, search_cases};
+pub use check::{Recognition, case_origins, case_state, check, free_turns, recognition};
 pub use data::{CaseEntry, DueCase, LibraryData, Progress, Status};
 pub use review::{Grade, Review};

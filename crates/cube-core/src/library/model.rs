@@ -199,7 +199,10 @@ impl StickerModel {
                 let end = from.find(is_gap).unwrap_or(from.len());
                 AlgError::InvalidMove(from[..end].to_owned())
             };
-            let known = self.names.iter().find(|name| rest.starts_with(name.as_str()));
+            let known = self
+                .names
+                .iter()
+                .find(|name| rest.starts_with(name.as_str()));
             let Some(name) = known else {
                 return Err(invalid(rest));
             };
@@ -280,7 +283,10 @@ impl StickerModel {
                 let (face, height) = value.split_once(':')?;
                 let height: f64 = height.parse().ok()?;
                 let face = self.face_names.iter().position(|name| *name == face)?;
-                let normal = self.stickers.iter().find(|sticker| usize::from(sticker.face) == face)?;
+                let normal = self
+                    .stickers
+                    .iter()
+                    .find(|sticker| usize::from(sticker.face) == face)?;
                 let normal = normal.normal;
                 let stickers = self.stickers.iter();
                 Some(
@@ -314,9 +320,17 @@ pub const fn square1_corner(piece: u16) -> bool {
     matches!(piece, 0 | 2 | 4 | 6 | 9 | 11 | 13 | 15)
 }
 
+/// Returns whether a Square-1 piece belongs in the top layer.
+const fn square1_top(piece: u16) -> bool {
+    piece < 8
+}
+
 /// Returns whether a Square-1 can do a `/`.
 pub fn square1_can_slash(state: &[u16]) -> bool {
-    state[0] != state[11] && state[6] != state[5] && state[12] != state[23] && state[18] != state[17]
+    state[0] != state[11]
+        && state[6] != state[5]
+        && state[12] != state[23]
+        && state[18] != state[17]
 }
 
 /// Returns whether a Square-1's pieces are an even permutation of the solved
@@ -361,6 +375,9 @@ pub struct Region {
     pub shape_only: bool,
     /// A Square-1 must also have an even permutation.
     pub even: bool,
+    /// A Square-1 only asks for its corners, then its edges, to be in the
+    /// right layer. Asking that of the edges alone leaves the corners solved.
+    pub layers: [bool; 2],
 }
 
 /// A puzzle's rules.
@@ -463,7 +480,7 @@ impl Model {
                 }
                 (Self::Clock, Op::Dial { turn, amount }) => {
                     for (dial, step) in state.iter_mut().zip(CLOCK_MOVES[turn as usize]) {
-                        let moved = *dial as i16 + i16::from(step) * i16::from(amount);
+                        let moved = (*dial).cast_signed() + i16::from(step) * i16::from(amount);
                         *dial = moved.rem_euclid(12) as u16;
                     }
                 }
@@ -508,6 +525,7 @@ impl Model {
             places: vec![false; size],
             shape_only: false,
             even: false,
+            layers: [false; 2],
         };
         for word in text.split_whitespace() {
             let (removing, word) = word
@@ -555,6 +573,14 @@ impl Model {
                         region.even = true;
                         Some(vec![false; 25])
                     }
+                    "corner-layers" => {
+                        region.layers[0] = true;
+                        Some(slots(&|_| true))
+                    }
+                    "edge-layers" => {
+                        region.layers[1] = true;
+                        Some(slots(&|_| true))
+                    }
                     _ => None,
                 }
             }
@@ -582,7 +608,19 @@ impl Model {
         let solved = self.solved();
         let places = state.iter().zip(&solved).zip(&region.places);
         let mut wanted = places.filter(|(_, chosen)| **chosen).map(|(pair, _)| pair);
-        let fits = if region.shape_only {
+        let fits = if region.layers != [false; 2] {
+            wanted.all(|(&place, &home)| {
+                let corner = square1_corner(home);
+                let same_layer = square1_top(place) == square1_top(home);
+                match (corner, region.layers[0], region.layers[1]) {
+                    (true, true, _) | (false, _, true) => {
+                        square1_corner(place) == corner && same_layer
+                    }
+                    (true, false, _) => place == home,
+                    (false, _, false) => square1_corner(place) == corner,
+                }
+            })
+        } else if region.shape_only {
             wanted.all(|(&place, &home)| square1_corner(place) == square1_corner(home))
         } else if matches!(self, Self::Clock) {
             // A Clock is solved with all the chosen dials alike.
@@ -737,8 +775,9 @@ fn cube(size: usize) -> StickerModel {
             }
         }
     }
-    if size % 2 == 1 {
-        let half = layer / 2.;
+    if size > 2 {
+        // The middle layer, or the middle two of an even cube.
+        let half = if size % 2 == 1 { layer / 2. } else { layer };
         for (name, axis) in [
             ("M", [-1., 0., 0.]),
             ("E", [0., -1., 0.]),
@@ -783,6 +822,10 @@ fn pyraminx() -> StickerModel {
         });
         specs.push(turn(name.to_lowercase(), axis, 5. / 9., 2., 3));
     }
+    specs.push(TurnSpec {
+        rotation: true,
+        ..turn("y", corners[0].1, -2., 2., 3)
+    });
     StickerModel::build(&faces, &cuts, specs)
 }
 
@@ -890,6 +933,14 @@ fn megaminx() -> StickerModel {
             ..turn(name, axis, depth, 2., 5)
         });
     }
+    specs.push(TurnSpec {
+        rotation: true,
+        ..turn("y", [0., 1., 0.], -2., 2., 5)
+    });
+    specs.push(TurnSpec {
+        rotation: true,
+        ..turn("x", ring(-18., upper), -2., 2., 5)
+    });
     StickerModel::build(&faces, &cuts, specs)
 }
 
@@ -928,6 +979,7 @@ mod tests {
         let cases = [
             (WcaEvent::Cube3x3, "R", 4),
             (WcaEvent::Cube3x3, "M", 4),
+            (WcaEvent::Cube4x4, "M", 4),
             (WcaEvent::Cube5x5, "3Rw", 4),
             (WcaEvent::Cube4x4, "2R", 4),
             (WcaEvent::Pyraminx, "U", 3),
@@ -1088,5 +1140,36 @@ mod tests {
         assert_eq!(count("touching:2"), 24);
         assert_eq!(count("touching:1"), 6);
         assert!(model.region("nonsense").is_none());
+    }
+
+    #[test]
+    fn a_square1_region_can_ask_only_for_layers() {
+        let model = Model::of(WcaEvent::Square1);
+        let layers = model.region("corner-layers edge-layers").unwrap();
+        let all = model.region("all").unwrap();
+        let mut turned = model.solved();
+        assert!(model.apply(&mut turned, &model.parse("(3,0)").unwrap()));
+        assert!(model.matches(&turned, &layers));
+        assert!(!model.matches(&turned, &all));
+        let mut swapped = model.solved();
+        assert!(model.apply(&mut swapped, &model.parse("/").unwrap()));
+        assert!(!model.matches(&swapped, &layers));
+    }
+
+    #[test]
+    fn a_megaminx_and_a_pyraminx_can_rotate() {
+        for (event, rotation, turns, holds) in [
+            (WcaEvent::Megaminx, "y", 5, 60),
+            (WcaEvent::Megaminx, "x", 5, 60),
+            (WcaEvent::Pyraminx, "y", 3, 3),
+        ] {
+            let model = Model::of(event);
+            let mut state = model.solved();
+            for _ in 0..turns {
+                assert!(model.apply(&mut state, &model.parse(rotation).unwrap()));
+            }
+            assert_eq!(state, model.solved(), "{event:?}");
+            assert_eq!(model.holds(&state).len(), holds);
+        }
     }
 }

@@ -59,6 +59,59 @@ pub fn case_state(set: &AlgSet, case: &AlgCase) -> Option<State> {
         .find(|hold| model.matches(hold, set.before()))
 }
 
+/// Returns where every place's sticker began in `case`, held like
+/// [`case_state`]. A Square-1 and a Clock have no stickers to follow, so that
+/// is just their position.
+pub fn case_origins(set: &AlgSet, case: &AlgCase) -> Option<State> {
+    let model = set.model();
+    let Some(mut state) = model.numbered() else {
+        return case_state(set, case);
+    };
+    let ops = model.parse(case.algorithm).ok()?;
+    if !model.apply(&mut state, &model.inverse(&ops)) {
+        return None;
+    }
+    let solved = model.solved();
+    model.holds(&state).into_iter().find(|hold| {
+        let colors: State = hold.iter().map(|&origin| solved[origin as usize]).collect();
+        model.matches(&colors, set.before())
+    })
+}
+
+/// What can be read off a case at a glance, to help recognize it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Recognition {
+    /// How many stickers of the top already show its color.
+    pub facing_up: usize,
+    /// How many stickers the top has.
+    pub top_stickers: usize,
+    /// How many stickers are not where they belong.
+    pub moved: usize,
+}
+
+/// Describes `case`, for a case the data has no note on. A Square-1 and a
+/// Clock have no faces of stickers to count.
+pub fn recognition(set: &AlgSet, case: &AlgCase) -> Option<Recognition> {
+    let Model::Stickers(stickers) = set.model() else {
+        return None;
+    };
+    let origins = case_origins(set, case)?;
+    let color = |origin: u16| stickers.stickers[origin as usize].face;
+    let top = stickers.stickers.iter().zip(&origins);
+    let top: Vec<u16> = top
+        .filter(|(sticker, _)| sticker.face == 0)
+        .map(|(_, &origin)| origin)
+        .collect();
+    let places = origins.iter().enumerate().zip(&set.after().places);
+    Some(Recognition {
+        facing_up: top.iter().filter(|&&origin| color(origin) == 0).count(),
+        top_stickers: top.len(),
+        moved: places
+            .filter(|((place, origin), chosen)| **chosen && *place != usize::from(**origin))
+            .count(),
+    })
+}
+
 /// Returns whether `state` finished what the set sets out to do, however the
 /// puzzle ended up held and with any of the allowed turns still to do.
 fn finished(set: &AlgSet, state: &[u16], turns: &[Vec<Op>]) -> bool {

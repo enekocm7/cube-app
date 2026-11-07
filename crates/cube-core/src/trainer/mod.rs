@@ -21,7 +21,7 @@ mod three_by_three;
 pub use cube::{CustomAlgError, check_algorithm, generate_scramble};
 pub use data::{Attempt, CaseStats, TrainerData, slowest_first};
 pub use deck::Deck;
-pub use diagram::case_diagram;
+pub use diagram::{case_diagram, case_thumbnail, diagram_ratio};
 pub use drill::{Drill, Prompt};
 pub use grid::{GridStep, grid_step, rows_before};
 pub use three_by_three::{OLL, PLL};
@@ -244,7 +244,7 @@ mod tests {
 
     #[test]
     fn a_search_finds_a_whole_group() {
-        assert_eq!(found(&PLL, "edges only"), ["Ua", "Ub", "H", "Z"]);
+        assert_eq!(found(&PLL, "epll"), ["H", "Ua", "Ub", "Z"]);
     }
 
     #[test]
@@ -257,7 +257,7 @@ mod tests {
     fn groups_with_nothing_found_are_left_out() {
         let groups = PLL.matching(PLL.groups(), "ua");
         assert_eq!(groups.len(), 1);
-        assert_eq!(groups[0].name, "Edges only");
+        assert_eq!(groups[0].name, "EPLL");
         assert_eq!(PLL.matching(PLL.groups(), "nothing"), [] as [CaseGroup; 0]);
     }
 
@@ -267,8 +267,8 @@ mod tests {
             name: "",
             cases: (0..PLL.cases.len()).collect(),
         };
-        let groups = PLL.matching(vec![everything], "corners");
-        assert_eq!(groups[0].cases.len(), 3);
+        let groups = PLL.matching(vec![everything], "epll");
+        assert_eq!(groups[0].cases.len(), 4);
     }
 
     #[test]

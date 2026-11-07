@@ -4,8 +4,8 @@
 //! lines of a keyword and its value:
 //!
 //! ```text
-//! set zbll                  a unique id, which saved data refers to
-//! name ZBLL
+//! set zbll-t                a unique id, which saved data refers to
+//! name ZBLL T
 //! method ZB                 what the set is listed under
 //! before all -layer:U       a region solved in every case of the set
 //! after all                 a region an algorithm must solve
@@ -13,7 +13,7 @@
 //! show all                  stickers to draw in color, by where they began
 //! view top                  `top` or `solid`
 //! step permute              only for a set the trainer drills
-//! source moishy             where the algorithms came from
+//! source speedcubedb        where the algorithms came from
 //! group T                   the group of the cases that follow
 //! case T 1 | recognition | algorithm | algorithm
 //! ```
@@ -30,6 +30,22 @@ use crate::trainer::{AlgCase, AlgSet, Step};
 pub struct LibraryPuzzle {
     pub event: WcaEvent,
     pub sets: Vec<&'static AlgSet>,
+}
+
+impl LibraryPuzzle {
+    /// Returns the puzzle's methods with their sets, each method once, in the
+    /// order they first come up.
+    #[must_use]
+    pub fn methods(&self) -> Vec<(&'static str, Vec<&'static AlgSet>)> {
+        let mut methods: Vec<(&'static str, Vec<&'static AlgSet>)> = Vec::new();
+        for &set in &self.sets {
+            match methods.iter_mut().find(|(name, _)| *name == set.method) {
+                Some((_, sets)) => sets.push(set),
+                None => methods.push((set.method, vec![set])),
+            }
+        }
+        methods
+    }
 }
 
 /// The data files, in the order the puzzles are listed.
@@ -198,6 +214,24 @@ pub fn catalog() -> &'static [LibraryPuzzle] {
 pub fn library_sets() -> impl Iterator<Item = &'static AlgSet> {
     let puzzles = catalog().iter();
     puzzles.flat_map(|puzzle| puzzle.sets.iter().copied())
+}
+
+/// Finds the cases of every set whose names, groups, sets or methods have all
+/// the words of `query`.
+pub fn search_cases(query: &str) -> Vec<(&'static AlgSet, &'static AlgCase)> {
+    let mut found = Vec::new();
+    for puzzle in catalog() {
+        for &set in &puzzle.sets {
+            let event = puzzle.event.name();
+            for case in set.cases {
+                let fields = [case.name, case.group, set.name, set.method, event];
+                if crate::search::matches(query, &fields) {
+                    found.push((set, case));
+                }
+            }
+        }
+    }
+    found
 }
 
 /// Returns the set with the id `id`.

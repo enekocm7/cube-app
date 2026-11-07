@@ -5,213 +5,201 @@ name Ortega OLL
 method Ortega
 before face:D
 after face:D face:U
-turn U
+turn U y
 show face:U face:D
 view top
-source standard
-group Orientation
-case Sune |  | R U R' U R U2 R'
-case Antisune |  | R' U' R U' R' U2 R
-case Pi |  | F R U R' U' R U R' U' F'
-case H |  | R2 U2 R U2 R2
-case U |  | F R U R' U' F'
-case T |  | R U R' U' R' F R F'
-case L |  | F R' F' R U R U' R'
+source speedcubedb
+case Sune |  | R U R' U R U2 R' | R U R2 U' R2 U R | R U' L' U R' U' L | y' R' U2 R U R' U R
+case Anti Sune |  | R U2 R' U' R U' R' | y L' U' L U' L' U2 L | y' R' U' R U' R' U2 R | R' F R F' R U R'
+case Pi |  | F R U R' U' R U R' U' F' | R U' R2 U R2 U R2 U' R | R U2 R2 U' R2 U' R2 U2 R | y' R' F R2 U' R2 F R
+case P |  | F R U R' U' F' | y2 F U R U' R' F' | y' R2 D R' U2 R D' R' U2 R' | y R2 D' R U2 R' D R U2 R
+case L |  | F R U' R' U' R U R' F' | y F' R U R' U' R' F R | F R' F' R U R U' R' | F' R U R' U' R' F R
+case T |  | R U R' U' R' F R F' | U R U R' U' F' U' F | y2 x U' L' U R' U' L U R | x L U R' U' L' U R U'
+case H |  | R2 U2 R' U2 R2 | R2 U2 R U2 R2 | F R U R' U' R U R' U' R U R' U' F' | y R U R' U R U' R' U R U2 R'
 
 set 2x2-ortega-pbl
 name Ortega PBL
 method Ortega
 before face:U face:D
 after all
-turn U D
+turn U D y
 show all
 view top
-source standard
-group Permutation
-case Adjacent, adjacent |  | R2 U' B2 U2 R2 U' R2
-case Diagonal, diagonal |  | R2 F2 R2
-case Adjacent on top |  | R U R' F' R U R' U' R' F R2 U' R'
-case Diagonal on top |  | F R U' R' U' R U R' F' R U R' U' R' F R F'
-case Adjacent, diagonal |  | R U' R F2 R' U R'
+source speedcubedb
+case Adj |  | y R U R' F' R U R' U' R' F R2 U' R' | y R' F R F' R U2 R' U R U2 R' | y R U R' U' R' F R2 U' R' U' R U R' F' | y2 R' F R' F2 R U' R' F2 R2
+case Opp |  | R U' R' U' F2 U' R U R' U F2 | F R U' R' U' R U R' F' R U R' U' R' F R F' | R U' R' U' F2 U' R U R' D R2 | F R' F R2 U' R' U' R U R' F' R U R' U' F'
+case Opp Opp |  | R2 F2 R2 | R2 B2 R2 | x R2 U2 R2 | x' R2 U2 R2
+case Adj Adj |  | R2 U' B2 U2 R2 U' R2 | y2 R2 U' R2 U2 F2 U' R2 | R2 U R2 U2 F2 U F2 | R2 U' F2 U2 R2 U' B2
+case Adj Opp |  | R U' R F2 R' U R' | R' F R' F2 R U' R | y2 R' U R' F2 R F' R | y2 R' U L' U2 R U' L
+case Opp Adj |  | R' D R' F2 R D' R | y R2 U R2 U' R2 U R2 U' R2 | z2 R U' R F2 R' U R' | y R2 U' R2 U R2 U' R2 U R2
 
 set 2x2-cll
 name CLL
 method CLL
 before all -layer:U
 after all
-turn U
+turn U y
 show all
 view top
-source generated
-group Solved
-case CLL Solved 1 |  | R U' R F2 R' U R F2 R2 | R2 F2 R' U' R F2 R' U R' | R2 U R' F' U' F U' R' U2 R' | R U2 R U F' U F R U' R2 | R' U2 R' U' F R' F' R' U R2
-case CLL Solved 2 |  | R U' R' U' F2 U' R U R' U F2 | F2 U' R U' R' U F2 U R U R' | R2 U' R F' R' U R2 U F U F' | F U' F' U' R2 U' R F R' U R2 | R F' U' R' U2 R' U R F' U F2
-group Sune
-case CLL Sune 1 |  | R' U2 R U R' U R | R U R' U R U2 R' | R U R2 U' R2 U R | R' F2 R U R' F R | R F U' F R F2 R'
-case CLL Sune 2 |  | R U' R' F R' F' R | R F' U' F R' U' R | F U' F' R U' R' F | F R' F' R F' U' F | F2 U R' U' F2 R' U R
-case CLL Sune 3 |  | F R' F' R U2 R U2 R' | R U' R' F U2 F U2 F' | R F' U' F U2 F R2 F' | F U' F' R F2 R F2 R' | R U' F R F' R' U' R U2 R'
-case CLL Sune 4 |  | R' U2 R U2 R F' U' F | R' F2 R U2 R U' R' F | F' R2 F R2 F R' U' R | F' U2 F U2 F R' F' R | F U' R' U2 R U2 R U' F'
-case CLL Sune 5 |  | R U' R U' R' U R' U' F R' F' | F' U' F U' R' U R' U' R U' R | R' U' R U' F' R U' F' U R' F | F' R' U R' U' R F' U' R F' R | R U' R U' F R U R' U R2 F
-case CLL Sune 6 |  | R' U R U' F R U R' U' R F' | R' F R2 F' R U2 R' U' R2 | R2 U' R' U2 R F' U2 F R' | R2 U' F' U2 F U' R2 U R' | R' U R2 U' F R2 F' U' R2
-group Antisune
-case CLL Antisune 1 |  | R' U' R U' R' U2 R | R U2 R' U' R U' R' | R' U' R2 U R2 U' R' | R' F' R U' R' F2 R | R F2 R' F' U F' R'
-case CLL Antisune 2 |  | R' F R F' R U R' | R' U R F' U F R' | F' R U R' F U F' | F' U F R' F R F' | R' U' R F2 U R U' F2
-case CLL Antisune 3 |  | R U2 R' U2 R' F R F' | F U2 F' U2 F' R U R' | F R2 F' U2 F' U F R' | R F2 R' F2 R' F U F' | R U2 R' U R F R' F' U R'
-case CLL Antisune 4 |  | F' U F R' U2 R' U2 R | F' R U R' U2 R' F2 R | R' U R F' R2 F' R2 F | R' F R F' U2 F' U2 F | F U R' U2 R' U2 R U F'
-case CLL Antisune 5 |  | F R F' U R U' R U R' U R' | R' U R' U R U' R U F' U F | F' R U' F U R' F U R' U R | R' F R' U F R' U R U' R F | F' R2 U' R U' R' F' U R' U R'
-case CLL Antisune 6 |  | F R' U R U' R' F' U R' U' R | R2 U R U2 R' F R2 F' R | R F' U2 F R' U2 R U R2 | R U' R2 U F' U2 F U R2 | R2 U F R2 F' U R2 U' R
-group Pi
-case CLL Pi 1 |  | F U R U' R' U R U' R' F' | F R U R' U' R U R' U' F' | R U' R2 U R2 U R2 U' R | R' U R2 U' R2 U' R2 U R' | R' U F R' U R' U R2 U F
-case CLL Pi 2 |  | R F R F' U R' U' R U' R' | R U R' U R U' F R' F' R' | R' U' R U' R' U F' U F R | R' F' U' F U' R U R' U R | R' U' F' U F' R U R' F R
-case CLL Pi 3 |  | F R F' R U' R U2 R' U R' | R' U R' U R U' R F' U2 F | R U' R U' R' U R' F R2 F' | F' U' F R' U R' U2 R U' R | R' U R U F R' U R U' R' F'
-case CLL Pi 4 |  | R' F R F' R U' R' U' R U' R' | R F' U' F R' U R U R' U R | R' U R' F' R2 U2 F' R U R' | R U' R F U2 R2 F R' U' R | R U' R' F R' F R U R' F R
-case CLL Pi 5 |  | R' F2 R F' U2 R U' R' U' F | F U' R' F' R U2 F' R U2 R' | R' U2 R F' R2 U R' F' R' F | R' F2 R F' U R' U' R' U R F | F' R2 F U' R U' F' U' R U R
-case CLL Pi 6 |  | F' U R U R' U2 F R' F2 R | R U2 R' F U2 R' F R U F' | F' R F R U' R2 F R' U2 R | F' R' U' R U R U' F R' F2 R | R' U' R' U F U R' U F' R2 F
-group U
-case CLL U 1 |  | R F R F' U' R' | R U F R' F' R' | R' U' F' U F R | R' F' U' F U R | F R U R' U' F'
-case CLL U 2 |  | R' F U' R F R' U R F' | R U' F U' R' U F' R' F | F U' R F' R' U F' U' R | F' U R' U F U' R F R' | R' U F' R F U' R U F'
-case CLL U 3 |  | R' U R' U R' U R U' R U' R | R U' R U' R U' R' U R' U R' | R2 F2 U' R' U F' R U' R | R' F U' R U' R' U2 F2 R | R' U F' R U' R' F2 U2 R
-case CLL U 4 |  | R' U F' U' R U' R' F2 U R | R2 U' F R2 F' U R U2 R | R' F U' F' R U' R' U2 F R | R2 U' R U R2 U F R2 F' | R' U R U F2 R' F' U R' F'
-case CLL U 5 |  | R U' R' U' F2 R U R' U F | F2 U R' U' F2 U' R' U2 R | R U' F R U' F R F2 U' R' | R F' R U R' F U R2 F' R' | R2 U R' U' R2 U' F' U2 F
-case CLL U 6 |  | R U F R' F2 U' F R' U' R | R' U R F' U F2 R F' U' R' | R U F2 U R F R' U F R | R' F' U' R F' R' U' F2 U' R' | F R U R' U2 F' R U' R' F
-group T
-case CLL T 1 |  | R' U' R U F R F' | F' U' F U R U R' | F' R' U R U F R' | R' F' R U F U F' | R' U' R F' R' U R F
-case CLL T 2 |  | R U R' U' F' U' F | F R F' U' R' U' R | R F U' F' U' R' F | F U F' U' R' F' R | R' U' R U R F' U' F
-case CLL T 3 |  | F R' U' R F' R' U F' R | F' R F U' R U F' U R' | R' U F U' R F R' U F' | R F' R' U F' U' R U' F | F U' R' U F' R' F U' R
-case CLL T 4 |  | R' U R' U R' U' R U' R U' R | R U' R U' R U R' U R' U R' | R' U R' F U' R U F2 R2 | R' F2 U2 R U R' U F' R | R' U2 F2 R U R' F U' R
-case CLL T 5 |  | R U' R F U2 R2 U F R' | R F' U' R2 U2 F' R' U R' | R2 U R U' R2 U F' U F | F' U' F U' R2 U R' U' R2 | R' U R' F' R2 U2 R' F' R
-case CLL T 6 |  | F U' R U2 R' U' F2 R U R' | R U' R' F2 U R U2 R' U F' | R U R U' R F' U' F R' U R2 | R2 U' R F' U F R' U R' U' R' | R U R U' R U' F R' F' U R2
-group L
-case CLL L 1 |  | F R' F' U' R' U R | R U' R' U' F' U F | R F' U' R' U' R F | F U' F' U' R' F R | F' R' U' R F R' U R
-case CLL L 2 |  | F' U F U R U' R' | R' U R U F R' F' | F' R U F U F' R' | R' F R U F U' F' | F' U F R' U' R' U R
-case CLL L 3 |  | R' U' F2 R U R' U F U' R | R' U2 R' U' F R2 F' U R2 | R' F' U2 R U R' F U F' R | F R2 F' U' R2 U' R' U R2 | F R U' F R F2 U' R' U' R
-case CLL L 4 |  | F' U' R U' R' F2 U R U R' | R' U2 R U F2 U R U' F2 | R U F2 R' F' U R' F' U R' | R F R2 U' F' R U' R' F R' | F' U2 F U R2 U R U' R2
-case CLL L 5 |  | R U F' U F R U' R2 U R | R' U' R2 U R' F' U' F U' R' | R' U' F R' F' R' U R2 U' R' | R U R2 U' R F R F' U R | F U' R' U R U F' U R' U R
-case CLL L 6 |  | R' U R' U R' U2 R U' R U' R | R U' R U' R U2 R' U R' U R' | R U' F R' U R' U' R F' U R' | R U' F R' U R U' R F' U R' | R2 U R' U2 R U2 R' U R2
+source speedcubedb
+group AS
+case CLL AS 1 |  | R' U' R U' R' U2 R | y R U2 R' U' R U' R' | y2 L' U' L U' L' U2 L | U2 L' U' L U' L' U2 L
+case CLL AS 2 |  | R U2 R' F R' F' R U' R U' R' | y2 R' U R U' R2 F R F' R U R' U' R | L' U' L U' L F' L' F L' U2 L | y' R' U' R U' R' U R' F R F' U R
+case CLL AS 3 |  | y2 F' L F L' U2 L' U2 L | y2 F' R U R' U2 R' F2 R | y R' F R F' R U2 R' U' R' F R F'
+case CLL AS 4 |  | U2 L' U R U' L U R' | y2 R' F R F' R U R' | y2 L' U L F' R U R' | x' R' F R U' R U R' | R' U L U' R U L'
+case CLL AS 5 |  | y2 R U2 R' U2 R' F R F' | L U2 L' U2 x' L' U L U' | x' R U2 R' F2 R' F R U' | y' z F R2 F' R' U' R' U z' y' R U' R'
+case CLL AS 6 |  | R2 F' U' R2 F' R2 U F R2 | y' R U2 R' U' R U' R' F R' F' R U R U' R' U' | R2 F R U2 R U' R' U2 F' R | y R U R2 F' R F R U' R2 F R
 group H
-case CLL H 1 |  | R2 U2 R' U2 R2 | R2 U2 R U2 R2 | F2 U2 F' U2 F2 | F2 U2 F U2 F2 | R2 U' R U R' U R' U' R'
-case CLL H 2 |  | R U' R U2 R' U R' F R' F' | F' U2 F R' U R' U' R U' R | F R2 F' R U' R U R' U R' | R' U R' U2 R U' R F' U F | F R U R' U' R F' U' R' U' R
-case CLL H 3 |  | R U R' U R U R' F R' F' R | R' U' R U' R' U' R F' U F R' | R U' R' F U2 R2 F R U' R | R' U R F' R2 U2 F' R' U R' | R' F' R U' R' F' R F' R U R'
-case CLL H 4 |  | R2 F' U2 F2 R2 F' R2 | R2 F R2 F2 U2 F R2 | R2 F' R2 F2 U2 F' R2 | R2 F U2 F2 R2 F R2 | F2 R' F2 R2 U2 R' F2
+case CLL H 1 |  | F R2 U' R2 U' R2 U R2 F' | F R U' R' U R U2 R' U' R U R' U' F' | y' R' U2 R y R' U R' U' R U' R | y2 F R U R' U' R F' R U R' U' R'
+case CLL H 2 |  | R U R' U R U R' F R' F' R | y2 R' F' R U' R' F' R F' R U R' | R U R' U R U L' U R' U' L | y R U' R' F U2 R2 F R U' R
+case CLL H 3 |  | R U' R' F R' F' R2 U' R' F R' F' R | y F R U R' U' R U R' U' R U R' U' F' | y x' U2 R U2 R2 F2 R U2 x | R2 F' U2 F2 R2 F' R2
+case CLL H 4 |  | R U R' U R U' R' U R U2 R' | y R2 U2 R' U2 R2 | y R2 U2 R U2 R2 | y' R U2 R' U' R U R' U' R U' R'
+group L
+case CLL L 1 |  | R' F' R U R' U' R' F R2 U' R' U2 R | y R U2 R' F' R U2 R' U R' F2 R | y R' U' R U2 R' F R' F' R U' R | U' R U R' U R' F R F' U2 R' F R F'
+case CLL L 2 |  | R U' R' U R U' R' F R' F' R2 U R' | y2 R U2 R2 F2 R U R' F2 R F' | R' U2 R' U' F R2 F' U R2 | y2 R' F2 R2 U2 R' U R' F2 R F'
+case CLL L 3 |  | y2 R' U R' U2 R U' R' U R U' R2 | y2 R2 U' R U2 R' U2 R U' R2 | y' R U R' U R U' R' U R U' R' U R U2 R' | y R U' R U' R U2 R' U R' U R'
+case CLL L 4 |  | R U2 R' F R' F' R2 U2 R' | y R U2 R2 F R F' R U2 R' | y2 R U R' L' U2 R U R' U2 L | y' R' U' R U R' F' R U R' U' R' F R2
+case CLL L 5 |  | y F R' F' R U R U' R' | y F R' F' U' R' U R | y F' U R U' R' F2 R U' R' | y' R' F' L' F R F' L F
+case CLL L 6 |  | R U R U' R' F R' F' | y2 F' R U R' U' R' F R | y F R U' R' U' R U R' F' | y R' F R U F U' F'
+group Pi
+case CLL Pi 1 |  | R' F2 R F' U2 R U' R' U' F | y F R' F' R U2 R U' R' U R U2 R' | U F U R U' R' U R U' R2 F' R U R U' R' | y2 L' U2 L U L' U' L U2 L F' L' F
+case CLL Pi 2 |  | R U2 R' U' R U R' U2 R' F R F' | y F' R U R' U2 R' F R U' R' F2 R | R U R' U' R' F R2 U R' U' R U R' U' F' | R2 U' R' U' F R2 U2 F' R2 F
+case CLL Pi 3 |  | U' R' F R U F U' R U R' U' F' | y F R2 U' R2 U R2 U R2 F' | y' R U' R U' R' U R' F R2 F' | y2 F R' F' R U2 F R' F' R2 U2 R'
+case CLL Pi 4 |  | R U' R' F R' F R U R' F R | y2 R' F R F' R U' R' U' R U' R' | R U' R' F L' U L U L' U L | y' R U' R2 D' R U R' D R2 U R'
+case CLL Pi 5 |  | R2 U R' U' F R F' R U' R2 | y' R' U' R' F R F' R U' R' U2 R | U' R' U' R' F R F' R U' R' U2 R | y' R U R' U R' F R F' R U' R' U R U2 R'
+case CLL Pi 6 |  | F R U R' U' R U R' U' F' | R U' R2 U R2 U R2 U' R | R' U R2 U' R2 U' R2 U R' | R U2 R2 U' R2 U' R2 U2 R
+group Sune
+case CLL Sune 1 |  | L' U2 L U2 L F' L' F | y2 R' U2 R U2 R B' R' B | R' F2 R U2 R U' R' F | R' F2 R U2 L F' L' F
+case CLL Sune 2 |  | R U R' U' R' F R F' R U R' U R U2 R' | R U2 R' F R U2 R' U R U' R' F | y2 R U' R U' R' U R' U' y R U' R' | R2 F' U' R2 F R2 U F R2
+case CLL Sune 3 |  | R U' R' F R' F' R | R U' R' F L' U' L | L F' L' F L' U' L | R U' L' U R' U' L
+case CLL Sune 4 |  | F R' F' R U2 R U2 R' | y2 x' U R' F' R F2 R U2 R' | y R U' R' F R' F2 R U R U' R' F | y' x' R U' R' U R' F2 R F R U' R' U x
+case CLL Sune 5 |  | U2 R U R' U R' F R F' R U2 R' | y2 R U R' U R' F R F' R U2 R' | R U R' U' R' F R F' R U' R' F R' F' R | y' R' F R2 F' U' R' U' R2 U R'
+case CLL Sune 6 |  | R U R' U R U2 R' | R U R2 U' R2 U R | y' R' U2 R U R' U R | y L' U2 L U L' U L
+group T
+case CLL T 1 |  | U' x L U R' U' L' U R U' x' | y' R U R' U' R' F R F' | y2 R' U' R U F R F' | y R B R' U' R' U R F' z
+case CLL T 2 |  | R U R' U' y L' U' L | y L' U' L U L F' L' F | y R' F' R U R U' R' F | y' F R U' R' U R U R' F'
+case CLL T 3 |  | F U' R U2 R' U' F2 R U R' | y R U2 R2 F R F' R U' R' U R U2 R' | y2 R U F R' F' R U2 R U2 R2 | y' R U' B U2 B' U' R2 F R F'
+case CLL T 4 |  | R' U R U2 R2 F' R U' R' F2 R2 | y R' U R' F U' R U F2 R2 | y2 R' U R' U2 R U2 R' U R2 U' R' | y' R U R' U R U2 R' L' U' L U' L' U2 L U
+case CLL T 5 |  | y2 F R U R' U' R U' R' U' R U R' F' | y' R U R' U' R U' R' F' U' F R U R' | y R U R' U2 R U R' U R' F R F' | y R2 F' R U' R' F2 R F R' F' R2
+case CLL T 6 |  | R' U R U2 R2 F R F' R | U2 y z R U R' U' R' F R2 U' R' U' R U R' F' | y2 R U' R' U2 L2 F' L' U L' | y2 R' F R U2 R2 F R U' R
+group U
+case CLL U 1 |  | R' F' U' F U R | y' F R U R' U' F' | y F U R U' R' F' | y' R' U' F R' F' R U R
+case CLL U 2 |  | R' U' R2 U R' U2 R U2 R' U R' | y' R2 F2 R U R' F R2 U2 R' U' R | R' F U' R U' R' U2 F2 R | y2 R2 F2 R U R' F U' R U R2
+case CLL U 3 |  | R' F R U' R' U' R U R' F' R U R' U' R' F R F' R | y2 F R U R' U2 F' R U' R' F | y' R U2 R U' R' F R' F2 U' F | y' z' U2 R' U' R2 U' R' U' R U' R' U' x2
+case CLL U 4 |  | F R U' R' U R U R' U R U' R' F' | y' F R' F' R U' R U' R' U2 R U' R' | y F' R U R' U' R' F R2 U R' U R U2 R' | R2 F R F' R' F2 R U R' F R2
+case CLL U 5 |  | R U' R2 F R F' R U R' U' R U R' | y2 R U2 R' U R' F2 R F' R' F2 R | R2 D' R U2 R' D R U2 R | y2 R2 U R2 F' R U R U' R' F R U' R2
+case CLL U 6 |  | R' U R' F R F' R U2 R' U R | L' U L2 F' L' F L' U' L U L' U' L | R' F R2 U' R' F R' F' R U R' F' R | y' R' U' R2 U' R' U2 R B' R2 F z'
 
 set 2x2-eg1
 name EG-1
 method EG
 before face:D
 after all
-turn U D
+turn U D y
 show all
 view top
-source generated
-group Solved
-case EG-1 Solved 1 |  | R U' F U2 F' U R' | F' U R' U2 R U' F | R' F U' R2 U F' R | R F' R F2 R' U F' | F U' R F2 R' F R'
-case EG-1 Solved 2 |  | R2 U' R2 U2 F2 U' R2 | R2 U F2 U2 R2 U R2 | F2 U' F2 U2 R2 U' R2 | R2 U R2 U2 F2 U F2 | F2 U R2 U2 F2 U R2
-case EG-1 Solved 3 |  | R U' R F U R' U2 R F R2 | R2 F' R' U2 R U' F' R' U R' | R U' R F U2 F U R2 U' R | R' U R2 U' F' U2 F' R' U R' | R U2 R F U' F U R U' R2
-group Sune
-case EG-1 Sune 1 |  | R' F U2 R2 F R' | F' U R2 F2 U R' | R' U F2 R2 U F' | F' R F2 U2 R F' | R U2 R2 F' U2 F R'
-case EG-1 Sune 2 |  | R U F' U R' U' R2 U' R | R2 F U' F U' R U' R2 | R2 F U' R U' R U' F2 | R2 U' R U' F R' F R2 | R U' R2 U' R' U F' R F
-case EG-1 Sune 3 |  | F' U R' U2 R' F2 U R' | R' F U' R2 U' R2 F R' | F' R U R U F2 R' U R | R U R' F2 U F R U R' | R' U F2 R' F2 R' F R'
-case EG-1 Sune 4 |  | R2 F' U' F U' R U' R2 | R2 F' U' R U' R U' F2 | F2 R' F' U R' F U' R2 | R' U2 R F2 U' R F2 R | F R' F' R2 U2 R U' R2
-case EG-1 Sune 5 |  | R2 U' R U' F R' F' R2 | F2 U' R F' U R' F' R2 | F2 U' F U' R U' R' F2 | R2 U' F U' F U' R' F2 | R2 U' R' F U2 R2 U F
-case EG-1 Sune 6 |  | R' U R' U' F' R U R' F R' | F' U R U' R' U F R U R' | F' U F' U' R' U R F' U R' | R' U F R' U R F R U' F' | F' U R U' F R U R F' R'
-group Antisune
-case EG-1 Antisune 1 |  | R F' R2 U2 F' R | R U' F2 R2 U' F | F U' R2 F2 U' R | F R' U2 F2 R' F | R F' U2 F R2 U2 R'
-case EG-1 Antisune 2 |  | R' U R2 U R U' F U' R' | R2 U R' U F' U F' R2 | F2 U R' U R' U F' R2 | R2 F' R F' U R' U R2 | F' R' F U' R U R2 U R'
-case EG-1 Antisune 3 |  | R U' F2 R U2 R U' F | R F' R2 U R2 U F' R | R' U' R F2 U' R' U' R' F | R U' R' F' U' F2 R U' R' | R F' R F2 R F2 U' R
-case EG-1 Antisune 4 |  | R2 U R' U F' U F R2 | F2 U R' U R' U F R2 | R2 U F' R U' F R F2 | R' F2 R' U F2 R' U2 R | R2 U R' U2 R2 F R F'
-case EG-1 Antisune 5 |  | R2 F R F' U R' U R2 | R2 F R U' F R' U F2 | F2 R U R' U F' U F2 | F2 R U F' U F' U R2 | F' U' R2 U2 F' R U R2
-case EG-1 Antisune 6 |  | R F' R U' R' F U R U' R | R U' R' F' U' R U R' U' F | R U' F R' U' R U F U' F | F U R' F' R' U' R F' U' R | R F R' U' R' F' U R' U' F
-group Pi
-case EG-1 Pi 1 |  | R U' R2 F R2 U' R' | R U R2 F' R2 U R' | F' R' U2 F R2 U' R | R' U R2 F' U2 R F | R' F' R2 U R2 F' R
-case EG-1 Pi 2 |  | R' U R' U F2 R' U' R' | R U' R U' F2 R F R | R F' U R' F2 U R F | R' F R' U R2 F' U' F' | F R' F U' F2 R U R
-case EG-1 Pi 3 |  | R2 U' R F' U' F U' R | R2 U R' F R F' U R' | R' F R' F' U R' U2 R' | R2 U F' U R U' R F' | R F' U F U' R U2 R
-case EG-1 Pi 4 |  | R U R U F' R U' R F' | F R' U R' F U' R' U' R' | R' F' R' U' R U' F U' R | R' U F' U R' U R F R | F' R' U' R' U F' R U' F
-case EG-1 Pi 5 |  | F' U2 R U' R' F' R F' R' | R' U2 F R' F' R' F U' R' | F' R2 U R' F' U' R U' F' | R' F2 U R' F' R' U R' F' | R' U' F U' R' F' U F2 R'
-case EG-1 Pi 6 |  | R F R' F R U R' U2 F | R U F' R F R F' U2 R | F U R' U F R U' R2 F | F R U' R F R U' F2 R | R F2 U' F R U F' U R
-group U
-case EG-1 U 1 |  | R U2 R U2 R U R2 | R2 U' R' U2 R' U2 R' | R2 U R U2 R U2 R | R' U2 R' U2 R' U' R2 | R2 U R U R' U R U' R
-case EG-1 U 2 |  | R' U2 F R2 F' U2 R | R U2 F' U2 F U2 R' | F' R2 U R2 U' F2 R | R' F2 U R2 U' R2 F | F' U2 R U2 R' U2 F
-case EG-1 U 3 |  | R' U R2 U R F R' U' R' | R' U F R2 F' R U2 R | R2 U' R U2 R F R F' | F R' F' U R2 U R' U R' | R F' U' R U2 R U' F R'
-case EG-1 U 4 |  | R U' F' U2 F R' U2 R' | F2 R' U' R' U2 R' U F | R2 F' R' U' R2 U' F R | F2 U R' U2 R' U' R' F | F R2 U' R U F2 U' R
-case EG-1 U 5 |  | R' F U' R' U2 R' F U' R | R U' R' F R U' R2 F R | F' U R' U' R2 U' R U' F | R2 F' U F U' F R' U' R' | F2 R' F R U' R U' F' R'
-case EG-1 U 6 |  | R U2 R U2 R U F2 R2 | R' U' F U R' U F U F R' | F U R' U' F U' R' U' R' F | R' U2 R' U2 R' U' F2 R2 | R U F' R' F R' F' R' U' R
-group T
-case EG-1 T 1 |  | R' U' R2 U F' R2 U R' | R U' R2 F U' R2 U R | R U R2 U' F U2 R' F | F' R U2 F' U R2 U' R' | F' U' F2 U R' U2 F R'
-case EG-1 T 2 |  | R' U R' U F U' F U' R' | R U F' U F' U' R U' R | R' F' U R' F U R' U R' | R U' R U' F' R U' F R | R F R' U R' F' U R' F
-case EG-1 T 3 |  | R U' F' U2 F' R' U2 R' | F2 R U' R' U2 R' U F | R2 F R' U' R2 U' F R | R F U' R F2 U R' U' R' | F2 R U' F' R2 F' U R
-case EG-1 T 4 |  | R' U F' R U2 R U F' R | R' F' R2 U R' F' R U R' | F' U R' U R2 U R U' F | R U R F' U F' U' F R2 | R F U R' U R' F' R F2
-case EG-1 T 5 |  | R' U' R F' U2 R' U R F | F2 R' F R U2 R F' R' | R2 F' U F U2 F U' R' | R2 F' U R F2 R U' F' | R' U F R2 F R F2 R
-case EG-1 T 6 |  | R2 F2 U' R' U2 R' U2 R' | R F' U' F' U' R U' F' U R | F' R U R U F' U R U' F' | R2 F2 U R U2 R U2 R | R' U R F R F' R F U' R'
-group L
-case EG-1 L 1 |  | R U R F' R' U' R2 U' R | R' U2 R' F R2 F' U' R | F R' F' R' U2 R' U R2 | R U' R U' R2 U' F R F' | R F' U R' U2 R' U F R'
-case EG-1 L 2 |  | R U2 R F U2 F U R' | F' U' R U2 R U R' F2 | R' F' U R2 U R F' R2 | R U R U' F2 R' U F' R' | R' U' F R2 F U R' F2
-case EG-1 L 3 |  | R U2 R F' U2 F U R' | F' U' R U2 R U R F2 | R' F' U R2 U R F R2 | F' R U R U2 R U' F2 | R' U F2 U' R' U R2 F'
-case EG-1 L 4 |  | R' U R' U R2 U' R U2 R' | R U2 R' U R2 U' R U' R | R' U2 R U' R2 U R' U R' | R U' R U' R2 U R' U2 R | R' F U' R U F2 R' U' R2
-case EG-1 L 5 |  | F' R' U' R U2 F R' U R | R F R' U2 R' F' R F2 | R U F' U2 F' U' F R2 | F U R' F2 R' U' F R2 | R' F2 R' F' R2 F' U' R
-case EG-1 L 6 |  | R U' R U R' U2 F' R U' R | R' U R' F U2 R U' R' U R' | R' F U' R' U F2 R' U' R2 | R2 U R F2 U' R U F' R | R U2 R' F R U' R2 F' R
+source speedcubedb
+group AS
+case EG1 AS 1 |  | y R' F R2 U R' F' U' R U' R' | y U2 B U' R2 F2 U' F | y U' L' U' L U' F' L' U L2 F L' | y L' U L2 F L' F' U' L F' L'
+case EG1 AS 2 |  | U R U' R' F' U' F2 R U' R' | U2 L' U' L F2 U' F' L' U' L | R U' F2 R U2 R U' F | F R U' R' U R' F' R U F' R U R' U
+case EG1 AS 3 |  | F' R U R' U' R U R2 F' R | U' R U' R' U2 R' F R2 U2 R' F | F' L F L' U' L F L2 U' L | F' L F L' U' R U R' L' U' L
+case EG1 AS 4 |  | R U' R' F' U' R U R' U' F | U F R U' R2 F' R U F' R U R' | U' R' F R F' U R U' R2 F' R F | U2 F U' L' U L U' F' L' U' L
+case EG1 AS 5 |  | y' R U R' F' U' R U R' U' R U R' | y' U2 L' U L U' L' U L U L F L' F' | y' U2 R' F R U' R' F R U R U R' F'
+case EG1 AS 6 |  | y2 R U' R2 F R U' R' F R F' | y2 L F' L2 U L U' L' U L F'
 group H
-case EG-1 H 1 |  | R U R F2 U' R U' R | R' F' R' F2 U R' U R' | F' R' U' F2 R U' F R' | F U F R2 U' R F' R | R' U' R' F2 U F' R F'
-case EG-1 H 2 |  | R' U R' F U R' U2 R' | R U2 R U' F' R U' R | R F' U F' U' R U2 R | R' U2 R' U F U' F R' | R U' R F' R' F R2 F
-case EG-1 H 3 |  | R' U F' U F R' U R2 | R U' F R' F' R U' R2 | R U2 R U' F R F' R | F R' U R' U' F U' R2 | R' U2 R' U F' U' F R'
-case EG-1 H 4 |  | R U F2 U' R U2 F' U R | R' U' F U2 R' U F2 U' R' | F' U' R2 U F' U2 R U' F' | F U R' U2 F U' R2 U F | R U F' R2 U F' U2 F R
+case EG1 H 1 |  | U' R' F R2 U' R' F R U R' F' | U' R' F R2 U' R2 U' F U R | F' R' F R F R' F' R2 U R' | U R U' R2 F R F' R' F' R F
+case EG1 H 2 |  | U' F' U R U' R2 F2 R U' F | y' R2 U' R U' R' U R' U' R U' R2 | F R U' R2 F U' F2 U R | y' R2 U2 R U' R2 U R2 U' R2 U R2 U R2
+case EG1 H 3 |  | U R' F R F' U2 F R U2 R' F | R' U' R' F2 U F' R F' | U R U' R' F U2 x U' R' U2 R U' | U' F U2 R U' R' F2 R' F2 R F'
+case EG1 H 4 |  | U' R U R' F' R U R' U' R U R' U' | F' U R' F R F' U F2 | U' R U R' F' R U R' U' R U R' | R' F R F' R' F R U' R' F R F'
+group L
+case EG1 L 1 |  | y R U' R' U R U' R2 F' R F | y U R U R' F' R U2 R' U2 R U R' | y U F R U' R' F' R U R' F' R U R'
+case EG1 L 2 |  | y' U' R' F R U' R' F R2 U R' F' U2 | y' U' R' F R U' R' F R2 U R' F' | y' U2 x R' U' R U' R' U' R U' R' U2 R | y' U' L' U L U' L' U L2 F L' F'
+case EG1 L 3 |  | y R' U R2 U' R2 U' F R2 U' R'
+case EG1 L 4 |  | y R' F R2 U R' F' R U2 R' | y R U2 R' F R U' R2 F' R
+case EG1 L 5 |  | y2 R U R' F' R U R' U' F R' F' R | y2 U' R U R' F' U R U R' U' R U R' U' | y2 U F' R' F R U' R U R' U' R U R' U' | y2 L' U L y' R U2 R U' R2
+case EG1 L 6 |  | y2 R' U2 F R U2 R U' R2 F | y2 U' L' U' L F L' U' L U F' L F L' | y2 U2 F R U' R' U R' F' R U R' F' R | y2 R' F' R F U' R' F' R U R' F' R
+group Pi
+case EG1 Pi 1 |  | U' R U' R2 F R2 U' R F2 R2 U' | y2 U' F U' R' F R U' F2 R U R' | y2 F2 R U R' U2 R U R' U' F | y2 R2 B2 R' U R' U' R U2 R U' R2
+case EG1 Pi 2 |  | y' R U' R2 F R2 U' R' | y' R U R2 F' R2 U R' | y' R' F R2 U' R2 F R | y R' U R L U' L' R' U R
+case EG1 Pi 3 |  | y' F R' F U' F2 R U R | y' F' R U2 R' F' U2 F R' F' R
+case EG1 Pi 4 |  | y' R U' R' U R U' R' F R U' R' | y' F' R U R' U' R U R' F' R U R'
+case EG1 Pi 5 |  | R U' R2 F R U R U' R' U' R' F R F' | U' R U R' U R U' R2 F' R F R' F' R | R' U' R' F2 U' R U2 F2 R | U' L F' L' F L F' L2 U' L U L' U L U'
+case EG1 Pi 6 |  | U' R' F' R U' R' F R2 U R' F' R U R' | U' R' F R F' R' F R2 U R' U' R U' R' | F R U' R' F R U2 R' U F' | U' F R' F' R U R U R' U' R' F' R2 U R'
+group S
+case EG1 S 1 |  | y2 U' L F' L2 U' L F U L' U L | y2 R U R' U F R U' R2 F' R | y2 U F' R B2 U2 R F' R2 | y U R' F R2 F' R2 U2 R U2
+case EG1 S 2 |  | R U R' F2 U F R U R' | U F R' F' R F R U' R' U R' F' R | U R' F R F U F2 R' F R
+case EG1 S 3 |  | y2 F R' F' R U R' F' R2 U R' | y2 F L' U' L U L' U' L R U R' | y2 U R' F R U2 R U' R2 F2 R F'
+case EG1 S 4 |  | U F' R' F R2 U R' U' F R' F' R U | U F' R' F R2 U R' U' F R' F' R | F' U R U' R' U F R U R'
+case EG1 S 5 |  | y R U' R' U R U' R' U F R U' R' | y U2 R2 F U' R U' R U' B2 U2 | y U2 L' U' L F U L' U' L U L' U' L | y U2 R2 F U' R U' R U' F2
+case EG1 S 6 |  | R' F R2 U' R' U R U' R' F | L' U L2 F' L' U L F' L' F | R' F R2 U' R' U L F' L' F
+group T
+case EG1 T 1 |  | F R U' R2 F' R U R' F' R | F L F' L2 U' L U L' U' L | U R2 U R U' R2 F R U2 R' F | U2 R U2 R' U' R' F' R F R' F' R
+case EG1 T 2 |  | F' R' F R2 U R' U' R U R' | U2 R U2 R' F R U' R' F' R U R' | U2 R U' R' F R U' R' F R U R' F'
+case EG1 T 3 |  | y R U' R2 F R U R U2 R' | y R U2 R' U' R' F' R2 U R' | y U2 R' F R2 U' R' U' R' F2 R | y U2 L' U L2 F' L' U' L' U2 L U2
+case EG1 T 4 |  | y' U2 R' F R F' U R U' R' U F R U' R' | y' U' R' U F R2 U' R2 U' F U' R | y' R2 B2 U' R' U' R U' R' U R'
+case EG1 T 5 |  | y' R' F' R2 U R' F' R U R' | y' U2 R U R2 F' R F R' F' R | y' U2 R U R2 F' R F R' F' R U2
+case EG1 T 6 |  | y' U' R U' R' U2 F R U2 R' F | y' U R' U' R U F2 U' F2 R U R | y' R U R' F R U R' F U' R U' R'
+group U
+case EG1 U 1 |  | y U2 R U R' U R U' R2 F' R2 U R' U | y U2 R U R' U R U R2 F R2 U' R' | y U2 R U' R2 F R2 U R' U' R U' R' U | y U2 R U R2 F' R2 U' R' U' R U' R'
+case EG1 U 2 |  | U2 y R' U R' U' R U' R' U' F2 R2 | U' R U R' F' U' R U R' U' F R' F' R | U' F R2 B R2 F U F2 R2 | U' F R U' R' F x F' L' U' L' U
+case EG1 U 3 |  | F' U2 R U2 R' U2 F | U2 R U' R2 F2 R F' U R U R' | U y' R U R' F R2 F' R U' R' | R U R' U F' R U R' U' R U R2 F2 R
+case EG1 U 4 |  | y R' F R F' R' F R2 U' R' | y U2 R U' R' F R U' R2 F R | y U2 L F' L' F L F' L2 U L
+case EG1 U 5 |  | U2 R U' R' U R U' R' U' F R U' R' | U R' F R F' U R U' R' F R U' R' | U2 L F' L' U L F' L' U L' U' L F | F U' R' F2 R F' U2 F'
+case EG1 U 6 |  | y2 R' F R U' R' F R U' R U R' F' U2 | y2 R' F R2 U' R' U y' R U R' | y2 U L F' L' F U' L' U L F' L' U L | y2 U2 F' U L F2 L' F U2 F
 
 set 2x2-eg2
 name EG-2
 method EG
 before face:D
 after all
-turn U D
+turn U D y
 show all
 view top
-source generated
-group Solved
-case EG-2 Solved 1 |  | R2 F2 R2 | F2 R2 F2 | R' U R F U2 F' R' U' R | R U' F' U' R2 U F U R' | R' F U R U2 R' F' U' R
-case EG-2 Solved 2 |  | R U' R F2 R' U R' | F' R U' R2 U R' F | R' U R' F2 R F' R | R' F R' F2 R U' R | R F' U F2 U' F R'
-case EG-2 Solved 3 |  | F R' U2 R' U' R' F U2 R U' R | R' U R' U2 F' R U R U2 R F' | F2 U' R U R F2 R U' R' U R' | R U' R U R' F2 R' U' R' U F2 | F R' U' R' U2 R' F U R' U R2
-group Sune
-case EG-2 Sune 1 |  | R U2 R' F2 R' U R' F | F R2 F' R2 F' R U' R | F R' F R' F2 R' U2 R | R U' R F' U2 F' R2 F | R F2 R' U2 R' F U' F
-case EG-2 Sune 2 |  | R2 F U2 R' U' R U F | R2 F' U2 R U' R U F | R2 F U' R U R' U' R' F | R2 F U2 R' U' F R F | R2 F' U2 R U' F R F
-case EG-2 Sune 3 |  | F' R U' R F2 U' R U' R' | F' R' U R' U2 F R' U R' | R' U R' F R2 U' F R' F' | R' U' R U' F2 R F' R F' | R' F R' F R2 U' F U' F'
-case EG-2 Sune 4 |  | R U' R' F' U R U' R F2 | R U F U' F U2 R' F2 | R U F U' F' U2 R F2 | R F R U' F U2 R' F2 | R F R U' F' U2 R F2
-case EG-2 Sune 5 |  | R U R' U R U2 R F2 R2 | R2 F2 R' U R' U R U2 R' | R2 F2 R U2 R U R' U R | R' U2 R U R' U R' F2 R2 | R' U R U2 R' F2 U F U' R
-case EG-2 Sune 6 |  | F U' R2 F U R' U R F R | R U' F2 R F U' R U R F | F R' U2 F U F' U R U R | R U R U F' R U F2 R' F | F U F U R' U R U2 F' R
-group Antisune
-case EG-2 Antisune 1 |  | F' R U' R F2 R U2 R' | R' U R' F R2 F R2 F' | R' U2 R F2 R F' R F' | F' R2 F U2 F R' U R' | F' U F' R U2 R F2 R'
-case EG-2 Antisune 2 |  | F' U' R' U R U2 F' R2 | F' U' R' U R' U2 F R2 | F' R U R U' R' U F' R2 | F' R' F' U R U2 F' R2 | F' R' F' U R' U2 F R2
-case EG-2 Antisune 3 |  | R U R' U F2 R' U R' F | R U' R F' U2 R U' R F | F R F' U R2 F' R U' R | F R' F R' F2 U R' U R | F U F' U R2 F' R F' R
-case EG-2 Antisune 4 |  | F2 R' U R' U' F R U R' | F2 R U2 F' U F' U' R' | F2 R' U2 F U F' U' R' | F2 R U2 F' U R' F' R' | F2 R' U2 F U R' F' R'
-case EG-2 Antisune 5 |  | R2 F2 R' U2 R' U' R U' R' | R U2 R' U' R U' R F2 R2 | R' U' R U' R' U2 R' F2 R2 | R2 F2 R U' R U' R' U2 R | R' U F' U' F2 R U2 R' U' R
-case EG-2 Antisune 6 |  | R' F' R' U' R U' F' R2 U F' | F' R' U' R' U F' R' F2 U R' | R' U' R' U' F U' F' U2 R F' | F' R F2 U' R' F U' R' U' R' | R' F U2 R' U' R U' F' U' F'
-group Pi
-case EG-2 Pi 1 |  | R' U F' R U R' U2 F2 R | R' F U' R U R' F2 U2 R | R U' R' U R F' R U F2 R' | R' U R U' R' F U' F' U2 R | R U' F U' F' R F2 U2 R'
-case EG-2 Pi 2 |  | R' F' R' U' R' U F' R U2 R | R U R U F R' F R' U2 R' | R' F' U R' F U' R U R U' R | R U F' U' R U' R F R U' R' | R U F' U F' U R' U' R' U R'
-case EG-2 Pi 3 |  | F R U' R U R' U2 R' U F' | F U' R U2 R U' R' U R' F' | F U R' U R U' R2 U' R F' | F R' U R2 U R' U' R U' F' | R F' R U2 R U' F' R F' R'
-case EG-2 Pi 4 |  | R' U F' U' R U R' U2 F R | R U R F2 R2 U' R U2 R' | R U R' U R2 F2 R' U2 R' | R U F2 R' F U R' F' U R' | R' F U' F' R U R' F2 U R
-case EG-2 Pi 5 |  | R' F' U2 R U' R' U F U' R | R U2 R' U R2 F2 R' U' R' | R U2 R F2 R2 U' R U' R' | R U' F R U' F' R F2 U' R' | R' U' F2 R U' R' F U F' R
-case EG-2 Pi 6 |  | R U2 R2 U R' F2 R2 F' | F R2 F2 R U' R2 U2 R' | R U2 R2 U R F2 R2 F | F' R2 F2 R' U' R2 U2 R' | F R2 F2 R U R2 U2 R
-group U
-case EG-2 U 1 |  | R' U' F' R U2 R' F U R | R' F' U' R U2 R' U F R | R U F U' F2 U R' F' R' | R F R U' F2 U F' U' R' | F' R' F' U R2 U' R U F
-case EG-2 U 2 |  | R U F R' F' R F2 R2 | R F R F' U' R F2 R2 | F U R U' R' F R2 F2 | F R U R' U' F R2 F2 | R' F' U' F U R' F2 R2
-case EG-2 U 3 |  | F R2 U' F' R' U F' U R | R F2 U' F' R' F R' U F | F U2 R' F' R' F U' F R | R U2 F' U' F' R F' R F | R2 F R' U' R F U R' U R'
-case EG-2 U 4 |  | R' U2 F R F R' U R' F' | R' F2 U R F U' R U' F' | F' U2 R U R F' R F' R' | F' R2 U R F R' F U' R' | R' F R' U' R' U R F' U2 R
-case EG-2 U 5 |  | F R' U R U2 F' U R' U R | R U' F R F2 U' R U' R F | F U' R U R2 F' U R' F R | F' R F' U' R2 F U' R U' R' | F R U' R U' R' U2 R2 U' F'
-case EG-2 U 6 |  | F U' R' U R' F U R' U R2 | R2 U' R U' F' R U' R U F' | R' U R' F U' R U' R' U2 R2 | R2 U2 R U R' U F' R U' R | R' U R' F U' R U' R U2 R2
-group T
-case EG-2 T 1 |  | R2 U' R' U F' R U' R | R' U R' F U' R U R2 | R2 U F R' F R' U R' | R U' R F' R F' U' R2 | R2 U R U' F U' F R'
-case EG-2 T 2 |  | R U2 R F2 R' U2 R' | R' F2 R' F2 R U2 R | R' U2 R' F2 R F2 R | R F2 R U2 R' F2 R' | F' U' R U F' U R F' R'
-case EG-2 T 3 |  | F U' R2 U' R' U R2 F' | F R' U2 R' U' R U2 F' | R U' F2 U' R' F U2 R' | R F' R2 F' R' U F2 R' | F R' U' R U R' U' R' U F'
-case EG-2 T 4 |  | R2 F2 R' F R F' U' R' | R2 F2 R' U F R' F' R' | F2 R2 F' R U R' U' F' | F2 R2 F' U R U' R' F' | R2 F2 R U' F' U F R
-case EG-2 T 5 |  | R' U F2 U F U' F2 R | R' F U2 F U F' U2 R | F' U R2 U F R' U2 F | F' R F2 R F U' R2 F | R' U' R U R' U F R' F R2
-case EG-2 T 6 |  | R' U' R U' F U2 R' U' R F' | F' R' U R' U F2 R' F' U R' | R' F' R U' F R2 U' R' U F' | R U R' U F' R2 U F R' F | F U R2 U2 R U R' U R' F'
-group L
-case EG-2 L 1 |  | F R2 U' R U R2 U F' | F U2 R' U R U2 R F' | R U2 F' R U F2 U R' | R F2 U' R F R2 F R' | F U' R U R U' R' U R F'
-case EG-2 L 2 |  | R' F2 U F' U' F2 U' R | R' U2 F U' F' U2 F' R | F' U2 R F' U' R2 U' F | F' R2 U F' R' F2 R' F | R2 F' R F' U' R U' R' U R
-case EG-2 L 3 |  | R' U' F U' R F U R2 F' | F' U' R F' R F U F2 R' | R' F' U F' R F R U2 F' | F' R' F R' F U F U2 R' | R U' R U' F' R' U R F' R2
-case EG-2 L 4 |  | F R U' R F' R' F' U2 R | F U R' U F' R' U' F2 R | R F R' F R' U' R' U2 F | R U F' R F' R' U' R2 F | R' U2 F R' U' R U R F' R
-case EG-2 L 5 |  | R U' R' U F2 R' U R' U F | F' U' R U' R F2 U' R U R' | R U' R F' R' F' U R2 U' R | R' U R2 U' F R F R' U R' | R' U R' F U R F' U2 F R'
-case EG-2 L 6 |  | R' U' F U' R U' R' U' F U' R | R' U F' U R U R' U F' U R | R F' R2 U R2 U' R2 F R' | F R' U R' U' R U' F R' F2 | F2 R F' U R' U R U' R F'
+source speedcubedb
+group AS
+case EG2 AS 1 |  | F R2 U R' U2 R U R2 U F' | U2 R' U2 R2 U' R' U R' F R F R2 | x U' R2 F R2 F' U R' U2 R' U x' | U2 F R2 U2 R' U R' U2 R U' F'
+case EG2 AS 2 |  | R' U' R U' R' U2 R' F2 R2 | y2 L' U' L U' L' U2 L' F2 R2 | U2 R' F' R U' R' F2 R' F2 R2 | y R U2 R' U' R U' R B2 R2
+case EG2 AS 3 |  | U2 R' F R F' R U R B2 R2 | U2 L' U R U' L U R B2 R2 | y2 L' U L F' R U R B2 R2 | U2 L' U L F2 L2 F R U R'
+case EG2 AS 4 |  | U2 F' L F L' U2 L' U2 L' B2 L2 | y' R' U R' F R2 F R2 F' | y2 F' R U R' U2 R' F2 R' F2 R2 | y' R' U L' U R2 U R2 U'
+case EG2 AS 5 |  | R' U' R U' R' U' R' F2 R F' R | y2 F R F' U R2 F' R U' R | y2 R U2 R' U2 R' F R F R2 F2
+case EG2 AS 6 |  | R2 F2 R U L U' R U L' | y2 R2 F2 R F R F' R U R' | y R U2 R' U' R U' R F2 R U R' F2 R F' R' F2 R2 | y2 L' U' L U L F' L' F L' U' L U' L' U2 L' B2 L2
 group H
-case EG-2 H 1 |  | R2 U2 R' U2 F2 R2 | R2 F2 U2 R U2 R2 | R2 U2 R U2 F2 R2 | R2 F2 U2 R' U2 R2 | F2 U2 F' U2 R2 F2
-case EG-2 H 2 |  | R' F2 U2 R U' R' F U' R | R' U2 F2 R U' R' U F' R | R F2 U' R' F R' U' R U R' | R' U2 F U F' R U R' U' R | R U2 F2 R' F U F' U R'
-case EG-2 H 3 |  | R' U2 R' F U' R U R F R | R U2 R F' R F' U' R' U' R' | R' U R' U' R' U F' R U' F R | R U R' F' R' U R' U F U' R' | R U' R U R U' F U' F U' R'
-case EG-2 H 4 |  | R' U R2 F' R U' F2 R F' | F R' F2 U R' F R2 U' R | R U' R2 F U' F U2 R' F | F' R U2 F' U F' R2 U R' | F' U F2 R' U R' U2 F R'
+case EG2 H 1 |  | R2 F U2 F2 R2 F' R2 | R U' R' F R' F' R2 U' R' F R' F' R' F2 R2 | U F R U R' U' R U R' U' R U R' U' F' R2 F2 R2 U' | y F2 R U2 R2 F2 R' F2
+case EG2 H 2 |  | U R2 U2 R' U2 F2 R2 | y R2 B2 U2 R' U2 R2 | y R2 U2 R U2 B2 R2 | y R2 U2 R U2 F2 R2
+case EG2 H 3 |  | R' U' R U2 R2 F' R U' F R | y R' U' F R U' R U R' U2 R' F | y2 R U R' U R U R' F R' F' R' F2 R2 | U2 R U R' U R U R' F R' F' R' F2 R2
+case EG2 H 4 |  | y' R U2 B2 R' U R U' B R' | y2 F R2 U' R2 U' R2 U R2 F R2 F2 | U2 F R2 U' R2 U' R2 U R2 F B2 R2 F2 R2 U2 | y R U' R' F U2 R2 F' R F' R
+group L
+case EG2 L 1 |  | U L2 B2 L U' L' U L F' L F | y R2 B2 R2 F R' F' R U R U' R' | y R' U' R' F' R U' R U' R' F R | y F R' F' R U R U' R' U' R' F R' F2 R U' R
+case EG2 L 2 |  | U2 F' R U R' U' R' F R U R' F R' F2 R U' R | y2 F2 R2 F R U R' U' R' F R | y2 R2 B2 R' U R U' R' F R' F' | y2 R2 F2 R2 F' R U R' U' R' F R
+case EG2 L 3 |  | U2 F' R U R' U' R' F2 R' F2 R U' R | y2 R2 U' R U2 R' U2 R U' F2 R2 | y R' U' F2 R U2 R' U2 F R | y2 R2 F2 R U R' U2 R U' R' U R U' R2
+case EG2 L 4 |  | y' R' U L' U2 R' F R U' R' U' F' x2 | y R U2 R2 F R F' R U2 R B2 R2 | y' R' U' R U R' F' R U R' U' R' F' R2
+case EG2 L 5 |  | y F R' F' R U R U' R B2 R2
+case EG2 L 6 |  | y2 F' R U R' U' R' F R' F2 R2 | R U R U' R' F R' F R2 B2 | y F R U' R' U' R U R' F R2 B2
+group Pi
+case EG2 Pi 1 |  | F U' R U2 R U' R' U R' F' | y' R' U' R' F R F' R U' R' U2 R' F2 R2 | y' F2 U' F2 R U2 R F2 U' R2 | R' F' U' F U' R U R' U R' F2 R2 U'
+case EG2 Pi 2 |  | R U2 R2 U R' F2 R2 F' | R U' R2 U R2 U R2 U' R' F2 R2 | R' U2 R2 U' R' F2 R2 F' | F R U R' U' R U R' U' F R2 B2
+case EG2 Pi 3 |  | U F R2 U' R2 U R2 U R2 F R2 F2 U2 | y2 R' F' U R' F R2 U2 R' U R | y' R U' R U' R' U R' F R2 F R2 F2 | y' R U' R U' R' U R' F R2 F' R2 F2 R2
+case EG2 Pi 4 |  | U R U' F U' F' R F2 U2 R' U | y2 R' F R F' R U' R' U' R U' R F2 R2 | R U' R' F L' U L U R' F R' F2 R2 | R U' R' F R' F R U R' F R' F2 R2 U2
+case EG2 Pi 5 |  | U' R' F' R' F2 R2 U R' U2 R U | y' R' F' R' F2 R2 U R' U2 R | U F U R U' R' U R U' R2 F' R U R U' R F2 R2 U' | y2 L' U2 L U L' U' L U2 L F' L' F' L2 B2
+case EG2 Pi 6 |  | U R' U2 R U' R2 F2 R F R U' | y R' U2 R U' R2 F2 R F R | R U2 R' U' R U R' U2 R' F R F' R2 F2 R2 | R U2 R' U' R U R' U2 R' F R F' R2 B2 R2
+group S
+case EG2 S 1 |  | R2 F2 R U R U' R' F R' F' R2 U R' U' R | y' R' F R2 F' U' R' U' R2 U R B2 R2 | y' R' F R2 F' U' R' U' R2 U R F2 R2 | y' R' F R2 F' R U2 R' U' F2 R2
+case EG2 S 2 |  | R U R' U R U2 R B2 R2 | y' R2 F2 R U2 R U R' U R | R2 B2 R' U R' U R U2 R' | y' R' U2 R U R' U R' F2 R2
+case EG2 S 3 |  | R U' R' F R' F' R' F2 R2 | R U' R' F2 R2 F' L' U' L
+case EG2 S 4 |  | F R' F' R U2 R U2 R B2 R2 | y F R2 F' R2 F' R U' R
+case EG2 S 5 |  | R' U R' F R2 U' F R' F' | y2 R' F R' F2 R U R U R' U R | R' U R' F R2 D' R U' R' | R' F2 R U2 R U' R' F R2 F2 R2
+case EG2 S 6 |  | R2 B2 R' U' R' F R' F' R | R2 B2 R' U' L' U R' U' L | y2 R U' R U' R' U R' U' F R' F' R2 B2 R2 | R U R' U' R' F R F' R U R' U R U2 R B2 R2
+group T
+case EG2 T 1 |  | y R' F' R U R U' R' F' R2 F2 | U R' F' R U R U' R' F' R2 B2 U | R U R' U' F' U' F' L2 B2 | y' F R F' R U R' U' R B2 R2
+case EG2 T 2 |  | U F R' U2 R' U' R U2 F' U | y' F U' R2 U' R' U R2 F' | y F R' U2 R' U' R U2 F' | y' R U R' U' R' F R F' R2 F2 R2
+case EG2 T 3 |  | R' U R U2 R2 F' R U' R | y R' U R' F U' R U R2 | R U2 R' U' R U' R2 U2 R U R' U R' F2 R2 U' | y2 R' U R' U2 R U2 R' U R2 U' R B2 R2
+case EG2 T 4 |  | R2 F2 R U' F R' F' R U R | U R U2 R2 F R F' R U' R' U R U2 R F2 R2 U | y2 R2 B2 R2 F R U R' U' F' | F2 R2 F U' R' F R F
+case EG2 T 5 |  | R' U R U2 R2 F R F' R' F2 R2 | y' R' U2 R U' R' F R' F R F' R | y R' F2 R U' R' U R' F R U' R
+case EG2 T 6 |  | U R' U2 R' F2 R F2 R U | y R' U2 R' F2 R F2 R | y z' U' R2 U' R2 U R2 U R2 z | U R' U' F R U2 R' U' F R
+group U
+case EG2 U 1 |  | R2 U2 R U R' U F' R U' R | y' F U' R U2 R U' R' U2 R' U' F' | y' R' U R' F U' R U' R U2 R2 | y' R' U R' F U' R U' R' U2 R2
+case EG2 U 2 |  | y F U R U' R' F R2 F2 | y' F R U R' U' F R2 B2 | U' F R U R' U' F R2 B2 U' | y' F R U R' U' F R2 F2
+case EG2 U 3 |  | R' F' U' R U2 R' U F R | y2 R' U' R U R' F2 R U' R' U R | R U R' U' R B2 R' U R U' R' | y' F R' F' R U' R U' R' U2 R U' R F2 R2
+case EG2 U 4 |  | R' F' U' F U2 L' U2 R U' L | y' R2 F2 R U R U2 R2 F R F' R | y' z' U2 R' U' R2 U' R' U' R U' R B2 R2 | F R U R' U' F R U R' U' F R U R F2 R2 U2
+case EG2 U 5 |  | U2 R2 B2 R' U R' U' R' F R F' U2 | y2 R2 B2 R' U R' U' R' F R F' | R' U R' F R F' R U2 R' U R' F2 R2 | R' F R2 U' R' F R' F' R U R' F' R' F2 R2
+case EG2 U 6 |  | R U' R2 F R F' R U R' U' R U R F2 R2 | y2 R2 F2 R F' R U L F' L' F | y2 R2 B2 R2 F R F' R U R' U' R' | U2 R2 F2 R F' R U R U' R' F U2

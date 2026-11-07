@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 use super::review::{Grade, Review};
-use crate::trainer::{AlgCase, AlgSet};
+use crate::trainer::{AlgCase, AlgSet, TrainerData, puzzles};
 
 /// How far along learning a case is.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -20,6 +20,7 @@ pub enum Status {
 
 impl Status {
     /// Returns the next status, going back to the first after the last.
+    #[must_use]
     pub const fn next(self) -> Self {
         match self {
             Self::NotStarted => Self::Learning,
@@ -28,6 +29,10 @@ impl Status {
         }
     }
 
+    #[allow(
+        clippy::trivially_copy_pass_by_ref,
+        reason = "serde's skip_serializing_if takes a reference"
+    )]
     const fn is_default(&self) -> bool {
         matches!(self, Self::NotStarted)
     }
@@ -171,6 +176,32 @@ impl LibraryData {
         });
     }
 
+    /// Takes on the trainer's algorithm for a case: `None` is its default,
+    /// which clears the choice. The trainer checks what it is given.
+    pub fn adopt(&mut self, set: &AlgSet, case: &AlgCase, algorithm: Option<&str>) {
+        match algorithm {
+            Some(algorithm) => self.add_custom(set, case, algorithm),
+            None => self.update(set.id, case.name, |entry| entry.favourite = None),
+        }
+    }
+
+    /// Picks up the algorithms chosen in the trainer, for cases with no choice
+    /// here yet.
+    pub fn adopt_trainer(&mut self, trainer: &TrainerData) {
+        for puzzle in puzzles() {
+            for &set in &puzzle.sets {
+                for case in set.cases {
+                    let chosen = self.entry(set, case.name);
+                    if chosen.is_none_or(|entry| entry.favourite.is_none())
+                        && let Some(algorithm) = trainer.custom_algorithm(set, case.name)
+                    {
+                        self.add_custom(set, case, algorithm);
+                    }
+                }
+            }
+        }
+    }
+
     /// Removes one of the user's algorithms, and the choice of it.
     pub fn remove_custom(&mut self, set: &AlgSet, name: &str, algorithm: &str) {
         self.update(set.id, name, |entry| {
@@ -238,6 +269,31 @@ mod tests {
     use crate::trainer::{OLL, PLL};
 
     const NOW: u64 = 1_000_000;
+
+    #[test]
+    fn the_library_picks_up_what_the_trainer_chose() {
+        let algorithm = "U R U R' U' R' F R2 U' R' U' R U R' F'";
+        let case = PLL.case("T").unwrap();
+        let mut trainer = TrainerData::default();
+        trainer.set_custom_algorithm(&PLL, "T", Some(algorithm.to_owned()));
+        let mut data = LibraryData::default();
+        data.adopt_trainer(&trainer);
+        assert_eq!(data.chosen(&PLL, case), algorithm);
+
+        data.adopt(&PLL, case, None);
+        assert_eq!(data.chosen(&PLL, case), case.algorithm);
+    }
+
+    #[test]
+    fn a_choice_made_in_the_library_is_kept_over_the_trainer_s() {
+        let case = PLL.case("T").unwrap();
+        let mut trainer = TrainerData::default();
+        trainer.set_custom_algorithm(&PLL, "T", Some("R U R'".to_owned()));
+        let mut data = LibraryData::default();
+        data.toggle_favourite(&PLL, "T", case.algorithms[1]);
+        data.adopt_trainer(&trainer);
+        assert_eq!(data.chosen(&PLL, case), case.algorithms[1]);
+    }
     const DAY_MS: u64 = 24 * 60 * 60 * 1000;
 
     #[test]
@@ -272,7 +328,7 @@ mod tests {
         let due = data.due(NOW + DAY_MS);
         assert_eq!(due.len(), 1);
         assert_eq!(due[0].case, "Z");
-        assert!(data.due(NOW).is_empty());
+        assert_eq!(data.due(NOW), Vec::new());
     }
 
     #[test]
@@ -280,7 +336,7 @@ mod tests {
         let mut data = LibraryData::default();
         data.set_status(&PLL, "T", Status::Learned, NOW);
         data.set_status(&PLL, "T", Status::Learning, NOW);
-        assert!(data.due(NOW + 10 * DAY_MS).is_empty());
+        assert_eq!(data.due(NOW + 10 * DAY_MS), Vec::new());
     }
 
     #[test]
@@ -310,7 +366,7 @@ mod tests {
         let later = NOW + DAY_MS;
         assert_eq!(data.due(later).len(), 1);
         data.grade("pll", "T", Grade::Good, later);
-        assert!(data.due(later).is_empty());
+        assert_eq!(data.due(later), Vec::new());
     }
 
     #[test]

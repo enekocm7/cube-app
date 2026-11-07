@@ -46,7 +46,7 @@ for valid bindings.
 | `Space` | Start inspection, hold and release to start the solve, press to stop |
 | Any other key | Stop a running solve |
 | Left mouse button or touch on the digits | Same as the timer key when **Timer → Touch the digits** is on (off by default) |
-| `Esc` | Cancel the current attempt without recording it, or leave the stats, charts, goals, trainer or Multi-Blind screen |
+| `Esc` | Cancel the current attempt without recording it, or leave the stats, charts, goals, trainer, library or Multi-Blind screen |
 | `N` | New scramble (hold to keep generating) |
 | `I` | Turn WCA inspection on or off |
 | `P` | Show or hide the scramble preview |
@@ -86,10 +86,18 @@ for valid bindings.
 | `Shift + H` | Edit the highlighted case's algorithm, in the trainer |
 | `Shift + Y` | Sort cases by slowest, in the trainer |
 | `Shift + Q` | See the highlighted case's attempts, in the trainer |
+| `Shift + B` | Show the library, or return to the timer |
+| `Shift + U` | Next puzzle, in the library |
+| `Shift + X` | Change the highlighted case's status, in the library |
+| `Shift + F` | Make the highlighted algorithm your favourite, in the library |
+| `Shift + I` | Add an algorithm, in the library |
+| `.` | Edit the highlighted case's note, in the library |
+| `Shift + W` | Start the library's review |
+| `6` / `7` / `8` / `9` | Grade a review: again, hard, good or easy |
 | `Shift + M` | Show Multi-Blind, or return to the timer |
 | `Shift + C` | Copy the Multi-Blind scrambles |
 | `Shift + V` | Save the Multi-Blind scrambles to a text file |
-| `/` | Jump to the search field in the shortcuts, settings and trainer |
+| `/` | Jump to the search field in the shortcuts, settings, trainer and library |
 | `V` | Show the next charts view |
 | `F` | Filter charts by the next event |
 | `R` / `Shift + R` | Filter charts by the next range, or by custom dates |
@@ -146,6 +154,12 @@ Around the shortcuts:
 - Search for cases by name or group.
 - A history that names the case of each attempt, and per-case stats sorted by slowest.
 - Your own algorithm for any case, checked against it.
+
+**Library**
+
+- Algorithm sets for every puzzle, browsed by puzzle, method and set, with search.
+- A drawing, algorithms and a status for each case, with your own algorithms, favourite and note.
+- A spaced-repetition review of the cases you have learned.
 
 **Sharing**
 

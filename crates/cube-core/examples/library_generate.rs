@@ -29,6 +29,19 @@
 //! keep 4                  algorithms to keep per case
 //! prefix CLL              cases are named by this and a number
 //! ```
+//!
+//! Optional keys: `longest` caps an algorithm's length, `most` keeps only that
+//! many cases, `oriented` names a region that may only show its own colors,
+//! `loose`, `bars` and `shapes` are described on [`Spec`]. `from <file> <set>...`
+//! replaces the search: on a puzzle too big to search that deep, it chains the
+//! algorithms of sets already found, which all keep the same things solved.
+
+#![allow(
+    clippy::type_complexity,
+    clippy::too_many_lines,
+    clippy::assigning_clones,
+    reason = "a tool run by hand to write the data files"
+)]
 
 use std::collections::HashMap;
 use std::fmt::Write as _;
@@ -64,6 +77,12 @@ struct Spec {
     bars: Option<usize>,
     /// Groups the cases by the shape of the top's corners.
     shapes: bool,
+    /// Keeps only the cheapest cases, for sets that are the common cases.
+    most: usize,
+    /// A region that must show only its own colors, in any arrangement.
+    oriented: String,
+    /// A data file and the sets in it whose algorithms are chained.
+    from: Vec<String>,
 }
 
 fn event_named(name: &str) -> WcaEvent {
@@ -85,7 +104,8 @@ fn read_specs(text: &str) -> Vec<Spec> {
             specs.push(Spec {
                 id: value,
                 keep: 4,
-                longest: 99,
+                longest: 999,
+                most: usize::MAX,
                 ..Spec::default()
             });
             continue;
@@ -108,6 +128,9 @@ fn read_specs(text: &str) -> Vec<Spec> {
             "loose" => spec.loose = true,
             "bars" => spec.bars = Some(value.parse().expect("bars")),
             "shapes" => spec.shapes = true,
+            "most" => spec.most = value.parse().expect("most"),
+            "oriented" => spec.oriented = value,
+            "from" => spec.from = value.split_whitespace().map(str::to_owned).collect(),
             _ => panic!("Unknown key {key}"),
         }
     }
@@ -167,7 +190,10 @@ fn walk(solved: &State, steps: &[Step], depth: usize) -> Vec<Found> {
     for _ in 0..depth {
         let end = found.len();
         for index in frontier..end {
-            let last = found[index].moves.last().map(|&step| steps[step as usize].family);
+            let last = found[index]
+                .moves
+                .last()
+                .map(|&step| steps[step as usize].family);
             for (id, step) in steps.iter().enumerate() {
                 if last == Some(step.family) {
                     continue;
@@ -252,9 +278,11 @@ fn bars(model: &StickerModel, state: &[u16], solved: &[u16], down: &[bool]) -> u
     (0..faces)
         .filter(|&face| model.face_names[face] != "D")
         .filter(|&face| {
-            let on_face = model.stickers.iter().enumerate().filter(|(place, sticker)| {
-                usize::from(sticker.face) == face && down[*place]
-            });
+            let on_face = model
+                .stickers
+                .iter()
+                .enumerate()
+                .filter(|(place, sticker)| usize::from(sticker.face) == face && down[*place]);
             let mut colors = on_face.map(|(place, _)| solved[state[place] as usize]);
             let first = colors.next();
             first.is_some() && colors.all(|color| Some(color) == first)
@@ -333,7 +361,10 @@ fn inverse_step(id: u8, steps: &[Step]) -> u8 {
 }
 
 fn text_of(moves: &[u8], steps: &[Step]) -> String {
-    let texts: Vec<&str> = moves.iter().map(|&id| steps[id as usize].text.as_str()).collect();
+    let texts: Vec<&str> = moves
+        .iter()
+        .map(|&id| steps[id as usize].text.as_str())
+        .collect();
     texts.join(" ")
 }
 
@@ -359,8 +390,178 @@ fn search(spec: &Spec) -> String {
     let down = model.region("layer:D").map(|region| region.places);
     let solved = model.solved();
 
+    let oriented = (!spec.oriented.is_empty()).then(|| {
+        let region = model.region(&spec.oriented).expect("oriented");
+        let places = solved.iter().zip(&region.places);
+        let allowed: Vec<u16> = places
+            .filter(|(_, chosen)| **chosen)
+            .map(|(c, _)| *c)
+            .collect();
+        (region, allowed)
+    });
+    let undone = |moves: &[u8]| {
+        let mut state = numbering.clone();
+        for &id in moves.iter().rev() {
+            let inverse = inverse_step(id, &steps);
+            state = permuted(&state, &steps[inverse as usize].source);
+        }
+        state
+    };
+    let free: Vec<u16> = spec
+        .turn
+        .split_whitespace()
+        .filter_map(|name| stickers.base(name))
+        .collect();
+    let solved_key = case_key(&numbering, &turns, &numbering, &colors);
+    let mut cases: HashMap<State, Vec<(u32, Vec<u8>)>> = HashMap::new();
+    let consider = |moves: Vec<u8>, cases: &mut HashMap<State, Vec<(u32, Vec<u8>)>>| {
+        let mut state = numbering.clone();
+        for &id in &moves {
+            state = permuted(&state, &steps[id as usize].source);
+        }
+        if let Some(wanted) = spec.bars {
+            let down = down.as_ref().expect("A cube has a bottom");
+            if bars(stickers, &state, &solved, down) != wanted {
+                return;
+            }
+        }
+        if let Some((region, allowed)) = &oriented {
+            let case = undone(&moves);
+            let colored = case.iter().map(|&place| solved[place as usize]);
+            let mut shown = colored.zip(&region.places).filter(|(_, chosen)| **chosen);
+            if !shown.all(|(color, _)| allowed.contains(&color)) {
+                return;
+            }
+        }
+        let key = case_key(&state, &turns, &numbering, &colors);
+        if key == solved_key {
+            return;
+        }
+        let list = cases.entry(key).or_default();
+        let cost = alg_cost(&moves, &steps);
+        if (list.len() < spec.keep || cost < list.last().map_or(u32::MAX, |best| best.0))
+            && !list.iter().any(|known| known.1 == moves)
+        {
+            list.push((cost, moves));
+            list.sort_by_key(|known| known.0);
+            list.truncate(spec.keep);
+        }
+    };
+
+    if spec.from.is_empty() {
+        joined(spec, &steps, &numbering, &keep, &free, &mut |moves| {
+            consider(moves, &mut cases);
+        });
+    } else {
+        let wanted_before = |moves: &[u8]| model.matches(&colored(&undone(moves), &solved), &keep);
+        let blocks = known_algorithms(&spec.from, &steps);
+        eprintln!("{}: chaining {} algorithms", spec.id, blocks.len());
+        let turning: Vec<u8> = (0..steps.len() as u8)
+            .filter(|&id| free.contains(&steps[id as usize].family))
+            .collect();
+        let mut chained = blocks.clone();
+        for round in 0..2 {
+            for first in &chained {
+                for second in &blocks {
+                    for turn in std::iter::once(None).chain(turning.iter().copied().map(Some)) {
+                        let mut moves = first.clone();
+                        for &id in turn.iter().chain(second) {
+                            push_merged(&mut moves, id, &steps);
+                        }
+                        if !moves.is_empty() && wanted_before(&moves) {
+                            consider(moves, &mut cases);
+                        }
+                    }
+                }
+            }
+            eprintln!("{}: round {round}, {} cases", spec.id, cases.len());
+            chained = cases.values().map(|list| list[0].1.clone()).collect();
+        }
+    }
+
+    let mut ordered: Vec<(State, Vec<(u32, Vec<u8>)>)> = cases.into_iter().collect();
+    ordered.sort_by(|a, b| a.1[0].0.cmp(&b.1[0].0).then_with(|| a.0.cmp(&b.0)));
+    ordered.truncate(spec.most);
+    eprintln!("{}: {} cases", spec.id, ordered.len());
+    block_of(spec, stickers, &numbering, &solved, &steps, &ordered)
+}
+
+/// A numbered position as the colors it shows.
+fn colored(state: &[u16], solved: &[u16]) -> State {
+    state.iter().map(|&place| solved[place as usize]).collect()
+}
+
+/// Adds a step to a sequence, combining it with a last step of its family.
+fn push_merged(moves: &mut Vec<u8>, id: u8, steps: &[Step]) {
+    let family = steps[id as usize].family;
+    let powers: Vec<u8> = (0..steps.len() as u8)
+        .filter(|&other| steps[other as usize].family == family)
+        .collect();
+    let power_of = |step: u8| {
+        powers
+            .iter()
+            .position(|&known| known == step)
+            .expect("family")
+            + 1
+    };
+    let Some(&last) = moves.last() else {
+        moves.push(id);
+        return;
+    };
+    if steps[last as usize].family != family {
+        moves.push(id);
+        return;
+    }
+    moves.pop();
+    let power = (power_of(last) + power_of(id)) % (powers.len() + 1);
+    if power != 0 {
+        moves.push(powers[power - 1]);
+    }
+}
+
+/// Reads the algorithms of sets in a data file, with their inverses.
+fn known_algorithms(from: &[String], steps: &[Step]) -> Vec<Vec<u8>> {
+    let text = std::fs::read_to_string(&from[0]).expect("Read the chained file");
+    let mut chosen = false;
+    let mut found = Vec::new();
+    for line in text.lines() {
+        if let Some(id) = line.strip_prefix("set ") {
+            chosen = from[1..].iter().any(|wanted| wanted == id);
+        }
+        let Some(case) = line.strip_prefix("case ").filter(|_| chosen) else {
+            continue;
+        };
+        for algorithm in case.split('|').skip(2) {
+            let moves: Vec<u8> = algorithm
+                .split_whitespace()
+                .map(|name| {
+                    let step = steps.iter().position(|step| step.text == name);
+                    step.unwrap_or_else(|| panic!("No step {name}")) as u8
+                })
+                .collect();
+            let undo = moves
+                .iter()
+                .rev()
+                .map(|&id| inverse_step(id, steps))
+                .collect();
+            found.push(moves);
+            found.push(undo);
+        }
+    }
+    found
+}
+
+/// Offers every sequence two half-length searches can join into.
+fn joined(
+    spec: &Spec,
+    steps: &[Step],
+    numbering: &State,
+    keep: &Region,
+    free: &[u16],
+    consider: &mut dyn FnMut(Vec<u8>),
+) {
     // Each sequence, as what it does to a numbered puzzle.
-    let walked = walk(&numbering, &steps, spec.depth);
+    let walked = walk(numbering, steps, spec.depth);
     eprintln!("{}: {} sequences", spec.id, walked.len());
 
     // A sequence A and the inverse of B leave the kept stickers alone exactly
@@ -372,7 +573,7 @@ fn search(spec: &Spec) -> String {
         for (place, &sticker) in found.state.iter().enumerate() {
             place_of[sticker as usize] = place as u16;
         }
-        let mut key = masked(&place_of, &keep);
+        let mut key = masked(&place_of, keep);
         if spec.loose {
             key.sort_unstable();
         }
@@ -381,22 +582,13 @@ fn search(spec: &Spec) -> String {
             group.push(index as u32);
         }
     }
-    let free: Vec<u16> = spec
-        .turn
-        .split_whitespace()
-        .filter_map(|name| stickers.base(name))
-        .collect();
-
-    // The best algorithms of each case, cheapest first.
-    let mut cases: HashMap<State, Vec<(u32, Vec<u8>)>> = HashMap::new();
-    let solved_key = case_key(&numbering, &turns, &numbering, &colors);
     for group in halves.values() {
         for (at, &first) in group.iter().enumerate() {
             for &second in &group[at..] {
                 let (a, b) = (&walked[first as usize], &walked[second as usize]);
                 for (one, other) in [(a, b), (b, a)] {
                     let mut moves = one.moves.clone();
-                    moves.extend(other.moves.iter().rev().map(|&id| inverse_step(id, &steps)));
+                    moves.extend(other.moves.iter().rev().map(|&id| inverse_step(id, steps)));
                     let free_end = |id: Option<&u8>| {
                         id.is_some_and(|&id| free.contains(&steps[id as usize].family))
                     };
@@ -410,56 +602,52 @@ fn search(spec: &Spec) -> String {
                     {
                         continue;
                     }
-                    let mut state = numbering.clone();
-                    for &id in &moves {
-                        state = permuted(&state, &steps[id as usize].source);
-                    }
-                    if let Some(wanted) = spec.bars {
-                        let down = down.as_ref().expect("A cube has a bottom");
-                        if bars(stickers, &state, &solved, down) != wanted {
-                            continue;
-                        }
-                    }
-                    let key = case_key(&state, &turns, &numbering, &colors);
-                    if key == solved_key {
-                        continue;
-                    }
-                    let list = cases.entry(key).or_default();
-                    let cost = alg_cost(&moves, &steps);
-                    if list.len() < spec.keep || cost < list.last().map_or(u32::MAX, |best| best.0) {
-                        if !list.iter().any(|known| known.1 == moves) {
-                            list.push((cost, moves));
-                            list.sort_by_key(|known| known.0);
-                            list.truncate(spec.keep);
-                        }
-                    }
+                    consider(moves);
                 }
             }
         }
     }
+}
 
-    let mut ordered: Vec<(State, Vec<(u32, Vec<u8>)>)> = cases.into_iter().collect();
-    ordered.sort_by(|a, b| a.1[0].0.cmp(&b.1[0].0).then_with(|| a.0.cmp(&b.0)));
-    eprintln!("{}: {} cases", spec.id, ordered.len());
-
+/// Writes a set's block.
+fn block_of(
+    spec: &Spec,
+    stickers: &StickerModel,
+    numbering: &State,
+    solved: &State,
+    steps: &[Step],
+    ordered: &[(State, Vec<(u32, Vec<u8>)>)],
+) -> String {
     let mut block = String::new();
-    let _ = writeln!(block, "\nset {}\nname {}\nmethod {}", spec.id, spec.name, spec.method);
-    let _ = writeln!(block, "before {}\nafter {}\nturn {}", spec.before, spec.after, spec.turn);
-    let _ = writeln!(block, "show {}\nview {}\nsource generated", spec.show, spec.view);
+    let _ = writeln!(
+        block,
+        "\nset {}\nname {}\nmethod {}",
+        spec.id, spec.name, spec.method
+    );
+    let _ = writeln!(
+        block,
+        "before {}\nafter {}\nturn {}",
+        spec.before, spec.after, spec.turn
+    );
+    let _ = writeln!(
+        block,
+        "show {}\nview {}\nsource generated",
+        spec.show, spec.view
+    );
     let shape_of = |moves: &[u8]| {
         let mut state = numbering.clone();
         for &id in moves.iter().rev() {
-            let inverse = inverse_step(id, &steps);
+            let inverse = inverse_step(id, steps);
             state = permuted(&state, &steps[inverse as usize].source);
         }
-        corner_shape(stickers, &state, &solved)
+        corner_shape(stickers, &state, solved)
     };
     let mut lines: Vec<(usize, String)> = Vec::new();
     let mut counts: HashMap<&'static str, usize> = HashMap::new();
     for (number, (_, algorithms)) in ordered.iter().enumerate() {
         let texts: Vec<String> = algorithms
             .iter()
-            .map(|(_, moves)| text_of(moves, &steps))
+            .map(|(_, moves)| text_of(moves, steps))
             .collect();
         let shape = if spec.shapes {
             shape_of(&algorithms[0].1)
@@ -479,7 +667,10 @@ fn search(spec: &Spec) -> String {
         } else {
             String::new()
         };
-        lines.push((order, format!("{group}case {name} |  | {}\n", texts.join(" | "))));
+        lines.push((
+            order,
+            format!("{group}case {name} |  | {}\n", texts.join(" | ")),
+        ));
     }
     lines.sort_by_key(|line| line.0);
     let mut last = String::new();

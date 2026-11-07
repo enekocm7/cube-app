@@ -777,6 +777,32 @@ pub struct Strings {
     pub toast_trainer_save_failed: &'static str,
     pub toast_trainer_scramble_failed: &'static str,
     pub action_open_trainer: &'static str,
+    pub nav_library: &'static str,
+    pub library_status_not_started: &'static str,
+    pub library_status_learning: &'static str,
+    pub library_status_learned: &'static str,
+    pub library_progress: &'static str,
+    pub library_due: &'static str,
+    pub library_review_empty: &'static str,
+    pub library_review_done: &'static str,
+    pub library_grade_again: &'static str,
+    pub library_grade_hard: &'static str,
+    pub library_grade_good: &'static str,
+    pub library_grade_easy: &'static str,
+    pub library_add_algorithm: &'static str,
+    pub library_add_hint: &'static str,
+    pub library_edit_note: &'static str,
+    pub library_note_placeholder: &'static str,
+    pub library_no_cases: &'static str,
+    pub library_favourite: &'static str,
+    pub library_remove_algorithm: &'static str,
+    pub library_recognition_counts: &'static str,
+    pub toast_library_load_failed: &'static str,
+    pub toast_library_save_failed: &'static str,
+    pub action_open_library: &'static str,
+    pub action_next_library_puzzle: &'static str,
+    pub action_cycle_case_status: &'static str,
+    pub action_start_library_review: &'static str,
     pub action_next_trainer_set: &'static str,
     pub goals_empty: &'static str,
     pub goals_unavailable: &'static str,
@@ -947,6 +973,14 @@ mod tests {
             assert!(strings.trainer_algorithm_hint.contains("{algorithm}"));
             assert!(strings.trainer_algorithm_invalid.contains("{move}"));
             assert!(strings.trainer_algorithm_wrong_case.contains("{case}"));
+            assert!(strings.library_progress.contains("{learned}"));
+            assert!(strings.library_progress.contains("{total}"));
+            assert!(strings.library_due.contains("{count}"));
+            assert!(strings.library_recognition_counts.contains("{up}"));
+            assert!(strings.library_recognition_counts.contains("{total}"));
+            assert!(strings.library_recognition_counts.contains("{moved}"));
+            assert!(strings.toast_library_load_failed.contains("{error}"));
+            assert!(strings.toast_library_save_failed.contains("{error}"));
             assert!(strings.toast_trainer_load_failed.contains("{error}"));
             assert!(strings.toast_trainer_save_failed.contains("{error}"));
             assert!(strings.toast_trainer_scramble_failed.contains("{error}"));

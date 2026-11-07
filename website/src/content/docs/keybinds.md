@@ -23,7 +23,7 @@ nothing is selected.
 | Action | Default | Notes |
 |---|---|---|
 | Start or stop the timer | `Space` | Hold and release to start the solve. Pressing and releasing the digits with the left mouse button or a touch does the same while **Timer → Touch the digits to start or stop the timer** is on (off by default) |
-| Cancel the current attempt | `Esc` | Does not record the solve; on the stats, charts, goals or Multi-Blind screen it returns to the timer. In the trainer it goes from the drill back to the cases, then to the timer. In Multi-Blind it abandons scrambles you have not started on |
+| Cancel the current attempt | `Esc` | Does not record the solve; on the stats, charts, goals, library or Multi-Blind screen it returns to the timer. In the trainer it goes from the drill back to the cases, then to the timer. In Multi-Blind it abandons scrambles you have not started on |
 | New scramble | `N` | |
 | Turn inspection on or off | `I` | |
 | Show or hide the scramble preview | `P` | The same switch as the setting |
@@ -69,6 +69,17 @@ nothing is selected.
 | Edit the algorithm | `Shift + H` | Works on the trainer's cases, for the highlighted one |
 | Sort by slowest | `Shift + Y` | Works on the trainer's cases |
 | See the case's attempts | `Shift + Q` | Works on the trainer's cases |
+| Show the library or the timer | `Shift + B` | Also the Library tab in the title bar. See [Library](#library) |
+| Next puzzle | `Shift + U` | Works in the library |
+| Change the case's status | `Shift + X` | Works in the library, for the highlighted case |
+| Favourite algorithm | `Shift + F` | Works in the library, for the highlighted algorithm |
+| Add algorithm | `Shift + I` | Works in the library, for the highlighted case |
+| Edit note | `.` | Works in the library, for the highlighted case |
+| Start the review | `Shift + W` | Works in the library |
+| Again | `6` | Grades a case in a review, once its algorithm is showing |
+| Hard | `7` | Grades a case in a review, once its algorithm is showing |
+| Good | `8` | Grades a case in a review, once its algorithm is showing |
+| Easy | `9` | Grades a case in a review, once its algorithm is showing |
 | Show Multi-Blind or the timer | `Shift + M` | Also the Multi-Blind tab in the title bar. See [Multi-Blind](#multi-blind) |
 | Copy the Multi-Blind scrambles | `Shift + C` | Works on the Multi-Blind screen, once an attempt has its scrambles |
 | Save the Multi-Blind scrambles | `Shift + V` | Writes them to a text file, one per cube, to print |
@@ -84,7 +95,7 @@ nothing is selected.
 | Reset the times chart zoom | `X` | |
 | Open settings | `Ctrl + ,` | |
 | Open the shortcuts panel | `F1` | |
-| Search in dialogs | `/` | Jumps to the search field of the shortcuts panel, the settings dialog and the trainer's cases. It types normally once the field has focus |
+| Search in dialogs | `/` | Jumps to the search field of the shortcuts panel, the settings dialog, the trainer's cases and the library. It types normally once the field has focus |
 
 While a solve is running, **any key stops the timer**. `Esc` is the exception:
 it cancels the attempt without recording it.
@@ -112,6 +123,15 @@ drill, new scramble skips the case, and selecting, opening, deleting and the
 penalties work on its attempts. Selecting, deleting and the penalties work the
 same on a case's attempts. `Esc` goes back to the cases. See
 [Algorithm trainer](/cube-app/docs/trainer/).
+
+## Library
+
+In the library, the bindings of selecting solves move through the cases and
+those of selecting averages through the highlighted case's algorithms. `Y` is
+the next set and deleting a solve removes the highlighted algorithm if it is
+yours. In a review, showing the case, `Enter` and the timer key show the
+algorithm. `Esc` ends a review, then clears the search, then returns to the
+timer. See [Algorithm library](/cube-app/docs/library/).
 
 ## Multi-Blind
 

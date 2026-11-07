@@ -294,11 +294,12 @@ mod tests {
         };
         for case in OLL.cases {
             match case.group {
-                "All edges oriented" => assert_eq!(edges_oriented(case), 4, "{}", case.name),
-                "Dots" => assert_eq!(edges_oriented(case), 0, "{}", case.name),
-                "Corners oriented" => assert_eq!(corners_oriented(case), 4, "{}", case.name),
-                "Lightning" | "L shapes" | "Knights" | "Fish" | "Awkward" | "W shapes"
-                | "C shapes" | "P shapes" | "T shapes" | "Squares" | "I shapes" => {
+                "OCLL" => assert_eq!(edges_oriented(case), 4, "{}", case.name),
+                "Dot Case" => assert_eq!(edges_oriented(case), 0, "{}", case.name),
+                "All Corners Oriented" => assert_eq!(corners_oriented(case), 4, "{}", case.name),
+                "Lightning Shapes" | "L Shapes" | "Knight Move Shapes" | "Fish Shapes"
+                | "Awkward Shapes" | "W Shapes" | "C Shapes" | "P Shapes" | "T Shapes"
+                | "Square Shapes" | "Line Shapes" => {
                     assert_ne!(edges_oriented(case), 4, "{}", case.name);
                 }
                 group => panic!("Unknown group {group}"),
