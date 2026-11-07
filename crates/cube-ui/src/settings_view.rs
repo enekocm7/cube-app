@@ -96,6 +96,10 @@ struct SettingsView {
     revealed_row: Rc<Cell<Option<usize>>>,
 }
 
+/// Starts the search text of a row that draws its own divider, so the card
+/// leaves it out. A person never types it.
+const OWN_DIVIDER: char = '';
+
 /// A titled card of rows in one category, each with the text the search matches
 /// it against.
 struct Section {
@@ -276,6 +280,7 @@ impl SettingsView {
         &mut self,
         heading: &'static str,
         rows: Vec<AnyElement>,
+        own_divider: &[bool],
         first_row: usize,
         cx: &mut Context<Self>,
     ) -> AnyElement {
@@ -287,7 +292,9 @@ impl SettingsView {
             .map(|(index, row)| {
                 let focus = self.row_focus(first_row + index, cx);
                 let row = div()
-                    .when(index > 0, |row| row.border_t_1().border_color(border))
+                    .when(index > 0 && !own_divider[index], |row| {
+                        row.border_t_1().border_color(border)
+                    })
                     .child(row);
                 self.reveal_on_focus(first_row + index, focus, row, cx)
                     .into_any_element()
@@ -1714,7 +1721,7 @@ impl SettingsView {
 
         let searching = !query(&self.search, cx).is_empty();
         let set_background = cx.theme().accent.opacity(0.08);
-        let page_background = cx.theme().background;
+        let row_border = cx.theme().border;
         let set_rail = cx.theme().accent.opacity(0.6);
         let visibility_state = |on: bool| {
             if on {
@@ -1826,7 +1833,7 @@ impl SettingsView {
                         .copied()
                         .unwrap_or_default();
                     library_texts.push(format!(
-                        "{} {} {} {} {} {} {} {}",
+                        "{OWN_DIVIDER}{} {} {} {} {} {} {} {}",
                         set.name,
                         event.name(),
                         method,
@@ -1837,31 +1844,28 @@ impl SettingsView {
                         strings.settings_library
                     ));
                     library_rows.push(
-                        // The overlay hides the hairline the card draws across
-                        // the indent (two method indents; the first set keeps the line
-                        // below its method), so only the band keeps
-                        // its dividers, behind a rail on its left edge.
+                        // The card leaves this row's divider out. Under a
+                        // method it starts at the method's own line; between
+                        // sets it starts at the rail, so nothing crosses the
+                        // indent.
                         div()
-                            .relative()
                             .w_full()
-                            .pl_12()
+                            .pl_6()
+                            .when(position == 0, |row| {
+                                row.child(div().w_full().h(px(1.)).bg(row_border))
+                            })
                             .child(
-                                div()
-                                    .absolute()
-                                    .top(px(-1.))
-                                    .left_0()
-                                    .when(position == 0, Styled::w_6)
-                                    .when(position > 0, Styled::w_12)
-                                    .h(px(1.))
-                                    .bg(page_background),
-                            )
-                            .child(
-                                div()
-                                    .w_full()
-                                    .bg(set_background)
-                                    .border_l_1()
-                                    .border_color(set_rail)
-                                    .child(self.library_set_row(set, visibility, strings, cx)),
+                                div().w_full().pl_6().child(
+                                    div()
+                                        .w_full()
+                                        .bg(set_background)
+                                        .border_l_1()
+                                        .border_color(set_rail)
+                                        .when(position > 0, |band| {
+                                            band.border_t_1().border_color(row_border)
+                                        })
+                                        .child(self.library_set_row(set, visibility, strings, cx)),
+                                ),
                             )
                             .into_any_element(),
                     );
@@ -2078,9 +2082,13 @@ impl Render for SettingsView {
         let mut first_row = 0;
         let mut cards = Vec::with_capacity(sections.len());
         for section in sections {
-            let rows: Vec<AnyElement> = section.rows.into_iter().map(|(_, row)| row).collect();
+            let (own_divider, rows): (Vec<bool>, Vec<AnyElement>) = section
+                .rows
+                .into_iter()
+                .map(|(text, row)| (text.starts_with(OWN_DIVIDER), row))
+                .unzip();
             let count = rows.len();
-            cards.push(self.section(section.heading, rows, first_row, cx));
+            cards.push(self.section(section.heading, rows, &own_divider, first_row, cx));
             first_row += count;
         }
 
