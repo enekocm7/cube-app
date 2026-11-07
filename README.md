@@ -175,7 +175,7 @@ Around the shortcuts:
 **Library**
 
 - Algorithm sets for every puzzle, browsed by puzzle, method and set, with search.
-- A drawing, algorithms and a status for each case, with your own algorithms, favourite and note.
+- A drawing, setup moves, algorithms and a status for each case, with your own algorithms, favourite and note.
 - A spaced-repetition review of the cases you have learned.
 
 **Sharing**

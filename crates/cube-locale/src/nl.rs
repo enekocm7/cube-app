@@ -489,6 +489,7 @@ pub const STRINGS: Strings = Strings {
     library_grade_good: "Goed",
     library_grade_easy: "Makkelijk",
     library_add_algorithm: "Algoritme toevoegen",
+    library_setup: "Opstelling",
     library_train: "Trainen",
     library_add_hint: "Het wordt aan de case getoetst voordat het wordt opgeslagen.",
     library_edit_note: "Notitie bewerken",

@@ -490,6 +490,7 @@ pub const STRINGS: Strings = Strings {
     library_grade_easy: "Easy",
     library_add_algorithm: "Add algorithm",
     library_train: "Train",
+    library_setup: "Setup",
     library_add_hint: "It is checked against the case before it is saved.",
     library_edit_note: "Edit note",
     library_note_placeholder: "Your note",

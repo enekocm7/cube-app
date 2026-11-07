@@ -490,6 +490,7 @@ pub const STRINGS: Strings = Strings {
     library_grade_easy: "Fácil",
     library_add_algorithm: "Añadir algoritmo",
     library_train: "Entrenar",
+    library_setup: "Preparación",
     library_add_hint: "Se comprueba con el caso antes de guardarlo.",
     library_edit_note: "Editar nota",
     library_note_placeholder: "Tu nota",
