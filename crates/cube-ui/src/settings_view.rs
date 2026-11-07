@@ -570,6 +570,7 @@ impl SettingsView {
         &self,
         key: &str,
         label: &str,
+        description: &str,
         open: bool,
         group: LibraryGroup,
         sets: &[&'static AlgSet],
@@ -577,7 +578,8 @@ impl SettingsView {
         strings: &'static Strings,
         cx: &mut Context<Self>,
     ) -> AnyElement {
-        let name = format!("{label} · {}", strings.settings_library);
+        let muted = cx.theme().muted_foreground;
+        let name = format!("{description} · {label}");
         let icon = if open {
             IconName::ChevronDown
         } else {
@@ -601,16 +603,23 @@ impl SettingsView {
             .items_center()
             .child(chevron)
             .child(
-                div()
+                v_flex()
                     .id(format!("{key}-label"))
                     .flex_1()
                     .min_w_0()
-                    .truncate()
+                    .gap_0p5()
                     .cursor_pointer()
                     .on_click(cx.listener(move |view, _, _, cx| {
                         view.toggle_library_group(group, cx);
                     }))
-                    .child(label.to_owned()),
+                    .child(div().truncate().font_medium().child(label.to_owned()))
+                    .child(
+                        div()
+                            .truncate()
+                            .text_xs()
+                            .text_color(muted)
+                            .child(description.to_owned()),
+                    ),
             )
             .child(switches)
             .into_any_element()
@@ -647,8 +656,8 @@ impl SettingsView {
                 });
             }));
         row(
-            format!("{} · {}", set.name, set.event.name()),
-            set.method,
+            set.name,
+            format!("{} · {}", strings.settings_library_set, set.method),
             h_flex().gap_4().child(library).child(training),
             cx,
         )
@@ -1728,9 +1737,11 @@ impl SettingsView {
                 .collect::<Vec<_>>()
                 .join(" ");
             let puzzle_text = format!(
-                "{} {} {} {} {} {} {} {}",
+                "{} {} {} {} {} {} {} {} {} {}",
                 event.name(),
                 strings.settings_library,
+                strings.settings_library_puzzle,
+                strings.settings_library_all_sets,
                 methods_text,
                 sets_text,
                 strings.setting_show_in_library,
@@ -1752,6 +1763,10 @@ impl SettingsView {
             library_rows.push(self.library_group_row(
                 &format!("library-puzzle-{index}"),
                 event.name(),
+                &format!(
+                    "{} · {}",
+                    strings.settings_library_puzzle, strings.settings_library_all_sets
+                ),
                 puzzle_open,
                 LibraryGroup::Puzzle(event),
                 &puzzle.sets,
@@ -1768,10 +1783,12 @@ impl SettingsView {
                         .open_library_groups
                         .contains(&LibraryGroup::Method(event, method));
                 let row_text = format!(
-                    "{} {} {} {} {} {} {} {}",
+                    "{} {} {} {} {} {} {} {} {} {}",
                     event.name(),
                     method,
                     strings.settings_library,
+                    strings.settings_library_method,
+                    strings.settings_library_all_sets,
                     sets.iter()
                         .map(|set| set.name)
                         .collect::<Vec<_>>()
@@ -1791,6 +1808,12 @@ impl SettingsView {
                         .child(self.library_group_row(
                             &format!("library-method-{index}-{at}"),
                             method,
+                            &format!(
+                                "{} · {} · {}",
+                                strings.settings_library_method,
+                                event.name(),
+                                strings.settings_library_all_sets
+                            ),
                             method_open,
                             LibraryGroup::Method(event, method),
                             &sets,
@@ -1810,10 +1833,11 @@ impl SettingsView {
                         .copied()
                         .unwrap_or_default();
                     library_texts.push(format!(
-                        "{} {} {} {} {} {} {} {}",
+                        "{} {} {} {} {} {} {} {} {}",
                         set.name,
                         event.name(),
                         method,
+                        strings.settings_library_set,
                         strings.setting_show_in_library,
                         visibility_state(visibility.library),
                         strings.setting_include_in_training,

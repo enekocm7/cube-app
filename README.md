@@ -262,7 +262,7 @@ Details worth knowing:
 - **Sizes per event.** **Appearance → Sizes per event** opens a dialog that sets the preview, timer and scramble size
   of each event.
 - **Set visibility.** **Library** lists every puzzle with **Show in library** and **Include in training** switches that
-  apply to all its sets. Open a puzzle and then a method to change single sets. Both are on by default.
+  apply to all its sets. Open a puzzle and then a method to change single sets; rows are labelled Puzzle, Method and Set.
 - **Scrollbar.** The solve list scrollbar appears only while you scroll. Turn on **Appearance → Always show the solve
   list scrollbar** to keep it visible.
 

@@ -40,10 +40,11 @@ has two switches:
 
 A puzzle's or method's switches change every set inside it, so one switch can
 hide all of Megaminx or all of a method such as ZB. Open the dropdowns to reach a
-single set. Both switches are on by default and work separately. From the
-library, `Ctrl + Shift + B` switches the highlighted set's library visibility and
-`Ctrl + Shift + P` switches its place in the trainer; the same keys work in the
-trainer. The set's data is kept while it is hidden.
+single set; each row says whether it is a puzzle, a method or a set. Both switches
+are on by default and work separately. From the library, `Ctrl + Shift + B`
+switches the highlighted set's library visibility and `Ctrl + Shift + P` switches
+its place in the trainer; the same keys work in the trainer. The set's data is
+kept while it is hidden.
 
 ## A case
 
