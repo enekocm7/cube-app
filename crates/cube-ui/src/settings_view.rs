@@ -1819,7 +1819,7 @@ impl SettingsView {
                 if !method_open {
                     continue;
                 }
-                for &set in &sets {
+                for (position, &set) in sets.iter().enumerate() {
                     let visibility = settings
                         .set_visibility
                         .get(set.id)
@@ -1838,7 +1838,8 @@ impl SettingsView {
                     ));
                     library_rows.push(
                         // The overlay hides the hairline the card draws across
-                        // the indent (two method indents), so only the band keeps
+                        // the indent (two method indents; the first set keeps the line
+                        // below its method), so only the band keeps
                         // its dividers, behind a rail on its left edge.
                         div()
                             .relative()
@@ -1849,7 +1850,8 @@ impl SettingsView {
                                     .absolute()
                                     .top(px(-1.))
                                     .left_0()
-                                    .w_12()
+                                    .when(position == 0, Styled::w_6)
+                                    .when(position > 0, Styled::w_12)
                                     .h(px(1.))
                                     .bg(page_background),
                             )
