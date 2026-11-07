@@ -891,8 +891,8 @@ impl CubeApp {
         };
 
         let rows = FadeScroll::new("relay-scrambles", background)
-            .flex_1()
-            .min_h_0()
+            .flex_none()
+            .max_h(relative(0.5))
             .gap_1()
             .children(scrambles.iter().enumerate().map(|(index, scramble)| {
                 let finished = index < splits.marked() && running;
@@ -966,7 +966,7 @@ impl CubeApp {
                 )
             })
             .child(rows)
-            .child(div().flex_none().py_4().child(digits_panel(
+            .child(v_flex().flex_1().min_h_0().child(digits_panel(
                 text,
                 color,
                 &hint,
