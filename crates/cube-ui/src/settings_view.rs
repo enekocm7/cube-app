@@ -1714,6 +1714,7 @@ impl SettingsView {
 
         let searching = !query(&self.search, cx).is_empty();
         let set_background = cx.theme().secondary;
+        let set_rail = cx.theme().accent.opacity(0.6);
         let visibility_state = |on: bool| {
             if on {
                 strings.search_on
@@ -1836,10 +1837,17 @@ impl SettingsView {
                     ));
                     library_rows.push(
                         div()
-                            .pl_20()
+                            .pl_6()
                             .w_full()
-                            .bg(set_background)
-                            .child(self.library_set_row(set, visibility, strings, cx))
+                            .child(
+                                div()
+                                    .w_full()
+                                    .pl_6()
+                                    .bg(set_background)
+                                    .border_l_1()
+                                    .border_color(set_rail)
+                                    .child(self.library_set_row(set, visibility, strings, cx)),
+                            )
                             .into_any_element(),
                     );
                 }
