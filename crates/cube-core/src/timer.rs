@@ -19,6 +19,94 @@ const TWELVE_SECOND_CUE: Duration = Duration::from_secs(12);
 /// How long the timer key must be held by default before a release starts the solve.
 pub const DEFAULT_HOLD: Duration = Duration::from_millis(300);
 
+/// The most puzzles one attempt may be split into.
+pub const MAX_PUZZLES: usize = 16;
+
+/// The ends of the puzzles of a relay, marked while its attempt runs.
+///
+/// A relay is one attempt over several puzzles. The timer key marks the end of
+/// each puzzle but the last, which ends the attempt as it does any other. Marks
+/// are kept as times since the attempt started, so the splits always add up to
+/// the total.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Splits {
+    puzzles: u8,
+    marked: u8,
+    at_ms: [u64; MAX_PUZZLES],
+}
+
+impl Splits {
+    /// An attempt of a single puzzle, which has nothing to mark.
+    pub const NONE: Self = Self::new(1);
+
+    /// Splits for an attempt of `puzzles` puzzles, from 1 to [`MAX_PUZZLES`].
+    pub const fn new(puzzles: usize) -> Self {
+        let puzzles = if puzzles < 1 {
+            1
+        } else if puzzles > MAX_PUZZLES {
+            MAX_PUZZLES
+        } else {
+            puzzles
+        };
+        Self {
+            puzzles: puzzles as u8,
+            marked: 0,
+            at_ms: [0; MAX_PUZZLES],
+        }
+    }
+
+    /// Returns how many puzzles the attempt has.
+    pub const fn puzzles(&self) -> usize {
+        self.puzzles as usize
+    }
+
+    /// Returns how many puzzles have been marked finished so far.
+    pub const fn marked(&self) -> usize {
+        self.marked as usize
+    }
+
+    /// Returns whether the next press marks the end of a puzzle rather than
+    /// the end of the attempt.
+    pub const fn pending(&self) -> bool {
+        self.marked + 1 < self.puzzles
+    }
+
+    /// Returns the puzzle being solved, counting from zero.
+    pub const fn current(&self) -> usize {
+        self.marked as usize
+    }
+
+    fn mark(&mut self, at_ms: u64) {
+        let previous = match self.marked {
+            0 => 0,
+            marked => self.at_ms[marked as usize - 1],
+        };
+        self.at_ms[self.marked as usize] = at_ms.max(previous);
+        self.marked += 1;
+    }
+
+    /// Returns the time spent on each puzzle, given the total of the attempt.
+    ///
+    /// The result always has one entry per puzzle and adds up to `total_ms`,
+    /// so a press that never came leaves the puzzles it would have marked at
+    /// zero, with the remainder on the one being solved.
+    pub fn durations(&self, total_ms: u64) -> Vec<u64> {
+        let mut durations = Vec::with_capacity(self.puzzles());
+        let mut start = 0;
+        for index in 0..self.puzzles() {
+            let end = if index < self.marked() {
+                self.at_ms[index].min(total_ms)
+            } else {
+                total_ms
+            };
+            let end = end.max(start);
+            durations.push(end - start);
+            start = end;
+        }
+        durations
+    }
+}
+
 /// What the timer is doing.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TimerPhase {
@@ -108,6 +196,11 @@ pub struct Timer {
     /// `inspection` says, and the first press of a running attempt marks the
     /// end of the memo instead of stopping it.
     pub blindfolded: bool,
+    /// How many puzzles the next attempt has. More than one makes it a relay:
+    /// there is one inspection for all of them, and the first presses of a
+    /// running attempt mark the end of each puzzle but the last.
+    pub puzzles: usize,
+    splits: Splits,
 }
 
 impl Timer {
@@ -118,7 +211,14 @@ impl Timer {
             inspection_limit,
             hold,
             blindfolded: false,
+            puzzles: 1,
+            splits: Splits::NONE,
         }
+    }
+
+    /// Returns the ends of the puzzles marked in the current or last attempt.
+    pub const fn splits(&self) -> &Splits {
+        &self.splits
     }
 
     /// Returns whether the next attempt starts with an inspection.
@@ -139,6 +239,7 @@ impl Timer {
     pub fn press(&mut self, now: Instant) -> Option<TimerOutcome> {
         match self.phase {
             TimerPhase::Idle if self.inspects() => {
+                self.splits = Splits::new(self.puzzles);
                 self.phase = TimerPhase::Inspecting {
                     started: now,
                     held_since: None,
@@ -148,6 +249,7 @@ impl Timer {
                 None
             }
             TimerPhase::Idle => {
+                self.splits = Splits::new(self.puzzles);
                 self.phase = TimerPhase::Holding { since: now };
                 None
             }
@@ -164,6 +266,11 @@ impl Timer {
                     eight_cue_played,
                     twelve_cue_played,
                 };
+                None
+            }
+            TimerPhase::Running { started, .. } if self.splits.pending() => {
+                self.splits
+                    .mark(now.duration_since(started).as_millis() as u64);
                 None
             }
             TimerPhase::Running {
@@ -286,6 +393,7 @@ impl Timer {
             HardwareState::HandsOn => self.phase = TimerPhase::Armed { ready: false },
             HardwareState::GetSet => self.phase = TimerPhase::Armed { ready: true },
             HardwareState::Running => {
+                self.splits = Splits::NONE;
                 self.phase = TimerPhase::Running {
                     started: now,
                     modifier: Modifier::None,
@@ -700,5 +808,87 @@ mod tests {
         timer.press(Instant::now());
         timer.cancel();
         assert!(!timer.is_active());
+    }
+
+    fn start_relay(timer: &mut Timer, puzzles: usize, start: Instant) {
+        timer.puzzles = puzzles;
+        timer.press(start);
+        timer.release(start + HOLD);
+    }
+
+    #[test]
+    fn a_relay_marks_each_puzzle_and_the_last_press_stops_it() {
+        let mut timer = Timer::new(false, LIMIT, HOLD);
+        let start = Instant::now();
+        start_relay(&mut timer, 3, start);
+        let begun = start + HOLD;
+        assert!(timer.splits().pending());
+        assert_eq!(timer.press(begun + ms(1_000)), None);
+        assert_eq!(timer.splits().current(), 1);
+        assert_eq!(timer.press(begun + ms(3_500)), None);
+        assert!(!timer.splits().pending());
+        let outcome = timer.press(begun + ms(6_000)).expect("last press stops");
+        assert_eq!(outcome.time_ms, 6_000);
+        assert_eq!(
+            timer.splits().durations(outcome.time_ms),
+            vec![1_000, 2_500, 2_500]
+        );
+        assert!(!timer.is_active());
+    }
+
+    #[test]
+    fn relay_inspection_is_taken_once_for_all_the_puzzles() {
+        let mut timer = Timer::new(true, LIMIT, HOLD);
+        let start = Instant::now();
+        timer.puzzles = 2;
+        timer.press(start);
+        timer.press(start + ms(15_500));
+        timer.release(start + ms(15_900));
+        // A late start earns the +2 of the whole relay, not one per puzzle.
+        let begun = start + ms(15_900);
+        assert_eq!(timer.press(begun + ms(2_000)), None);
+        let outcome = timer.press(begun + ms(5_000)).expect("stops");
+        assert_eq!(outcome.modifier, Modifier::PlusTwo);
+        assert_eq!(
+            timer.splits().durations(outcome.time_ms),
+            vec![2_000, 3_000]
+        );
+    }
+
+    #[test]
+    fn splits_always_add_up_to_the_total() {
+        let mut splits = Splits::new(4);
+        splits.mark(2_000);
+        splits.mark(1_000);
+        let durations = splits.durations(9_000);
+        assert_eq!(durations.len(), 4);
+        assert_eq!(durations.iter().sum::<u64>(), 9_000);
+        // A mark cannot go back in time.
+        assert_eq!(durations, vec![2_000, 0, 7_000, 0]);
+        // Marks beyond the total are held to it.
+        assert_eq!(splits.durations(1_500).iter().sum::<u64>(), 1_500);
+    }
+
+    #[test]
+    fn a_single_puzzle_has_nothing_to_mark() {
+        let mut timer = Timer::new(false, LIMIT, HOLD);
+        let start = Instant::now();
+        timer.press(start);
+        timer.release(start + HOLD);
+        assert!(!timer.splits().pending());
+        assert!(timer.press(start + HOLD + ms(500)).is_some());
+    }
+
+    #[test]
+    fn a_relay_cancelled_early_marks_nothing_for_the_next_attempt() {
+        let mut timer = Timer::new(false, LIMIT, HOLD);
+        let start = Instant::now();
+        start_relay(&mut timer, 3, start);
+        timer.press(start + HOLD + ms(500));
+        timer.cancel();
+        timer.puzzles = 1;
+        timer.press(start + ms(5_000));
+        assert_eq!(timer.splits().puzzles(), 1);
+        assert_eq!(timer.splits().marked(), 0);
     }
 }

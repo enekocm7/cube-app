@@ -23,7 +23,7 @@ nothing is selected.
 | Action | Default | Notes |
 |---|---|---|
 | Start or stop the timer | `Space` | Hold and release to start the solve. Pressing and releasing the digits with the left mouse button or a touch does the same while **Timer → Touch the digits to start or stop the timer** is on (off by default) |
-| Cancel the current attempt | `Esc` | Does not record the solve; on the stats, charts, goals, library or Multi-Blind screen it returns to the timer. In the trainer it goes from the drill back to the cases, then to the timer. In Multi-Blind it abandons scrambles you have not started on |
+| Cancel the current attempt | `Esc` | Does not record the solve; on the stats, charts, goals, library Multi-Blind or Relays screen it returns to the timer. In the trainer it goes from the drill back to the cases, then to the timer. In Multi-Blind and Relays it abandons scrambles you have not started on |
 | New scramble | `N` | |
 | Turn inspection on or off | `I` | |
 | Show or hide the scramble preview | `P` | The same switch as the setting |
@@ -86,6 +86,11 @@ nothing is selected.
 | Show Multi-Blind or the timer | `Shift + M` | Also the Multi-Blind tab in the title bar. See [Multi-Blind](#multi-blind) |
 | Copy the Multi-Blind scrambles | `Shift + C` | Works on the Multi-Blind screen, once an attempt has its scrambles |
 | Save the Multi-Blind scrambles | `Shift + V` | Writes them to a text file, one per cube, to print |
+| Show Relays or the timer | `Ctrl + R` | Also the Relays tab in the title bar. See [Relays](#relays) |
+| Select the next relay | `1` | On the Relays screen: the presets first, then your custom relays |
+| Create a custom relay | `Ctrl + E` | On the Relays screen |
+| Delete the selected custom relay | `Ctrl + D` | On the Relays screen. Its past attempts are kept |
+| Copy the relay's scrambles | `Ctrl + B` | On the Relays screen, once the scrambles are ready |
 | Show the next charts view | `V` | Cycles Trends, Calendar, Compare, Tags and All-time bests |
 | Filter charts by the next event | `F` | Cycles all events and every event with solves |
 | Filter charts by the next range | `R` | Cycles all solves, the last 50, 100 or 500 solves and the last 7, 30, 90 or 365 days |
@@ -135,6 +140,10 @@ the next set and deleting a solve removes the highlighted algorithm if it is
 yours. In a review, showing the case, `Enter` and the timer key show the
 algorithm. `Esc` ends a review, then clears the search, then returns to the
 timer. See [Algorithm library](/cube-app/docs/library/).
+
+## Relays
+
+On the Relays screen the timer key gets the scrambles of the selected relay, then starts the timer once they are ready (after the inspection, if it is on), and each press after that marks the end of a puzzle. The last press stops the relay and records it. `1` selects the next relay and `Ctrl + E` creates a custom one: type its events separated by commas, such as `2x2x2, 3x3x3, Pyraminx`, or a range of cubes such as `2x2x2-5x5x5`. `Up` and `Down` select an attempt, `Left` and `Right` select one of its puzzles, `2` and `Shift + D` give that puzzle a `+2` or DNF (press again to remove it), and `D` deletes the attempt. They follow the bindings of the solve and average actions. In the dialog, `Enter` creates the relay. See [Relays](/cube-app/docs/relays/).
 
 ## Multi-Blind
 

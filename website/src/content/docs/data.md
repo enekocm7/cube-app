@@ -15,6 +15,7 @@ order: 2
 | Algorithm trainer | `trainer.json` | No |
 | Algorithm library | `library.json` | No |
 | Multi-Blind attempts | `multi-blind.json` | No |
+| Relays and their attempts | `relays.json` | No |
 | Tags and solutions of solves | `solve-extras.json` | No |
 | Themes | `themes/` | Yes |
 | Automatic backups | `backups/` | No |
@@ -46,6 +47,10 @@ cube is the graphical sibling of [cube-tui](https://github.com/enekocm7/cube-tui
 - To restore: close both apps and copy a backup over `times.json`.
 
 If `times.json` exists but can't be read, cube says so and turns saving **off** — the file is never overwritten with an empty history.
+
+## Relays
+
+A relay has several events and a scramble for each, which `times.json` has no place for, so relay attempts and your custom relays live in `relays.json`. They never count toward the stats of any event. If that file exists but can't be read, cube says so, turns relay saving off and leaves it alone.
 
 ## Multi-Blind and memo times
 

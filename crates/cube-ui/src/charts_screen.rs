@@ -908,7 +908,8 @@ impl CubeApp {
             | Screen::Goals
             | Screen::Trainer
             | Screen::Library
-            | Screen::MultiBlind => false,
+            | Screen::MultiBlind
+            | Screen::Relays => false,
         }
     }
 

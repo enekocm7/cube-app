@@ -25,6 +25,7 @@ mod multi_blind_screen;
 mod palette;
 mod panel_resize;
 mod preview;
+mod relays_screen;
 mod scoped_rem;
 mod scroll_fade;
 mod search_bar;

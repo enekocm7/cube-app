@@ -26,6 +26,7 @@ use crate::history::History;
 use crate::library::LibraryData;
 use crate::merge::{self, MergeSummary};
 use crate::multi_blind::MultiBlindData;
+use crate::relay::RelayData;
 use crate::settings::Settings;
 use crate::solve_extras::SolveExtras;
 use crate::tags::TagChange;
@@ -78,6 +79,12 @@ pub fn trainer_file() -> Result<PathBuf> {
 /// cannot hold.
 pub fn multi_blind_file() -> Result<PathBuf> {
     Ok(data_dir()?.join("multi-blind.json"))
+}
+
+/// Returns the relays and their attempts, kept out of `times.json` because a
+/// relay has several events and scrambles, which cube-tui's solves cannot hold.
+pub fn relays_file() -> Result<PathBuf> {
+    Ok(data_dir()?.join("relays.json"))
 }
 
 /// Returns the settings file of the desktop app.
@@ -619,6 +626,31 @@ pub fn save_multi_blind(path: &Path, data: &MultiBlindData) -> Result<()> {
         .with_context(|| format!("Could not save Multi-Blind attempts to {}", path.display()))
 }
 
+/// Loads the relays; a missing file means there are none yet.
+///
+/// A file that exists but can't be read is an error, never an empty history,
+/// or the next save would overwrite it.
+pub fn load_relays(path: &Path) -> Result<RelayData> {
+    let Some(bytes) =
+        read_if_present(path).with_context(|| format!("Could not read {}", path.display()))?
+    else {
+        return Ok(RelayData::default());
+    };
+    let data: RelayData = serde_json::from_slice(&bytes)
+        .with_context(|| format!("Invalid relays in {}", path.display()))?;
+    if let Err(index) = data.validate() {
+        return Err(anyhow!("Invalid relay {} in {}", index + 1, path.display()));
+    }
+    Ok(data)
+}
+
+/// Saves the relays to `path` atomically.
+pub fn save_relays(path: &Path, data: &RelayData) -> Result<()> {
+    let text = serde_json::to_vec_pretty(data).context("Could not serialize relays")?;
+    write_atomic(path, &text)
+        .with_context(|| format!("Could not save relays to {}", path.display()))
+}
+
 /// Moves a file that could not be read out of the way, so saving over it
 /// destroys nothing, and returns its new path.
 pub fn set_aside(path: &Path) -> io::Result<PathBuf> {
@@ -951,6 +983,45 @@ mod tests {
         ] {
             fs::write(&path, broken).unwrap();
             assert!(load_multi_blind(&path).is_err(), "{broken}");
+            assert_eq!(fs::read_to_string(&path).unwrap(), broken);
+        }
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn relays_load_as_they_were_saved_and_none_means_empty() {
+        use crate::relay::{RelayAttempt, presets};
+        use crate::solve::Modifier;
+        let dir = temporary_path();
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("relays.json");
+        assert_eq!(load_relays(&path).unwrap(), RelayData::default());
+        let mut data = RelayData::default();
+        data.attempts.push(RelayAttempt::new(
+            presets()[0].clone(),
+            vec!["a".into(), "b".into(), "c".into()],
+            vec![1, 2, 3],
+            Modifier::PlusTwo,
+            9,
+        ));
+        save_relays(&path, &data).unwrap();
+        assert_eq!(load_relays(&path).unwrap(), data);
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn an_unreadable_relays_file_is_an_error_and_stays_on_disk() {
+        let dir = temporary_path();
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("relays.json");
+        for broken in [
+            "not json",
+            r#"{"custom":[["Cube3x3"]]}"#,
+            r#"{"custom":[["Nope","Cube3x3"]]}"#,
+            r#"{"attempts":[{"events":["Cube2x2","Cube3x3"],"splits_ms":[1],"modifiers":["None","None"]}]}"#,
+        ] {
+            fs::write(&path, broken).unwrap();
+            assert!(load_relays(&path).is_err(), "{broken}");
             assert_eq!(fs::read_to_string(&path).unwrap(), broken);
         }
         fs::remove_dir_all(dir).unwrap();

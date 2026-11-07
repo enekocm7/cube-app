@@ -1,0 +1,46 @@
+---
+title: Relays
+description: Time several puzzles as one attempt, with a split for each, from presets or your own list of events.
+section: Timing
+order: 6
+---
+
+A relay is several puzzles solved one after the other and timed as one attempt. cube records a split for each puzzle and
+a total. Open the screen with `Ctrl + R` or the Relays tab, beside Multi-Blind. Everything works from the keyboard.
+
+## Choosing a relay
+
+The presets are **2x2x2 to 4x4x4**, **2x2x2 to 5x5x5**, **2x2x2 to 6x6x6** and **2x2x2 to 7x7x7**. Press `1` to select
+the next relay.
+
+To make your own, press `Ctrl + E` and type its events separated by commas, in any case, such as
+`3x3x3, Pyraminx, Skewb`. A range of cubes such as `2x2x2-5x5x5` stands for each cube in it. A relay has 2 to 16
+puzzles, and the blindfolded events can't be part of one. Press `Ctrl + D` to delete the selected custom relay; the
+attempts you made at it stay.
+
+## Timing an attempt
+
+1. Press the timer key. cube prepares a scramble for every puzzle and shows them all before you start. `Ctrl + B` copies
+   them.
+2. Press the timer key again. With inspection on there is one inspection for the whole relay; otherwise hold and
+   release as usual.
+3. Press the timer key as you finish each puzzle. The scramble of the next one appears and the split is kept.
+4. The last press stops the timer and records the relay.
+
+`Esc` abandons scrambles you have not started on, or cancels a relay that is running.
+
+## Penalties
+
+- An inspection `+2` counts against the first puzzle, and an inspection DNF makes the whole relay a DNF.
+- After an attempt, `Left` and `Right` pick a puzzle and `2` or `Shift + D` give it a `+2` or a DNF. Press again to
+  remove it.
+- A `+2` adds two seconds to that puzzle's split and so to the total, so the splits always add up to the total. A DNF on
+  any puzzle makes the total a DNF.
+
+## Results
+
+The screen lists the attempts at the selected relay, newest first, and the summary line shows the number of attempts
+and the best and mean totals, leaving DNFs out of both. The selected attempt shows the split of every puzzle.
+
+Relay attempts are kept in `relays.json`, apart from `times.json`, so they never count toward the stats of any event
+and cube-tui never sees them. See [Your data](/cube-app/docs/data/).

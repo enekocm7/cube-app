@@ -22,6 +22,7 @@ pub mod merge;
 pub mod multi_blind;
 pub mod panels;
 pub mod persistence;
+pub mod relay;
 pub mod scramble;
 pub mod search;
 pub mod settings;

@@ -160,15 +160,15 @@ impl Render for AttemptForm {
 }
 
 /// What a number prompt asks and does.
-struct Prompt {
-    title: &'static str,
-    label: String,
-    default: String,
-    button: &'static str,
+pub(crate) struct Prompt {
+    pub(crate) title: &'static str,
+    pub(crate) label: String,
+    pub(crate) default: String,
+    pub(crate) button: &'static str,
 }
 
 /// Checks what was typed and acts on it, or says why it cannot.
-type Accept =
+pub(crate) type Accept =
     Rc<dyn Fn(&mut CubeApp, &str, &mut Window, &mut Context<CubeApp>) -> Result<(), String>>;
 
 impl CubeApp {
@@ -434,7 +434,7 @@ impl CubeApp {
     /// Opens a dialog with one field for a whole number. `accept` closes the
     /// dialog by returning `Ok`, and otherwise its message shows under the
     /// field.
-    fn open_number_prompt(
+    pub(crate) fn open_number_prompt(
         &self,
         prompt: Prompt,
         accept: Accept,
@@ -1085,7 +1085,7 @@ impl CubeApp {
 }
 
 /// Centers `text` as big digits with a line of `hint` under them.
-fn digits_panel(
+pub(crate) fn digits_panel(
     text: String,
     color: Hsla,
     hint: &str,
@@ -1120,7 +1120,7 @@ fn digits_panel(
 }
 
 /// A centered message built at run time.
-fn empty_message_owned(message: String, color: Hsla) -> AnyElement {
+pub(crate) fn empty_message_owned(message: String, color: Hsla) -> AnyElement {
     v_flex()
         .flex_1()
         .items_center()
