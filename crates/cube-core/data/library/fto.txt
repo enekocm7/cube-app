@@ -1,0 +1,146 @@
+# The FTO sets. See library/catalog.rs for the format.
+
+set fto-reduction
+name Reduction
+method Bencisco
+before all -layer:U -layer:R
+after all -layer:U
+turn U
+show all
+view solid
+source generated
+case Reduction 1 |  | R
+case Reduction 2 |  | R'
+case Reduction 3 |  | R U R
+case Reduction 4 |  | R U R'
+case Reduction 5 |  | R' U R
+case Reduction 6 |  | R' U' R'
+case Reduction 7 |  | R' U' R
+case Reduction 8 |  | R U' R'
+case Reduction 9 |  | R' U R'
+case Reduction 10 |  | R U' R
+case Reduction 11 |  | R U' R U' R'
+case Reduction 12 |  | R U' R U R'
+case Reduction 13 |  | R' U' R U' R
+case Reduction 14 |  | R' U' R' U' R
+case Reduction 15 |  | R U' R' U' R'
+case Reduction 16 |  | R' U R' U' R'
+case Reduction 17 |  | R' U R' U R'
+case Reduction 18 |  | R' U R U' R
+case Reduction 19 |  | R' U' R U R'
+case Reduction 20 |  | R' U R U' R'
+case Reduction 21 |  | R' U' R' U R'
+case Reduction 22 |  | R' U R U R
+case Reduction 23 |  | R U R U R'
+case Reduction 24 |  | R U R' U R'
+case Reduction 25 |  | R' U R' U R
+case Reduction 26 |  | R' U R' U' R
+case Reduction 27 |  | R U R U' R
+case Reduction 28 |  | R U' R' U R'
+case Reduction 29 |  | R U R' U' R
+case Reduction 30 |  | R U' R' U R
+case Reduction 31 |  | R U' R U' R
+case Reduction 32 |  | R U' R U R
+case Reduction 33 |  | R' U' R U R
+case Reduction 34 |  | R' U' R' U R
+case Reduction 35 |  | R' U' R' U' R'
+case Reduction 36 |  | R U R U' R'
+case Reduction 37 |  | R U' R' U' R
+case Reduction 38 |  | R U R' U R
+case Reduction 39 |  | R U R' U' R'
+case Reduction 40 |  | R U R U R
+
+set fto-ll
+name Last layer
+method Bencisco
+before all -layer:U
+after all
+turn U
+show all
+view solid
+source generated
+case LL 1 |  | F U' F' U' F U' F' | F' U' F U' F' U' F | F U' F U' F' U' F U' F | F' U' F' U' F U' F' U' F'
+case LL 2 |  | F U F' U F U F' | F' U F U F' U F | F' U F' U F U F' U F' | F U F U F' U F U F
+case LL 3 |  | F U F' R' F U' F' U R | L U' R' U' R U L' U' R' U R | F' U F U L' U' F' U' F U' L
+case LL 4 |  | R' U' F U F' R F U' F' | R' U' R U L U' R' U R U L' | L' U F' U F U L U' F' U' F
+case LL 5 |  | L U F' U' F L' F' U F | R U' F U' F' U' R' U F U F' | L U L' U' R' U L U' L' U' R
+case LL 6 |  | F' U' F L F' U F U' L' | F U' F' U' R U F U F' U R' | R' U L U L' U' R U L U' L'
+case LL 7 |  | R U' F U' F' U' R' F U' F' | L U F' U' F L' U' F' U' F | R F' U' F' U' F U' F R' F U' F' | F' U L' U F' U' F L U' F' U' F'
+case LL 8 |  | F U R U F' U' F R' U' F' | F U' R' F' U L' U L F U' R F' | F' U F R' F' U F U' R F' U' F
+case LL 9 |  | F U R' U F' U' F R U' F' | L' F R U' F' U' F U' R' F' L | F' U F R F' U F U' R' F' U' F
+case LL 10 |  | F U R F' U F U' R' U' F' | F R' U F' L' U' L U' F R U F' | F' U F R' U F' U' F R F' U' F
+case LL 11 |  | F U' F' U' R' F U' F' U R | F' U' F L' U' F' U' F U' L | F' U' F' U' R F U' F' U R' U F' | F' U' F L' F U' F U' F' U' F' L
+case LL 12 |  | F U R' F' U F U' R U' F' | L' F R U F' U F U R' F' L | F' U F R U F' U' F R' F' U' F
+case LL 13 |  | R' U' F U F' R U F U F' | L' U F' U F U L F' U F | F U' R U' F U F' R' U F U F | L' F U F U F' U F' L F' U F
+case LL 14 |  | F U F' R U F U F' U R' | F' U F U L F' U F U' L' | F U F' R F' U F' U F U F R' | F U F U L' F' U F U' L U' F
+case LL 15 |  | R U F' L F L' U' F R' F' | L' F' L' F U' R' F R F' U L' | R' F' L' F U' R' F R F' U L R
+case LL 16 |  | F' L' F U' R' F R F' U L | R' U F' L F L' U' F R' F' R' | L R U F' L F L' U' F R' F' L'
+case LL 17 |  | F R F' U L F' L' F U' R' | L U' F R' F' R U F' L F L | R' L' U' F R' F' R U F' L F R
+case LL 18 |  | L' U' F R' F' R U F' L F | R F R F' U L F' L' F U' R | L F R F' U L F' L' F U' R' L'
+case LL 19 |  | F' U' L' U' F U F' L U F | F' U L F U' R U' R' F' U L' F | F U' F' L F U' F' U L' F U F'
+case LL 20 |  | F' U' L' F U' F' U L U F | F' L U' F R U R' U F' L' U' F | F U' F' L U' F U F' L' F U F'
+case LL 21 |  | F' U' L F U' F' U L' U F | R F' L' U' F U' F' U' L F R' | F U' F' L' U' F U F' L F U F'
+case LL 22 |  | F' U' L U' F U F' L' U F | R F' L' U F U F' U L F R' | F U' F' L' F U' F' U L F U F'
+case LL 23 |  | R' U' R' F' U L' U L U' F R'
+case LL 24 |  | F' U F' R' U F U F' U R F'
+case LL 25 |  | F R' U' F U' F' U' R F U' F
+case LL 26 |  | L U L F U' R U' R' U F' L
+case LL 27 |  | R F' R U F' L F L' U' F R | F' U' L F U' R U R' F' U L' F
+case LL 28 |  | R' F' U L F' L' F U' R' F R' | F' L U' F R U' R' U F' L' U F
+case LL 29 |  | F R F' U' F' U F' R' F U' F
+case LL 30 |  | R U R F R F L F L U L | R' L R' L' R F' R' L R L' F R | L F R' L R L' F' L R' L' R L'
+case LL 31 |  | F' U F' R F U' F U F R' F'
+case LL 32 |  | L' U' L' F' L' F' R' F' R' U' R' | R' F' L R' L' R F R' L R L' R | L R' L R L' F L R' L' R F' L'
+case LL 33 |  | L R' F R L' U' L R' F R L' | R' L F L' R U' R' L F L' R
+case LL 34 |  | R U R' U F' L' F U' F' L F
+case LL 35 |  | L' U' L U' F R F' U F R' F'
+case LL 36 |  | F' L' F U F' L F U' R U' R'
+case LL 37 |  | F R F' U' F R' F' U L' U L
+case LL 38 |  | L R' F' R L' U L R' F' R L' | R' L F' L' R U R' L F' L' R
+case LL 39 |  | R' U' F U F' R' U F U F' U R' | F L U' R U' F' U F R' U L' F' | F' R' U L' F U F' U' L U' R F | L' U F' U F U L' F' U F U' L'
+case LL 40 |  | R' U' R U F' U' F R' F' U F R
+case LL 41 |  | R' U' F' U F R' U F' U F U R'
+case LL 42 |  | R' F' U' F R F' U F U' R' U R
+case LL 43 |  | R' U' R' U F' U' F R F' U F R | L' U' F U' F' L F U' R U' R' F'
+case LL 44 |  | R U' F' U' F U' R F' U' F U R
+case LL 45 |  | R' F' U' F R' F' U F U' R U R | F R U R' U F' L' F U F' U L
+case LL 46 |  | R U' F U' F' U' R F U' F' U R | F L U' R F' U' F U R' U L' F' | F' R' U L' U F U' F' L U' R F | L U F' U' F L U' F' U' F U' L
+case LL 47 |  | L F U' R' F R F' U L F' L | F R' U F' L' U L U' F R U' F'
+case LL 48 |  | F' L U F' U F U L' F' U F'
+case LL 49 |  | F U' F L U' F' U' F U' L' F
+case LL 50 |  | F U' F L' F' U F' U' F' L F
+case LL 51 |  | F' L' F U F U' F L F' U F'
+case LL 52 |  | R' F' L F L' U' F R' F' R U R
+case LL 53 |  | F' L' F R U L' U' F R' F' U' R' | L' U' F' L' F U' R' U L F R' F'
+case LL 54 |  | R U F R F' U L U' R' F' L F | F R F' L' U' R U F' L F U L
+case LL 55 |  | R' L F' U F U' L' U F' U' F R
+case LL 56 |  | F' L' U' R' F U' F' U R U L F
+case LL 57 |  | F' L' U' R' U' F U F' R U L F
+case LL 58 |  | R U R U F' L F U' R' F' L F
+case LL 59 |  | R' F' U F U' L U F' U' F L' R
+case LL 60 |  | F' L' F R U F' L' F U' R' U' R'
+case LL 61 |  | L F U' F' U R' U' F U F' R L'
+case LL 62 |  | F R U L U F' U' F L' U' R' F'
+case LL 63 |  | F R U L F' U F U' L' U' R' F'
+case LL 64 |  | L R' F U' F' U R U' F U F' L'
+case LL 65 |  | F U R' U F' L' U' L F U' R F'
+case LL 66 |  | R' U' F' U L' F U' F' U L F R
+case LL 67 |  | L F R U F' U' F R' U F' U' L'
+case LL 68 |  | F' L' U' R F' R' U R F R' L F
+case LL 69 |  | L U F U' R F' U F U' R' F' L'
+case LL 70 |  | F' L' U' L U' F R F' U' F U' R' | L F U F' L F U' F' U L' U' L'
+case LL 71 |  | F' U' L U' F R U R' F' U L' F
+case LL 72 |  | F' L U' F R U' R' F' U L' U F
+case LL 73 |  | R' F' L' U' F U F' L U' F U R
+case LL 74 |  | F' L' R F' R' U' R F R' U L F
+case LL 75 |  | R U F' U F R' F' U L' U L F | L U L U' F U F' L' F U' F' L'
+case LL 76 |  | F R F' L' U' F R F' U L U L
+case LL 77 |  | L' U' L' U' F R' F' U L F R' F'
+case LL 78 |  | L' U F U F' U L' F U F' U' L'
+case LL 79 |  | L F U F' L' F U' F' U L U' L'
+case LL 80 |  | F R U L' F L U' L' F' L R' F'
+case LL 81 |  | L F R F' R' F' L' F R F R' F'
+case LL 82 |  | F R L' F L U L' F' L U' R' F'
+case LL 83 |  | F R F' R' F' L F R F R' F' L'
+case LL 84 |  | F' L' F L F R' F' L' F' L F R
+case LL 85 |  | R' F' L' F L F R F' L' F' L F

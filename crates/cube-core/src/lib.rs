@@ -16,6 +16,7 @@ pub mod goals;
 pub mod history;
 pub mod history_writer;
 pub mod keybind;
+pub mod library;
 pub mod manual_entry;
 pub mod merge;
 pub mod multi_blind;

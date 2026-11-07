@@ -1,0 +1,52 @@
+# The Clock sets. See library/catalog.rs for the format.
+
+set clock-flips
+name Flip patterns
+method Simul
+before 
+after all
+turn 
+show all
+view top
+source standard
+group One pin
+case UR |  | UR1+ | UR1+ y2
+case DR |  | DR1+ | DR1+ y2
+case DL |  | DL1+ | DL1+ y2
+case UL |  | UL1+ | UL1+ y2
+group Two pins
+case U |  | U1+ | U1+ y2
+case R |  | R1+ | R1+ y2
+case D |  | D1+ | D1+ y2
+case L |  | L1+ | L1+ y2
+group All pins
+case ALL |  | ALL1+ | ALL1+ y2
+
+set clock-memo
+name Memo pairs
+method Simul
+before 
+after all
+turn 
+show all
+view top
+source standard
+group Corner pairs
+case UR DL 1 |  | UR1+ DL1-
+case UR DL 2 |  | UR2+ DL2-
+case UR DL 3 |  | UR3+ DL3-
+case UL DR 1 |  | UL1+ DR1-
+case UL DR 2 |  | UL2+ DR2-
+case UL DR 3 |  | UL3+ DR3-
+case UR DR 1 |  | UR1+ DR1-
+case UR DR 2 |  | UR2+ DR2-
+case UR DR 3 |  | UR3+ DR3-
+case UL DL 1 |  | UL1+ DL1-
+case UL DL 2 |  | UL2+ DL2-
+case UL DL 3 |  | UL3+ DL3-
+case UR UL 1 |  | UR1+ UL1-
+case UR UL 2 |  | UR2+ UL2-
+case UR UL 3 |  | UR3+ UL3-
+case DR DL 1 |  | DR1+ DL1-
+case DR DL 2 |  | DR2+ DL2-
+case DR DL 3 |  | DR3+ DL3-

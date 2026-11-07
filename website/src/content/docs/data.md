@@ -13,6 +13,7 @@ order: 2
 | This app's settings | `cube-app.toml` | No (cube-tui uses `config.toml`) |
 | Practice goals | `goals.json` | No |
 | Algorithm trainer | `trainer.json` | No |
+| Algorithm library | `library.json` | No |
 | Multi-Blind attempts | `multi-blind.json` | No |
 | Tags and solutions of solves | `solve-extras.json` | No |
 | Themes | `themes/` | Yes |

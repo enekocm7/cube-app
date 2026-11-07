@@ -15,9 +15,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use cube_core::format::format_ms;
 use cube_core::trainer::notation::AlgError;
 use cube_core::trainer::{
-    AlgCase, AlgSet, Attempt, CaseGroup, CaseStats, CustomAlgError, Drill, GridStep, PLL, PUZZLES,
-    TrainerData, case_diagram, check_algorithm, grid_step, next_set, rows_before, set_event,
-    slowest_first,
+    AlgCase, AlgSet, Attempt, CaseGroup, CaseStats, CustomAlgError, Drill, GridStep, PLL,
+    TrainerData, case_diagram, check_algorithm, grid_step, next_set, puzzles, rows_before,
+    set_event, slowest_first,
 };
 use cube_core::{Action, Modifier, TimerOutcome, WcaEvent, persistence};
 use cube_locale::Strings;
@@ -791,12 +791,25 @@ impl CubeApp {
             })?;
             Some(text.to_owned())
         };
+        self.adopt_trainer_algorithm(set, case, algorithm.as_deref(), window, cx);
+        self.follow_library_algorithm(set, case, algorithm, window, cx);
+        cx.notify();
+        Ok(())
+    }
+
+    /// Drills `case` with the algorithm chosen for it in the library or here.
+    pub(crate) fn follow_library_algorithm(
+        &mut self,
+        set: &'static AlgSet,
+        case: &'static AlgCase,
+        algorithm: Option<String>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         self.trainer
             .data
             .set_custom_algorithm(set, case.name, algorithm);
         self.save_trainer(window, cx);
-        cx.notify();
-        Ok(())
     }
 
     /// Opens the dialog that replaces a case's algorithm.
@@ -994,7 +1007,7 @@ impl CubeApp {
             .gap_1()
             .border_r_1()
             .border_color(border);
-        for puzzle in PUZZLES {
+        for puzzle in puzzles() {
             list = list.child(
                 div()
                     .px_2()
@@ -1003,7 +1016,7 @@ impl CubeApp {
                     .text_color(muted)
                     .child(puzzle.event.name()),
             );
-            for &set in puzzle.sets {
+            for &set in &puzzle.sets {
                 list = list.child(
                     Button::new(set.id)
                         .ghost()

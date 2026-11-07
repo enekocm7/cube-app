@@ -1,0 +1,179 @@
+# The Skewb sets. See library/catalog.rs for the format.
+
+set skewb-beginner
+name Beginner
+method Sarah
+before above:D:0.3
+after all
+turn y
+show all
+view solid
+source generated
+case Beginner 1 |  | R' L' R' U L R' U' | U R L' U' R L R | L' R' L' B U R' B' | B R U' B' L R L
+case Beginner 2 |  | U' L' R U L' R' L' | L R L U' R' L U | U' R B L' B' R' U' | U R B L B' R' U
+case Beginner 3 |  | B' L R L B R U' | U' L B R L R B'
+case Beginner 4 |  | U R' B' L' R' L' B | B R' L' R' B' L' U
+
+set skewb-intermediate
+name Intermediate
+method Sarah
+before above:D:0.3
+after all
+turn y
+show all
+view solid
+source generated
+case Intermediate 1 |  | U R L' U' R L R | R' L' R' U L R' U' | U' L' B' R' B L U' | U L' B' R B L U
+case Intermediate 2 |  | U' L' R U L' R' L' | L R L U' R' L U | U' R B L' B' R' U' | U R B L B' R' U
+case Intermediate 3 |  | U' R U' L R U' R L' | L R' U R' L' U R' U | U L' U R' L' U L' R | R' L U' L R U' L U'
+case Intermediate 4 |  | U' L R U' R L' U' R | R' U L R' U R' L' U | L' U' R' U R U L U' | U L' U' R' U' R U L
+case Intermediate 5 |  | R U' L R U' R L' U' | U L R' U R' L' U R' | U R' U L R' U R' L' | L R U' R L' U' R U'
+case Intermediate 6 |  | L' U' R' U' R U L U | U' L' U' R' U R U L | R U L U L' U' R' U' | U R U L U' L' U' R'
+case Intermediate 7 |  | R' U R' U' R L R L' | R U R U B' R' B U' R | L' B R' B' L R L R' | B' U R' U' B' U B' U R'
+case Intermediate 8 |  | L R' L' R' U R U' R | R' U B' R B U' R' U' R' | R L' R' L' B R B' L | R U' B U' B U R U' B
+case Intermediate 9 |  | L' R L R' U' R' U R | R' B' L R U B L' U' | U' L' R' L' R L U' L U' | R' L R L' B' U' B L
+case Intermediate 10 |  | L U R' U R U' L' U' | U' R' U' L U L' U R | U' R U' R' B U' B' R U' | R B R' B U B' U' B'
+case Intermediate 11 |  | U L U R' U' R U' L' | R' U' L U' L' U R U | U R' B U B' R U R' U | B U B U' B' R B' R'
+case Intermediate 12 |  | R' U' R U R L' R' L | U L B' U' R' L' B R | U L' U L' R' L R L U | L' B' U B L R' L' R
+case Intermediate 13 |  | B' L R L B R U' | U' L B R L R B' | U' R' U L' U' R' L R' U | U L' R L' U' R' U L' U'
+case Intermediate 14 |  | U R' B' L' R' L' B | B R' L' R' B' L' U | U' R L' R U L U' R U | U L U' R U L R' L U'
+case Intermediate 15 |  | R' L R L U' L' U L' | L' R L R B' L' B R' | U R U' L' R B R B' R | R' L' B U' L R U' B' U'
+case Intermediate 16 |  | L U' L U L' R' L' R | R B' L B R' L' R' L | R' B R' B' R' L U R' U' | U B U R' L' U B' L R
+case Intermediate 17 |  | R U R' B' U' R' U B | R L' R' L U L U' L' | U R L R L' R' U R' U | L R' L' R B U B' R'
+case Intermediate 18 |  | B' U' R U B R U' R' | L U L' U' L' R L R' | U' R U' R L R' L' R' U' | R B U' B' R' L R L'
+case Intermediate 19 |  | R U R U' L' U' L U R | B' L' U R' U' L' R B R' | R' U B U B' U L U L' | L R U' B' L U' R L B
+case Intermediate 20 |  | R' U' L' U L U R' U' R' | R B' R' L U R U' L B | L U' L' U' B U' B' U' R | B' L' R' U L' B U R' L'
+case Intermediate 21 |  | R U' R' L' R U' R' L U' | U' L B R' L U' B' R | U' L' R B' R B R' L | B' L' U R' B U L' R
+case Intermediate 22 |  | R' L U R' L' U R U R | R U' R' B L U' B' R | R L R U L U' R' L R' | L' R L' U' R U L R L
+case Intermediate 23 |  | U R L R U L' U' R U' | U L B R' U' B' R U' | B U L U' R' L' R B' | R U L R B' U' B R U'
+case Intermediate 24 |  | R' U' R' U' L R U' L' R | R' B U L' B' R U R' | R L' R U L' U' R' L' R' | L' R' L' U' R' U L R' L
+case Intermediate 25 |  | R U' R L R U R L' R' | R L R' U' R' L' R' U R' | L R L' B' U' L' U' B L' | L B' U L U B L R' L'
+case Intermediate 26 |  | U R U' L' U L U R' U | U L' U R U R' U' L U | B U R L R' U' B' U' | B' R' L' U' B L R U
+case Intermediate 27 |  | U R L R U R' U R' L' | L R U' R U' R' L' R' U' | R L B' U B' R' U' R' B' | B R U R B U' B L' R'
+case Intermediate 28 |  | U' R U' R U L U R L' | R' L U R U L U' L U' | R U B' U' B U' R L R | R L R B' R U' R' B R
+case Intermediate 29 |  | U L' R U R' L R U R' | R' B U L' R B' L' U | L' R B' R' B R' L U | R' L U' B' R U' L B
+case Intermediate 30 |  | U R' U L U' R' L' R' U' | U R' B U R B' L' U' | B R' L R U L' U' B' | U R' B' U B R' L' U' R'
+case Intermediate 31 |  | L R' U' L' U' R' U R' U | U L' U L' U' R' U' L' R | R' L' R' U B' U B U' R' | R' B' R U R' B R' L' R'
+case Intermediate 32 |  | U' R U' L' U' L U R' U' | U' L' U R U' R' U' L U' | U B U R L' R' U' B' | U' R' L' B' U L R B
+case Intermediate 33 |  | U R L' B' U B U' R' | B' R U R' U' L B R' | R' U R L' B' U B U' | L B R' B' R U R' U'
+case Intermediate 34 |  | R U B' U' B L R' U' | R B' L' U R U' R' B | U B' U' B L R' U' R | U R U' R' B R B' L'
+case Intermediate 35 |  | U' R' U R L' B' U B | B' U' B L R' U' R U | R U' R' B R B' L' U | U' L B R' B' R U R'
+case Intermediate 36 |  | B R' U L U' R B' U' | R U R' L' R' L' R L' U' | B' R' U L' B R L' U | U' B' L U' R U L' B
+case Intermediate 37 |  | U B R' U L' U' R B' | U L R' L R L R U' R' | U' L R' B' L U' R B | B' L U' R' U L' B U
+case Intermediate 38 |  | U' R U R' L B' U' B | B' U B L' R U' R' U | U' R B' R' U' L' B L U' | U L' B' L U R B R' U
+case Intermediate 39 |  | B R' L' R B' R U R' | U' R L' R L' R' U L' R' | U R' B' L R' U B L' | B R U' L B' U' R L'
+case Intermediate 40 |  | R U' R' B R' L R B' | R L U' R L R' L R' U | L B' U' R L' B R U' | L R' U B L' U R' B'
+case Intermediate 41 |  | R' U B L' B' U' R U | U' R' U B L B' U' R | R' L' U' B L R U B' | B U' R' L' B' U L R
+case Intermediate 42 |  | L' R U R' U' R' L' R L' | L R' L R U R U' R' L | L' R U R U' R' L' R' L' | L R L R U R' U' R' L
+case Intermediate 43 |  | L U R U' R' U' L U L | R' U R U B' U B U L' | R B R B' R U R U' L' | R' U B U' R' B' L R' U'
+case Intermediate 44 |  | L' U' L' U R U R' U' L' | L U' B' U' B U' R' U' R | L U R' U' R' B R' B' R' | U R L' B R U B' U' R
+case Intermediate 45 |  | L U' L R' U' R' U' L R' | R B' L U' B' R' B' R L'
+case Intermediate 46 |  | R' U R' L U L U R' L | L' B R' U B L B L' R
+case Intermediate 47 |  | U' L' R' L' U' R U L' U | U' R' B' L U B L' U | B' U' R' U L R L' B | R' B' U' L' R U R' L' B
+case Intermediate 48 |  | R L' U R U R L' U L' | L R' B R B U L' B R'
+case Intermediate 49 |  | U' L U' R' U L R L U | U' L B' U' L' B R U | B' L R' L' U' R U B | B' L R U' R' L U B R
+case Intermediate 50 |  | L' R U' L' U' L' R U' R | R' L B' L' B' U' R B' L
+case Intermediate 51 |  | B U' B' R L' U L U' | U L' U' L R' B U B' | B' U R U R U' R B L' | L B' R' U R' U' R' U' B
+case Intermediate 52 |  | U B' R' L R' L' R B | B' R' L R L' R B U' | R' U' R U R' B' L' B R' | R B' L B R U' R' U R
+case Intermediate 53 |  | B' U L R B U' R' L' | L R U B' R' L' U' B | U L U' B' R' B U L' | L U' B' R B U L' U'
+case Intermediate 54 |  | R' U R' U' R' B U B' R' | R B U' B' R U R U' R | U' B L R' L R L' B' | B L R' L' R L' B' U
+case Intermediate 55 |  | U' L' R' L' U' L U' L R | R' L' U L' U L R L U | L' R' B U' B L U L B | B' L' U' L' B' U B' R L
+case Intermediate 56 |  | R' U' R' B R B' L' U R' | U' R U' R' B R B' L' U' | U' B' U' B L R' U' R U' | U' R L' B' U B U' R' U'
+case Intermediate 57 |  | R U' L B R' B' R U R | U L B R' B' R U R' U | U R' U R L' B' U B U | U R U B' U' B L R' U
+case Intermediate 58 |  | B U' R B' R' L' U' R' U | U' R U L R B R' U B' | B' U B R L U R' L U' | U L' R U' L' R' B' U' B
+case Intermediate 59 |  | R' L' R B U R U B' R | R' B U' R' U' B' R' L R | L' R' L U L R L U' L | L' U L' R' L' U' L' R L
+case Intermediate 60 |  | B R L' U' L' R' B' R U' | L' U B' L' R U R L B | U R B' U' B' U' L' R B' | U B' U' B' R' L B' U L'
+case Intermediate 61 |  | R U' B R L' U' L' R' B' | U' B U B L R' B U' R | B' L' R U R L B L' U | U B L' R' L R B R' B
+case Intermediate 62 |  | U R' B R L U L R' B' | B' L' R' U' R' L B U' L | B R' L U B U B R' U' | L U' B L' R B U B U'
+case Intermediate 63 |  | B R L U L R' B' U R' | R' U B' R L' B' U' B' U | U' L B' L' R' U' R' L B | B' R B' R' L' R L B' U'
+case Intermediate 64 |  | U' B' U R' U B' R L' B' | B L R' B U' R U' B U | U B U' L U' B L' R B | B' R' L B' U L' U B' U'
+case Intermediate 65 |  | U' R B L' R' L' B' R' L | B' U R B' U' B' U' L' R
+case Intermediate 66 |  | U L' B' R L R B L R' | B U' L' B U B U R L'
+case Intermediate 67 |  | L' R B L R L B' R' U | R' L U B U B R' U' B
+case Intermediate 68 |  | R L' B' R' L' R' B L U' | L R' U' B' U' B' L U B'
+
+set skewb-advanced
+name Advanced
+method Sarah
+before above:D:0.3
+after all
+turn y
+show all
+view solid
+source generated
+case Advanced 1 |  | U R L' U' R L R | R' L' R' U L R' U' | B R U' B' L R L | L' R' L' B U R' B'
+case Advanced 2 |  | U' L' R U L' R' L' | L R L U' R' L U | U' R B L' B' R' U' | U R B L B' R' U
+case Advanced 3 |  | U' R U' L R U' R L' | L R' U R' L' U R' U | U L' U R' L' U L' R | R' L U' L R U' L U'
+case Advanced 4 |  | L' U' R' U R U L U' | U L' U' R' U' R U L | U' L R U' R L' U' R | R' U L R' U R' L' U
+case Advanced 5 |  | R U' L R U' R L' U' | U L R' U R' L' U R' | U R' U L R' U R' L' | L R U' R L' U' R U'
+case Advanced 6 |  | U R U L U' L' U' R' | R U L U L' U' R' U' | U' L' U' R' U R U L | L' U' R' U' R U L U
+case Advanced 7 |  | R' U R' U' R L R L' | R U R U B' R' B U' R | R' U L U' R U R L' R' U' | R U' L U R' U R U' L' R'
+case Advanced 8 |  | L R' L' R' U R U' R | R' U B' R B U' R' U' R' | U R L R' U' R' U L' U' R | R L U R' U' R U' L' U R'
+case Advanced 9 |  | L' R L R' U' R' U R | R' B' L R U B L' U' | U' L' R' L' R L U' L U' | U' R' U' R' U R U L' R L
+case Advanced 10 |  | U' R' U' L U L' U R | L U R' U R U' L' U' | U' R U' R' B U' B' R U' | U' L' R' L U R' U' R U R
+case Advanced 11 |  | R' U' L U' L' U R U | U L U R' U' R U' L' | U R' B U B' R U R' U | R' U' R' U R U' L' R L U
+case Advanced 12 |  | R' U' R U R L' R' L | U L B' U' R' L' B R | U L' U L' R' L R L U | L' R' L U' R' U' R U R U
+case Advanced 13 |  | B' L R L B R U' | U' L B R L R B' | U' R' U L' U' R' L R' U | U L' R L' U' R' U L' U'
+case Advanced 14 |  | U R' B' L' R' L' B | B R' L' R' B' L' U | U' R L' R U L U' R U | U L U' R U L R' L U'
+case Advanced 15 |  | R' L R L U' L' U L' | L' R L R B' L' B R' | U R U' L' R B R B' R | L' R L' R U R' U' R L' R
+case Advanced 16 |  | L U' L U L' R' L' R | R B' L B R' L' R' L | R' B R' B' R' L U R' U' | R' L R' U R U' R' L R' L
+case Advanced 17 |  | R L' R' L U L U' L' | R U R' B' U' R' U B | U R L R L' R' U R' U | L B R' L' U' B' R U
+case Advanced 18 |  | L U L' U' L' R L R' | B' U' R U B R U' R' | U' R U' R L R' L' R' U' | U' R' B U L R B' L'
+case Advanced 19 |  | R U R U' L' U' L U R | U' L U R' L' R U R' U' R | R L R L R U' R' L R U | L U R U L U' R U' L R
+case Advanced 20 |  | R' U' L' U L U R' U' R' | R' U R U' R' L R U' L' U | U' R' L' R U R' L' R' L' R' | R' L' U R' U L' U' R' U' L'
+case Advanced 21 |  | R U' R' L' R U' R' L U' | U' L B R' L U' B' R | U' L' R B' R B R' L | B' L' U R' B U L' R
+case Advanced 22 |  | R' L U R' L' U R U R | R U' R' B L U' B' R | R L R U L U' R' L R' | L' R L' U' R U L R L
+case Advanced 23 |  | U R L R U L' U' R U' | U L B R' U' B' R U' | B U L U' R' L' R B' | R U L R B' U' B R U'
+case Advanced 24 |  | R' U' R' U' L R U' L' R | R' B U L' B' R U R' | R L' R U L' U' R' L' R' | L' R' L' U' R' U L R' L
+case Advanced 25 |  | R U' R L R U R L' R' | R L R' U' R' L' R' U R' | R' L' U' R U' L' R' U R L' U | U' L R' U' R L U R' U L R
+case Advanced 26 |  | U R U' L' U L U R' U | U L' U R U R' U' L U | B U R L R' U' B' U' | U' B' U' L' R L U B
+case Advanced 27 |  | U R L R U R' U R' L' | L R U' R U' R' L' R' U' | R L B' U B' R' U' R' B' | B R U R B U' B L' R'
+case Advanced 28 |  | U' R U' R U L U R L' | R' L U R U L U' L U' | U R' L' R' U R' U R L R' | U R B U' L U B' U R'
+case Advanced 29 |  | U L' R U R' L R U R' | R' B U L' R B' L' U | L' R B' R' B R' L U | R' L U' B' R U' L B
+case Advanced 30 |  | U R' U L U' R' L' R' U' | U R' B U R B' L' U' | B R' L R U L' U' B' | U R' B' U B R' L' U' R'
+case Advanced 31 |  | L R' U' L' U' R' U R' U | U L' U L' U' R' U' L' R | R L' R' U' R U' R L R U' | R U' B U' L' U B' R' U'
+case Advanced 32 |  | U' R U' L' U' L U R' U' | U' L' U R U' R' U' L U' | U B U R L' R' U' B' | B' U' L' R' L U B U
+case Advanced 33 |  | R' U R U R' U R' U R' U' | L U R U R' U' L' R U' R' | U' R U' L' U R' U R' L R | U R' U L U' L' R' U R' U
+case Advanced 34 |  | U R U' R U' R U' R' U' R | R U R' L U R U' R' U' L' | R' L' R U' R U' L U R' U | U' R U' R L U L' U' R U'
+case Advanced 35 |  | L B R' B' R U R' U' | L R' U' R U B' U' B | U R L' B' U B U' R' | B' R U R' U' L B R'
+case Advanced 36 |  | U R U' R' B R B' L' | B' U B U' R' U R L' | R U B' U' B L R' U' | R B' L' U R U' R' B
+case Advanced 37 |  | R U' R' B R B' L' U | U' L B R' B' R U R' | U' R' U R L' B' U B | B' U' B L R' U' R U
+case Advanced 38 |  | B R' U L U' R B' U' | R U R' L' R' L' R L' U' | U' B' L U' R U L' B | U R' L B R' U L' B'
+case Advanced 39 |  | U B R' U L' U' R B' | U L R' L R L R U' R' | B' L U' R' U L' B U | B L U' R B' L' R U'
+case Advanced 40 |  | U' R U R' L B' U' B | B' U B L' R U' R' U | R L' R U R U R' U L R | R' L' U' R U' R' U' R' L R'
+case Advanced 41 |  | B R' L' R B' R U R' | U' R L' R L' R' U L' R' | B R U' L B' U' R L' | U R' B' L R' U B L'
+case Advanced 42 |  | R U' R' B R' L R B' | R L U' R L R' L R' U | L R' U B L' U R' B' | L B' U' R L' B R U'
+case Advanced 43 |  | R' U B L' B' U' R U | U' R' U B L B' U' R | U L' R' B' R' B R L | L' R' B' R B R L U'
+case Advanced 44 |  | L R' L R U R U' R' L | L' R U R' U' R' L' R L' | L' R U R U' R' L' R' L' | L R L R U R' U' R' L
+case Advanced 45 |  | L U R U' R' U' L U L | R U' B' U B U R L' R | R' U R U B' U B U L' | R B R B' R U R U' L'
+case Advanced 46 |  | L' U' L' U R U R' U' L' | R' L R' U' B' U' B U R' | L U' B' U' B U' R' U' R | L U R' U' R' B R' B' R'
+case Advanced 47 |  | L U' L R' U' R' U' L R' | U' L' R U' R' L U R U R' | R' U L U' R L U L' U' L' | R' L' R' L' U L R L R U'
+case Advanced 48 |  | R' U R' L U L U R' L | L U' R' U L' R' U' R U R | L R L R U' R' L' R' L' U | L R L' R' U' L R' L' U R
+case Advanced 49 |  | U' L' R' L' U' R U L' U | B' U' R' U L R L' B | U' R' B' L U B L' U | R' B' U' L' R U R' L' B
+case Advanced 50 |  | R L' U R U R L' U L' | R U' R' U' L' R U R' L U | L U L U' L' R' U L' U' R | U R' L' R' L' U' L R L R
+case Advanced 51 |  | U' L U' R' U L R L U | B' L R' L' U' R U B | U' L B' U' L' B R U | B' L R U' R' L U B R
+case Advanced 52 |  | L' R U' L' U' L' R U' R | R' U' R' U R L U' R U L' | U' L R L R U R' L' R' L' | R' U' L R L' U R L R' L'
+case Advanced 53 |  | B U' B' R L' U L U' | U L' U' L R' B U B' | B' U R U R U' R B L' | L B' R' U R' U' R' U' B
+case Advanced 54 |  | U B' R' L R' L' R B | B' R' L R L' R B U' | R B' L B R U' R' U R | R' U' R U R' B' L' B R'
+case Advanced 55 |  | B' U L R B U' R' L' | L R U B' R' L' U' B | L U' B' R B U L' U' | U L U' B' R' B U L'
+case Advanced 56 |  | R' U R' U' R' B U B' R' | R B U' B' R U R U' R | R' U R' U R' L' R L R' U | U' R L' R' L R U' R U' R
+case Advanced 57 |  | U' L' R' L' U' L U' L R | R' L' U L' U L R L U | U R U R L R' U' L' U R' U | U' R U' L U R L' R' U' R' U'
+case Advanced 58 |  | R' L' R U R U L U' R' U' | U R U L' U' R' U' R' L R | U' L' U' R U L U L R' L' | L R L' U' L' U' R' U L U
+case Advanced 59 |  | U L' R U R' U' L R U' R' | R U R' L' U R U' R' L U' | B U' R B' R' L' U' R' U | U' R U L R B R' U B'
+case Advanced 60 |  | R U' R L' R U' R' L R U' | U' R L' R' U R' U L U' R | B R L' U' L' R' B' R U' | L' U L R' L R' U' R L' R
+case Advanced 61 |  | U' R U R' L U' R' U R L' | R' U' L' R U R' L U R U' | U' L U' R' U R L U' L U' | R U L' R' L' R' U L' U R
+case Advanced 62 |  | L R U' R' U L' R U R' U' | R U' B R L' U' L' R' B' | R U' R' L R' L U L' R L' | U L' R L U' L U' R' U L'
+case Advanced 63 |  | U R' L' R U R' L R' U R' | R' U L' U' R U' R L R' U | U R' B R L U L R' B' | R' L R' U R L' R L' U' L
+case Advanced 64 |  | L R' U' R U L' R U' R' U | U R' U' L' R U' R' L U R | U L' U L' R' U' R U L' U | R' U' L U' R L R L U' R'
+case Advanced 65 |  | U R U' R' L U' R U R' L' | B R L U L R' B' U R' | L R' L U' L' R L' R U R' | L U' R U L' U L' R' L U'
+case Advanced 66 |  | U' R U' R' B R B' L' U' | U' B' U' B L R' U' R U' | U' R L' B' U B U' R' U' | R' U' R' B R B' L' U R'
+case Advanced 67 |  | U L B R' B' R U R' U | U R' U R L' B' U B U | U R U B' U' B L R' U | R U' L B R' B' R U R
+case Advanced 68 |  | R' L' R B U R U B' R | R' B U' R' U' B' R' L R | L' R' L U L R L U' L | L' U L' R' L' U' L' R L
+case Advanced 69 |  | R U L' R L' R' L' U R' U | U' R U' L R L R' L U' R' | L R U' L' R' U R' U R' U' R' | R U R U' R U' R L U R' L'
+case Advanced 70 |  | R U' L R L R' L U' R' U' | U' L' U' R L' R L R U' L | U' R U' L' R' U L U' R' U' R | R U' L' R' U L U' R' U' R U'
+case Advanced 71 |  | U R U L' R L' R' L' U R' | L' U R' L' R' L R' U L U | R' U R U L' U' R L U R' U | U R' U R U L' U' R L U R'
+case Advanced 72 |  | U L' U R' L' R' L R' U L | L' U' R L' R L R U' L U' | R' L U' L R U R' U' R U L | L' U' R' U R U' R' L' U L' R
+case Advanced 73 |  | R' U' R B' R' U R U' B U | U' B' U R' U' R B R' U R | R' U' R B R' U R U' B' U | U' B U R' U' R B' R' U R
+case Advanced 74 |  | U L U' R' U' R U' R U' L' R' | L U' R' B' R U' R B R U' | U' R' L U' R' L R U R U L | R L' U R' L' R L' R U R U
+case Advanced 75 |  | R L U R' U R' U R U L' U' | U R' B' R' U R' B R U L' | L' U' R' U' R' L' R U L' R U | U' R' U' R' L R' L R U' L R'
+case Advanced 76 |  | R' U' L' U' R U B R B' U | U' B R' B' U' R' U L U R | R U' L R U R' B R' U' B' | B U R B' R U' R' L' U R'

@@ -89,6 +89,19 @@ const TRAINER_ACTIONS: [Action; 9] = [
     Action::SortTrainerCases,
     Action::TrainerCaseAttempts,
 ];
+const LIBRARY_ACTIONS: [Action; 11] = [
+    Action::OpenLibrary,
+    Action::NextLibraryPuzzle,
+    Action::CycleCaseStatus,
+    Action::ToggleFavouriteAlgorithm,
+    Action::AddLibraryAlgorithm,
+    Action::EditLibraryNote,
+    Action::StartLibraryReview,
+    Action::GradeAgain,
+    Action::GradeHard,
+    Action::GradeGood,
+    Action::GradeEasy,
+];
 const CHART_ACTIONS: [Action; 10] = [
     Action::NextChartView,
     Action::NextChartEvent,
@@ -362,6 +375,7 @@ impl Render for KeybindsView {
             (strings.help_section_screens, &SCREEN_ACTIONS[..]),
             (strings.help_section_charts, &CHART_ACTIONS[..]),
             (strings.nav_trainer, &TRAINER_ACTIONS[..]),
+            (strings.nav_library, &LIBRARY_ACTIONS[..]),
             (strings.nav_multi_blind, &MULTI_BLIND_ACTIONS[..]),
         ];
         let capture_hint = self.capturing.map(|action| {
@@ -498,6 +512,17 @@ fn action_label(strings: &'static Strings, action: Action) -> &'static str {
         Action::EditTrainerAlgorithm => strings.trainer_edit_algorithm,
         Action::SortTrainerCases => strings.trainer_sort_slowest,
         Action::TrainerCaseAttempts => strings.trainer_case_attempts,
+        Action::OpenLibrary => strings.action_open_library,
+        Action::NextLibraryPuzzle => strings.action_next_library_puzzle,
+        Action::CycleCaseStatus => strings.action_cycle_case_status,
+        Action::ToggleFavouriteAlgorithm => strings.library_favourite,
+        Action::AddLibraryAlgorithm => strings.library_add_algorithm,
+        Action::EditLibraryNote => strings.library_edit_note,
+        Action::StartLibraryReview => strings.action_start_library_review,
+        Action::GradeAgain => strings.library_grade_again,
+        Action::GradeHard => strings.library_grade_hard,
+        Action::GradeGood => strings.library_grade_good,
+        Action::GradeEasy => strings.library_grade_easy,
         Action::OpenMultiBlind => strings.action_open_multi_blind,
         Action::CopyMultiBlindScrambles => strings.action_copy_multi_blind_scrambles,
         Action::SaveMultiBlindScrambles => strings.action_save_multi_blind_scrambles,

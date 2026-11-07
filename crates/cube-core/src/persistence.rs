@@ -23,6 +23,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::goals::Goal;
 use crate::history::History;
+use crate::library::LibraryData;
 use crate::merge::{self, MergeSummary};
 use crate::multi_blind::MultiBlindData;
 use crate::settings::Settings;
@@ -58,6 +59,12 @@ pub fn history_file() -> Result<PathBuf> {
 /// because that file is cube-tui's.
 pub fn goals_file() -> Result<PathBuf> {
     Ok(data_dir()?.join("goals.json"))
+}
+
+/// Returns the algorithm library's progress, kept out of `times.json` so that
+/// cube-tui never sees it.
+pub fn library_file() -> Result<PathBuf> {
+    Ok(data_dir()?.join("library.json"))
 }
 
 /// Returns the algorithm trainer's data, kept out of `times.json` so that
@@ -539,6 +546,29 @@ pub fn save_goals(path: &Path, goals: &[Goal]) -> Result<()> {
     write_atomic(path, &text).with_context(|| format!("Could not save goals to {}", path.display()))
 }
 
+/// Loads the library's progress; a missing file means nothing was learned yet.
+///
+/// # Errors
+/// Fails when the file exists but can't be read, which must never be taken for
+/// an empty library: the next save would overwrite it.
+pub fn load_library(path: &Path) -> Result<LibraryData> {
+    let Some(text) = read_if_present(path)? else {
+        return Ok(LibraryData::default());
+    };
+    serde_json::from_slice(&text)
+        .with_context(|| format!("Invalid library data in {}", path.display()))
+}
+
+/// Saves the library's progress to `path` atomically.
+///
+/// # Errors
+/// Fails when the file can't be written.
+pub fn save_library(path: &Path, data: &LibraryData) -> Result<()> {
+    let text = serde_json::to_vec(data).context("Could not serialize the library data")?;
+    write_atomic(path, &text)
+        .with_context(|| format!("Could not save library data to {}", path.display()))
+}
+
 /// Loads the trainer's data; a missing file means nothing was trained yet.
 ///
 /// A file that exists but can't be read is an error, never empty data, or the
@@ -793,6 +823,44 @@ mod tests {
             assert_eq!(fs::read_to_string(&path).unwrap(), broken);
         }
         fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn no_library_file_means_nothing_learned_yet() {
+        let dir = temporary_path();
+        let data = load_library(&dir.join("library.json")).unwrap();
+        assert_eq!(data, LibraryData::default());
+    }
+
+    #[test]
+    fn library_data_loads_as_it_was_saved() {
+        use crate::library::{Status, find_set};
+
+        let dir = temporary_path();
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("library.json");
+        let set = find_set("pll").unwrap();
+        let case = set.case("T").unwrap();
+        let mut data = LibraryData::default();
+        data.set_status(set, case.name, Status::Learned, 1_000);
+        data.add_custom(set, case, "R U R' U' R' F R2 U' R' U' R U R' F'");
+        data.set_note(set, case.name, "Headlights on the left".to_owned());
+        save_library(&path, &data).unwrap();
+
+        assert_eq!(load_library(&path).unwrap(), data);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn an_unreadable_library_file_is_an_error_and_stays_on_disk() {
+        let dir = temporary_path();
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("library.json");
+        std::fs::write(&path, "not json").unwrap();
+
+        assert!(load_library(&path).is_err());
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "not json");
+        std::fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]
