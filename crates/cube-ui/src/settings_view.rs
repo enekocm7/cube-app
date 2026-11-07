@@ -1713,6 +1713,7 @@ impl SettingsView {
         );
 
         let searching = !query(&self.search, cx).is_empty();
+        let set_background = cx.theme().secondary;
         let visibility_state = |on: bool| {
             if on {
                 strings.search_on
@@ -1835,7 +1836,9 @@ impl SettingsView {
                     ));
                     library_rows.push(
                         div()
-                            .pl_16()
+                            .pl_20()
+                            .w_full()
+                            .bg(set_background)
                             .child(self.library_set_row(set, visibility, strings, cx))
                             .into_any_element(),
                     );
