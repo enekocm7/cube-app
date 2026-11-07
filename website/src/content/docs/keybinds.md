@@ -66,11 +66,14 @@ nothing is selected.
 | Select or clear every case | `Shift + A` | Works on the trainer's cases |
 | Start training | `Q` | Works on the trainer's cases, where `Enter` does the same |
 | Show or hide the case | `H` | Works during a drill |
-| Edit the algorithm | `Shift + H` | Works on the trainer's cases, for the highlighted one |
+| Open the case in the library | `Shift + H` | Works on the trainer's cases, for the highlighted one |
 | Sort by slowest | `Shift + Y` | Works on the trainer's cases |
 | See the case's attempts | `Shift + Q` | Works on the trainer's cases |
+| Select the cases you are learning | `3` | Works on the trainer's cases. Selects those the library has as learning, and only those |
+| Select the cases due for review | `4` | Works on the trainer's cases. Selects those the library has due, and only those |
 | Show the library or the timer | `Shift + B` | Also the Library tab in the title bar. See [Library](#library) |
 | Next puzzle | `Shift + U` | Works in the library |
+| Train the case | `5` | Works in the library, for the highlighted case. Opens the trainer with only that case selected and starts it |
 | Change the case's status | `Shift + X` | Works in the library, for the highlighted case |
 | Favourite algorithm | `Shift + F` | Works in the library, for the highlighted algorithm |
 | Add algorithm | `Shift + I` | Works in the library, for the highlighted case |

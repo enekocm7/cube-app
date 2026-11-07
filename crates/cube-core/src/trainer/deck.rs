@@ -2,6 +2,10 @@
 
 use tnoodle::java::RandomSource;
 
+/// How many times a pass is shuffled in search of one with no item twice in a
+/// row, before settling for the last.
+const SHUFFLES: usize = 200;
+
 /// A shuffled pile of items. When it runs out it is shuffled again, so all of
 /// them keep coming up equally often.
 #[derive(Clone, Debug)]
@@ -41,10 +45,13 @@ impl<T: Copy + PartialEq> Deck<T> {
         }
         if self.dealt == self.items.len() {
             let last = self.items.last().copied();
-            self.shuffle(random);
-            if self.items.len() > 1 && self.items.first().copied() == last {
-                let other = 1 + bounded(random, self.items.len() - 1);
-                self.items.swap(0, other);
+            // Shuffle again until no item repeats, if it can be done at all.
+            let varied = self.items.iter().any(|item| *item != self.items[0]);
+            for _ in 0..SHUFFLES {
+                self.shuffle(random);
+                if !varied || self.is_separate(last) {
+                    break;
+                }
             }
             self.dealt = 0;
         }
@@ -61,6 +68,13 @@ impl<T: Copy + PartialEq> Deck<T> {
             self.dealt -= 1;
             self.items[self.dealt..].rotate_left(1);
         }
+    }
+
+    /// Returns whether no item follows an equal one, with `last` the item
+    /// that closed the previous pass. An item may be in the deck several
+    /// times, to come up more often.
+    fn is_separate(&self, last: Option<T>) -> bool {
+        last != self.items.first().copied() && self.items.windows(2).all(|pair| pair[0] != pair[1])
     }
 
     /// Shuffles every item with Fisher-Yates.
@@ -155,5 +169,21 @@ mod tests {
         pass(&mut deck, &mut random);
         deck.defer();
         assert_eq!(deck.dealt(), 2);
+    }
+
+    #[test]
+    fn a_repeated_item_comes_up_that_often_but_not_twice_running() {
+        let mut random = JavaRandom::new(8);
+        let mut deck = Deck::new(vec![1, 1, 1, 2, 2, 3, 4]);
+        let mut previous = None;
+        for _ in 0..20 {
+            let mut dealt = pass(&mut deck, &mut random);
+            for item in &dealt {
+                assert_ne!(Some(*item), previous);
+                previous = Some(*item);
+            }
+            dealt.sort_unstable();
+            assert_eq!(dealt, [1, 1, 1, 2, 2, 3, 4]);
+        }
     }
 }

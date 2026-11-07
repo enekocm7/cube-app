@@ -5,25 +5,24 @@
 //! panel, so timing works exactly as it does on the timer screen.
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ops::Range;
 use std::path::PathBuf;
-use std::rc::Rc;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use cube_core::format::format_ms;
-use cube_core::trainer::notation::AlgError;
+use cube_core::library::{Outcome, Status};
 use cube_core::trainer::{
-    AlgCase, AlgSet, Attempt, CaseGroup, CaseStats, CustomAlgError, Drill, GridStep, PLL,
-    TrainerData, case_diagram, check_algorithm, grid_step, next_set, puzzles, rows_before,
-    set_event, slowest_first,
+    AlgCase, AlgSet, Attempt, CaseGroup, CaseStats, Drill, GridStep, PLL, TrainerData,
+    TrainerPuzzle, case_diagram, grid_step, next_set, puzzles, rows_before, set_event,
+    slowest_first, weighted_cases,
 };
 use cube_core::{Action, Modifier, TimerOutcome, WcaEvent, persistence};
 use cube_locale::Strings;
 use gpui_kit::assets::IconName;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
-use gpui_kit::component::input::{Input, InputEvent, InputState};
+use gpui_kit::component::input::{InputEvent, InputState};
 use gpui_kit::component::notification::Notification;
 use gpui_kit::component::scroll::Scrollbar;
 use gpui_kit::component::{
@@ -34,9 +33,9 @@ use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::{CubeApp, LastResult, Screen};
-use crate::details::{field_error, keep_focus};
 use crate::dialog_size::{DialogSize, dialog_body_height, dialog_title, dialog_width};
-use crate::dialog_submit::{DialogSubmit as _, Submit, close_action, on_press};
+use crate::dialog_submit::{DialogSubmit as _, close_action, on_press};
+use crate::library_screen::{NAV_WIDTH, chevron, tree_children, tree_count, tree_row};
 use crate::palette::Palette;
 use crate::panel_resize::{PanelSide, render_grab};
 use crate::scroll_fade::{FadeScroll, fading_scroll};
@@ -49,7 +48,6 @@ const SEARCH_WIDTH: Rems = Rems(14.);
 /// Width of the summary of a case beside its attempts.
 const SUMMARY_WIDTH: Rems = Rems(14.);
 /// Width of the list of puzzles and sets.
-const NAV_WIDTH: Rems = Rems(9.);
 /// A case in the picker, which follows the text size.
 const CARD_WIDTH: Rems = Rems(9.);
 const CARD_HEIGHT: Rems = Rems(13.);
@@ -105,6 +103,11 @@ pub(crate) struct TrainerState {
     case_attempts: Option<CaseAttempts>,
     grid_scroll: ScrollHandle,
     history_scroll: UniformListScrollHandle,
+    /// Scrolls the list of sets, which is long.
+    sets_scroll: ScrollHandle,
+    /// The puzzles and methods open in the list of sets.
+    open_puzzles: HashSet<WcaEvent>,
+    open_methods: HashSet<(WcaEvent, &'static str)>,
     diagrams: RefCell<Diagrams>,
 }
 
@@ -126,6 +129,9 @@ impl TrainerState {
             case_attempts: None,
             grid_scroll: ScrollHandle::default(),
             history_scroll: UniformListScrollHandle::new(),
+            sets_scroll: ScrollHandle::default(),
+            open_puzzles: HashSet::from([PLL.event]),
+            open_methods: HashSet::from([(PLL.event, PLL.method)]),
             diagrams: RefCell::default(),
         }
     }
@@ -401,12 +407,14 @@ impl CubeApp {
             Action::ToggleTrainerGroup => self.toggle_cursor_group(window, cx),
             Action::ToggleTrainerSet => self.toggle_trainer_set(window, cx),
             Action::StartTrainer | Action::OpenSolve => self.start_trainer(window, cx),
-            Action::EditTrainerAlgorithm => {
+            Action::EditTrainerAlgorithm if !self.trainer.set.is_stage() => {
                 if let Some(case) = self.trainer.cursor_case() {
-                    self.open_trainer_algorithm(case, window, cx);
+                    self.open_trainer_case_in_library(case, window, cx);
                 }
             }
             Action::SortTrainerCases => self.toggle_trainer_sort(cx),
+            Action::SelectLearningCases => self.select_library_cases(false, window, cx),
+            Action::SelectDueCases => self.select_library_cases(true, window, cx),
             Action::TrainerCaseAttempts => {
                 if let Some(case) = self.trainer.cursor_case() {
                     self.open_case_attempts(case, cx);
@@ -530,6 +538,52 @@ impl CubeApp {
         self.trainer.set = set;
         self.trainer.cursor = 0;
         self.trainer.grid_scroll.set_offset(Point::default());
+        self.trainer.open_puzzles.insert(set.event);
+        self.trainer.open_methods.insert((set.event, set.method));
+        // Each puzzle is one row of the scrolling list, with its sets inside.
+        let row = puzzles()
+            .iter()
+            .position(|puzzle| puzzle.event == set.event)
+            .unwrap_or(0);
+        self.trainer.sets_scroll.scroll_to_item(row);
+        cx.notify();
+    }
+
+    /// Selects exactly the cases of the set that the library has as being
+    /// learned, or as due for review.
+    fn select_library_cases(&mut self, due: bool, window: &mut Window, cx: &mut Context<Self>) {
+        let set = self.trainer.set;
+        let strings = self.strings();
+        let data = &self.library.data;
+        let due_now = data.due(now_unix_ms());
+        let cases: Vec<usize> = set
+            .cases
+            .iter()
+            .enumerate()
+            .filter(|(_, case)| {
+                if due {
+                    due_now
+                        .iter()
+                        .any(|waiting| waiting.set == set.id && waiting.case == case.name)
+                } else {
+                    data.status(set, case.name) == Status::Learning
+                }
+            })
+            .map(|(index, _)| index)
+            .collect();
+        if cases.is_empty() {
+            let message = if due {
+                strings.trainer_nothing_due
+            } else {
+                strings.trainer_nothing_learning
+            };
+            let notice = Notification::warning(message);
+            window.push_notification(notice.placement(Anchor::BottomRight), cx);
+            return;
+        }
+        self.trainer.data.select_only(set, &cases);
+        self.trainer.cursor = 0;
+        self.save_trainer(window, cx);
         cx.notify();
     }
 
@@ -583,6 +637,7 @@ impl CubeApp {
             window.push_notification(notice.placement(Anchor::BottomRight), cx);
             return;
         }
+        let cases = weighted_cases(set, &cases, &self.trainer.data.stats(set));
         match Drill::new(set, cases) {
             Ok(drill) => {
                 self.trainer.drill = Some(ActiveDrill {
@@ -625,17 +680,40 @@ impl CubeApp {
             return;
         };
         let case = active.drill.case();
-        let solved_at_unix_ms = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_or(0, |elapsed| elapsed.as_millis() as u64);
-        self.trainer.data.attempts.push(Attempt {
-            set: active.drill.set().id.to_owned(),
+        let set = active.drill.set();
+        let solved_at_unix_ms = now_unix_ms();
+        let mean_before_ms = self
+            .trainer
+            .data
+            .stats(set)
+            .get(case.name)
+            .and_then(|stats| stats.mean_ms);
+        let attempt = Attempt {
+            set: set.id.to_owned(),
             case: case.name.to_owned(),
             time_ms,
             modifier,
             scramble: active.drill.prompt().scramble.clone(),
             solved_at_unix_ms,
-        });
+        };
+        let time = attempt.effective_ms();
+        self.trainer.data.attempts.push(attempt);
+        let clean_streak = self.trainer.data.clean_streak(set, case.name);
+        // The result also moves the case along in the library.
+        if !set.is_stage() {
+            let outcome = Outcome {
+                time_ms: time,
+                mean_before_ms,
+                clean_streak,
+            };
+            self.library
+                .data
+                .record_attempt(set, case.name, outcome, solved_at_unix_ms);
+            self.save_library(window, cx);
+        }
+        let Some(active) = &mut self.trainer.drill else {
+            return;
+        };
         active.revealed = false;
         active.selected = None;
         let advanced = active.drill.advance();
@@ -767,36 +845,6 @@ impl CubeApp {
         cx.notify();
     }
 
-    /// Replaces a case's algorithm, or brings back the default with empty
-    /// text. Returns why the text cannot be used, to show under the field.
-    fn set_trainer_algorithm(
-        &mut self,
-        set: &'static AlgSet,
-        case: &'static AlgCase,
-        text: &str,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> Result<(), String> {
-        let strings = self.strings();
-        let algorithm = if text.is_empty() {
-            None
-        } else {
-            check_algorithm(set, case, text).map_err(|error| match error {
-                CustomAlgError::Notation(AlgError::InvalidMove(part)) => {
-                    strings.trainer_algorithm_invalid.replace("{move}", &part)
-                }
-                CustomAlgError::Notation(AlgError::Empty) | CustomAlgError::WrongCase => strings
-                    .trainer_algorithm_wrong_case
-                    .replace("{case}", case.name),
-            })?;
-            Some(text.to_owned())
-        };
-        self.adopt_trainer_algorithm(set, case, algorithm.as_deref(), window, cx);
-        self.follow_library_algorithm(set, case, algorithm, window, cx);
-        cx.notify();
-        Ok(())
-    }
-
     /// Drills `case` with the algorithm chosen for it in the library or here.
     pub(crate) fn follow_library_algorithm(
         &mut self,
@@ -812,91 +860,37 @@ impl CubeApp {
         self.save_trainer(window, cx);
     }
 
-    /// Opens the dialog that replaces a case's algorithm.
-    fn open_trainer_algorithm(&self, case: usize, window: &mut Window, cx: &mut Context<Self>) {
-        let strings = self.strings();
+    /// Shows the trainer with only `case` selected, and starts drilling it.
+    pub(crate) fn train_case(
+        &mut self,
+        set: &'static AlgSet,
+        case: &'static AlgCase,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(position) = set.position(case.name) else {
+            return;
+        };
+        self.trainer.drill = None;
+        self.trainer.case_attempts = None;
+        self.select_trainer_set(set, cx);
+        self.trainer.data.select_only(set, &[position]);
+        self.save_trainer(window, cx);
+        self.show_screen(Screen::Trainer, cx);
+        self.start_trainer(window, cx);
+    }
+
+    /// Shows a case in the library, where its algorithms are edited.
+    fn open_trainer_case_in_library(
+        &mut self,
+        case: usize,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         let set = self.trainer.set;
-        let case = &set.cases[case];
-        let current = self
-            .trainer
-            .data
-            .custom_algorithm(set, case.name)
-            .unwrap_or_default()
-            .to_owned();
-        let input = cx.new(|cx| {
-            InputState::new(window, cx)
-                .default_value(current)
-                .placeholder(case.algorithm)
-        });
-        let error = cx.new(|_| None::<String>);
-        let entity = cx.entity().downgrade();
-        let hint = strings
-            .trainer_algorithm_hint
-            .replace("{algorithm}", case.algorithm);
-        let title = format!("{} · {}", strings.trainer_edit_algorithm, case.name);
-        let first_build = std::cell::Cell::new(true);
-        window.open_dialog(cx, move |dialog, window, cx| {
-            if first_build.replace(false) {
-                input.focus_handle(cx).focus(window, cx);
-            }
-            let theme = cx.theme();
-            let muted = theme.muted_foreground;
-            let red = Palette::of(cx).red;
-            let message = error.read(cx).clone();
-            let (input_for_save, error_for_save) = (input.clone(), error.clone());
-            let entity = entity.clone();
-            let save: Submit = Rc::new(move |window, cx| {
-                let text = input_for_save.read(cx).value().trim().to_owned();
-                let saved = entity.update(cx, |app, cx| {
-                    let saved = app.set_trainer_algorithm(set, case, &text, window, cx);
-                    if saved.is_ok() {
-                        app.focus.focus(window, cx);
-                    }
-                    saved
-                });
-                match saved {
-                    Ok(Ok(())) | Err(_) => window.close_dialog(cx),
-                    Ok(Err(message)) => {
-                        error_for_save.update(cx, |error, _| *error = Some(message));
-                        window.refresh();
-                    }
-                }
-            });
-            dialog
-                .title(dialog_title(title.clone(), strings.close))
-                .close_button(false)
-                .w(dialog_width(DialogSize::FORM, window))
-                .submit_on_enter(&save)
-                .child(
-                    v_flex()
-                        .gap_2()
-                        .py_2()
-                        .child(keep_focus(
-                            "trainer-algorithm-field",
-                            Input::new(&input).focus_bordered(false),
-                        ))
-                        .children(field_error(message.as_ref(), red))
-                        .child(div().text_xs().text_color(muted).child(hint.clone())),
-                )
-                .footer(
-                    h_flex()
-                        .w_full()
-                        .justify_end()
-                        .gap_2()
-                        .child(
-                            Button::new("trainer-algorithm-cancel")
-                                .outline()
-                                .label(strings.cancel)
-                                .on_click(|_, window, cx| window.close_dialog(cx)),
-                        )
-                        .child(
-                            Button::new("trainer-algorithm-save")
-                                .primary()
-                                .label(strings.save)
-                                .on_click(on_press(&save)),
-                        ),
-                )
-        });
+        if !set.is_stage() {
+            self.open_in_library(set, &set.cases[case], window, cx);
+        }
     }
 
     /// Opens the case of an attempt: its drawing, its algorithm and the
@@ -994,45 +988,142 @@ impl CubeApp {
             )
     }
 
-    /// The puzzles and, under each, the sets that train it.
+    /// The puzzles, each a dropdown of its methods and those of their sets.
     fn render_set_list(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
         let theme = cx.theme();
-        let (border, muted) = (theme.border, theme.muted_foreground);
-        let current = self.trainer.set.id;
-        let mut list = v_flex()
+        let (border, background) = (theme.border, theme.background);
+        let items: Vec<AnyElement> = puzzles()
+            .iter()
+            .enumerate()
+            .map(|(index, puzzle)| self.render_trainer_nav_puzzle(index, puzzle, cx))
+            .collect();
+        FadeScroll::new("trainer-sets", background)
+            .track(&self.trainer.sets_scroll)
             .w(NAV_WIDTH)
             .flex_none()
             .h_full()
             .p_2()
-            .gap_1()
+            .gap_0p5()
             .border_r_1()
-            .border_color(border);
-        for puzzle in puzzles() {
-            list = list.child(
+            .border_color(border)
+            .children(items)
+    }
+
+    /// A puzzle and, when open, its methods.
+    fn render_trainer_nav_puzzle(
+        &self,
+        index: usize,
+        puzzle: &'static TrainerPuzzle,
+        cx: &mut Context<Self>,
+    ) -> AnyElement {
+        let open = self.trainer.open_puzzles.contains(&puzzle.event);
+        let event = puzzle.event;
+        let row = tree_row(("trainer-puzzle", index), false, cx)
+            .child(chevron(open, cx))
+            .child(
                 div()
-                    .px_2()
-                    .pt_1()
-                    .text_xs()
-                    .text_color(muted)
-                    .child(puzzle.event.name()),
-            );
-            for &set in &puzzle.sets {
-                list = list.child(
-                    Button::new(set.id)
-                        .ghost()
-                        .small()
-                        .w_full()
-                        .label(set.name)
-                        .tab_stop(false)
-                        .selected(set.id == current)
-                        .on_click(cx.listener(move |app, _, window, cx| {
-                            app.select_trainer_set(set, cx);
-                            app.focus.focus(window, cx);
-                        })),
-                );
-            }
-        }
-        list
+                    .flex_1()
+                    .min_w_0()
+                    .truncate()
+                    .font_weight(FontWeight::MEDIUM)
+                    .child(event.name()),
+            )
+            .on_click(cx.listener(move |app, _, window, cx| {
+                if !app.trainer.open_puzzles.remove(&event) {
+                    app.trainer.open_puzzles.insert(event);
+                }
+                app.focus.focus(window, cx);
+                cx.notify();
+            }));
+        let methods = open.then(|| {
+            let rows: Vec<AnyElement> = puzzle
+                .methods()
+                .into_iter()
+                .enumerate()
+                .map(|(at, (method, sets))| {
+                    self.render_trainer_nav_method(index * 16 + at, event, method, &sets, cx)
+                })
+                .collect();
+            tree_children(cx).children(rows)
+        });
+        v_flex()
+            .w_full()
+            .gap_0p5()
+            .child(row)
+            .children(methods)
+            .into_any_element()
+    }
+
+    /// A method and, when open, its sets.
+    fn render_trainer_nav_method(
+        &self,
+        id: usize,
+        event: WcaEvent,
+        method: &'static str,
+        sets: &[&'static AlgSet],
+        cx: &mut Context<Self>,
+    ) -> AnyElement {
+        let muted = cx.theme().muted_foreground;
+        let open = self.trainer.open_methods.contains(&(event, method));
+        let holds_current = sets.iter().any(|set| set.id == self.trainer.set.id);
+        let row = tree_row(("trainer-method", id), false, cx)
+            .text_sm()
+            .child(chevron(open, cx))
+            .child(
+                div()
+                    .flex_1()
+                    .min_w_0()
+                    .truncate()
+                    .when(!holds_current, |name| name.text_color(muted))
+                    .child(method),
+            )
+            .on_click(cx.listener(move |app, _, window, cx| {
+                if !app.trainer.open_methods.remove(&(event, method)) {
+                    app.trainer.open_methods.insert((event, method));
+                }
+                app.focus.focus(window, cx);
+                cx.notify();
+            }));
+        let rows = open.then(|| {
+            let rows: Vec<AnyElement> = sets
+                .iter()
+                .enumerate()
+                .map(|(at, &set)| self.render_trainer_nav_set(id * 128 + at, set, cx))
+                .collect();
+            tree_children(cx).children(rows)
+        });
+        v_flex()
+            .w_full()
+            .gap_0p5()
+            .child(row)
+            .children(rows)
+            .into_any_element()
+    }
+
+    /// A set, with how many of its cases are selected.
+    fn render_trainer_nav_set(
+        &self,
+        id: usize,
+        set: &'static AlgSet,
+        cx: &mut Context<Self>,
+    ) -> AnyElement {
+        let language = self.language();
+        let current = set.id == self.trainer.set.id;
+        let selected = self.trainer.data.selected(set).len();
+        let count = format!(
+            "{}/{}",
+            language.format_count(selected as u64),
+            language.format_count(set.cases.len() as u64)
+        );
+        tree_row(("trainer-set", id), current, cx)
+            .text_sm()
+            .child(div().flex_1().min_w_0().truncate().child(set.name))
+            .child(tree_count(count, cx))
+            .on_click(cx.listener(move |app, _, window, cx| {
+                app.select_trainer_set(set, cx);
+                app.focus.focus(window, cx);
+            }))
+            .into_any_element()
     }
 
     /// The set's name, how much of it is selected, and what to do with that.
@@ -1094,6 +1185,7 @@ impl CubeApp {
                         app.focus.focus(window, cx);
                     })),
             )
+            .child(self.render_library_shortcuts(cx))
             .child(
                 Button::new("trainer-sort")
                     .ghost()
@@ -1117,6 +1209,40 @@ impl CubeApp {
                     .tab_stop(false)
                     .on_click(cx.listener(|app, _, window, cx| {
                         app.start_trainer(window, cx);
+                        app.focus.focus(window, cx);
+                    })),
+            )
+    }
+
+    /// The shortcuts that select the cases the library has as being learned
+    /// and as due for review.
+    fn render_library_shortcuts(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
+        let strings = self.strings();
+        h_flex()
+            .flex_none()
+            .child(
+                Button::new("trainer-learning")
+                    .ghost()
+                    .small()
+                    .icon(IconName::Star)
+                    .tooltip(strings.trainer_select_learning)
+                    .accessibility_label(strings.trainer_select_learning)
+                    .tab_stop(false)
+                    .on_click(cx.listener(|app, _, window, cx| {
+                        app.select_library_cases(false, window, cx);
+                        app.focus.focus(window, cx);
+                    })),
+            )
+            .child(
+                Button::new("trainer-due")
+                    .ghost()
+                    .small()
+                    .icon(IconName::RefreshCw)
+                    .tooltip(strings.trainer_select_due)
+                    .accessibility_label(strings.trainer_select_due)
+                    .tab_stop(false)
+                    .on_click(cx.listener(|app, _, window, cx| {
+                        app.select_library_cases(true, window, cx);
                         app.focus.focus(window, cx);
                     })),
             )
@@ -1271,21 +1397,23 @@ impl CubeApp {
                         })),
                 ),
             )
-            .child(
-                div().absolute().top_1().right_1().child(
-                    Button::new(("trainer-edit", index))
-                        .ghost()
-                        .xsmall()
-                        .icon(IconName::Pencil)
-                        .tooltip(strings.trainer_edit_algorithm)
-                        .accessibility_label(strings.trainer_edit_algorithm)
-                        .tab_stop(false)
-                        .on_click(cx.listener(move |app, _, window, cx| {
-                            cx.stop_propagation();
-                            app.open_trainer_algorithm(index, window, cx);
-                        })),
-                ),
-            )
+            .when(!set.is_stage(), |card| {
+                card.child(
+                    div().absolute().top_1().right_1().child(
+                        Button::new(("trainer-edit", index))
+                            .ghost()
+                            .xsmall()
+                            .icon(IconName::BookOpen)
+                            .tooltip(strings.trainer_open_in_library)
+                            .accessibility_label(strings.trainer_open_in_library)
+                            .tab_stop(false)
+                            .on_click(cx.listener(move |app, _, window, cx| {
+                                cx.stop_propagation();
+                                app.open_trainer_case_in_library(index, window, cx);
+                            })),
+                    ),
+                )
+            })
     }
 
     /// A case and how it has gone, beside the list of all its attempts.
@@ -1757,4 +1885,11 @@ impl CubeApp {
                 .child(div().font_weight(FontWeight::SEMIBOLD).child(case.name))
         })
     }
+}
+
+/// The time now, in milliseconds since the epoch.
+fn now_unix_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |elapsed| elapsed.as_millis() as u64)
 }

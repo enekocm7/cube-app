@@ -1,6 +1,7 @@
 # The 4x4x4 sets. See library/catalog.rs for the format.
 
 set 4x4-oll-parity
+step setup
 name OLL parity
 method Reduction
 before all -layer:U
@@ -14,6 +15,7 @@ case Pure |  | 2R' U2 2L F2 2L' F2 2R2 U2 2R U2 2R' U2 F2 2R2 F2 | y2 F R U R' U
 case M |  | M Rw U2 x Rw U2 Rw U2 Rw' U2 Lw U2 Rw' U2 Rw U2 Rw' U2 Rw' M' | y2 2R2 U2 2R2 Uw2 2R2 Uw2 Rw U2 x Rw U2 Rw U2 Rw' U2 Lw U2 Rw' U2 Rw U2 Rw' U2 Rw' | M Rw2 B2 U2 Lw U2 Rw' U2 Rw U2 F2 Rw F2 Lw' B2 Rw2 M' | M Rw' U2 Rw U2 Rw U2 Rw2 F2 Rw' U2 Rw' U2 F2 Rw2 F2 M'
 
 set 4x4-pll-parity
+step setup
 name PLL parity
 method Reduction
 before all -layer:U face:U
@@ -49,6 +51,7 @@ case Sb |  | F R U' R' U' R U R' F' R U R' U' R' F R F' 2R2 U2 2R2 u2 2R2 u2
 case X |  | Rw2 F2 U2 Rw2 F' U' R' U R U' R' U R U' R' U R F R2 U2 F2 Rw2 | r2 B2 U2 r2 B R U R' U' R U R' U' R U R' U' B' R2 U2 B2 r2 | x' R U' R' D R U R' D' R U R' D R U' R' D' x 2R2 U2 2R2 u2 2R2 u2
 
 set 4x4-edges
+step setup
 name Last edges
 method Reduction
 before touching:1
@@ -61,6 +64,7 @@ group Pairing
 case Flipped pair |  | Uw' R U R' F R' F' R Uw
 
 set 4x4-centers
+step setup
 name Last centers
 method Reduction
 before touching:3 touching:2

@@ -17,6 +17,8 @@ mod review;
 mod tests;
 
 pub use catalog::{LibraryPuzzle, catalog, find_set, library_sets, search_cases};
-pub use check::{Recognition, case_origins, case_state, check, free_turns, recognition};
-pub use data::{CaseEntry, DueCase, LibraryData, Progress, Status};
+pub use check::{
+    Recognition, case_origins, case_state, check, free_turns, recognition, solves_from,
+};
+pub use data::{CaseEntry, DueCase, LibraryData, Outcome, Progress, Status};
 pub use review::{Grade, Review};

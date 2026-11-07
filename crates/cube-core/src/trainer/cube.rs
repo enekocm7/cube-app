@@ -3,13 +3,14 @@
 
 use anyhow::{Result, anyhow, bail};
 use tnoodle::java::RandomSource;
-use tnoodle::min2phase::tools::from_scramble;
+use tnoodle::min2phase::tools::{from_scramble, random_last_layer};
 use tnoodle::min2phase::{INVERSE_SOLUTION, Search};
 
 use super::deck::bounded;
 use super::notation::{self, AlgError, Face, Turn, invert, parse_outer, simplify, to_text};
 use super::three_by_three::PLL;
 use super::{AlgCase, AlgSet, Step};
+use crate::event::WcaEvent;
 pub use crate::library::check as check_algorithm;
 
 /// The longest solution asked of the solver. It finds one this short almost
@@ -39,6 +40,7 @@ pub(super) fn facelets(turns: &[Turn]) -> String {
 }
 
 /// A turn of the last layer.
+#[cfg(test)]
 const fn auf(quarters: u8) -> Turn {
     Turn::new(Face::U, quarters)
 }
@@ -83,25 +85,35 @@ impl Step {
                     facelets(&turns) == solved
                 })
             }
-            Self::Reference => false,
+            Self::Setup | Self::RandomLastLayer | Self::Stage | Self::Reference => false,
         }
     }
 
     /// Returns what goes before a case's setup, for variety that leaves the
-    /// case as it is: a turn of the last layer, and for orientation any
-    /// permutation of it too, since orienting never depends on that.
-    fn opening(self, random: &mut dyn RandomSource) -> Result<Vec<Turn>> {
-        let mut turns = Vec::new();
-        if self == Self::OrientLastLayer {
-            turns = setup(&PLL.cases[bounded(random, PLL.cases.len())])?;
-        }
-        turns.push(random_auf(random));
+    /// case as it is: for orientation any permutation of the last layer, since
+    /// orienting never depends on that, and for a pair any last layer at all.
+    fn opening(self, set: &AlgSet, random: &mut dyn RandomSource) -> Result<Vec<Turn>> {
+        let mut turns = match self {
+            Self::OrientLastLayer => setup(&PLL.cases[bounded(random, PLL.cases.len())])?,
+            Self::RandomLastLayer => solve_facelets(&random_last_layer(random))?,
+            _ => Vec::new(),
+        };
+        turns.extend(free_turns(set, random));
         Ok(turns)
     }
 }
 
-fn random_auf(random: &mut dyn RandomSource) -> Turn {
-    auf(bounded(random, 4) as u8)
+/// Random turns of the faces a set allows around its algorithms, such as a
+/// turn of the last layer. Rotations can't be part of a scramble, so they are
+/// left out.
+fn free_turns(set: &AlgSet, random: &mut dyn RandomSource) -> Vec<Turn> {
+    let faces = set
+        .turn_text
+        .split_whitespace()
+        .filter_map(|word| Face::from_letter(word.chars().next()?).filter(|_| word.len() == 1));
+    faces
+        .map(|face| Turn::new(face, bounded(random, 4) as u8))
+        .collect()
 }
 
 /// A random turn on a face other than the last one's and its opposite.
@@ -116,17 +128,32 @@ fn random_opening_turn(previous: Option<Face>, random: &mut dyn RandomSource) ->
     }
 }
 
-/// Generates a scramble that leaves the cube in `case`, with a random turn of
-/// the last layer on either side of it. The solver is fast enough here that
-/// there is no need to prepare scrambles ahead.
+/// Finds turns that lead from a solved cube to the one with these facelets.
+pub(super) fn solve_facelets(cube: &str) -> Result<Vec<Turn>> {
+    let solution = Search::new().solution(cube, MAX_SOLUTION, SOLVER_PROBES, 0, INVERSE_SOLUTION);
+    let Some(turns) = parse_outer(&solution) else {
+        bail!("The solver failed: {solution}");
+    };
+    Ok(turns)
+}
+
+/// Generates a scramble that leaves the puzzle in `case`, with a random turn
+/// of the layer a set leaves free on either side of it. The solver is fast
+/// enough here that there is no need to prepare scrambles ahead.
 pub fn generate_scramble(
     set: &AlgSet,
     case: &AlgCase,
     random: &mut dyn RandomSource,
 ) -> Result<String> {
-    let mut target = set.step.opening(random)?;
+    match (set.step, set.event) {
+        (Step::Reference, _) => bail!("{} can't be drilled", set.name),
+        (Step::Stage, _) => return super::stage::generate(case, random),
+        (_, WcaEvent::Cube3x3) => {}
+        _ => return super::small::generate(set, case, random),
+    }
+    let mut target = set.step.opening(set, random)?;
     target.extend(setup(case)?);
-    target.push(random_auf(random));
+    target.extend(free_turns(set, random));
 
     let mut opening: Vec<Turn> = Vec::with_capacity(OPENING_TURNS);
     for _ in 0..OPENING_TURNS {
@@ -138,16 +165,8 @@ pub fn generate_scramble(
     // lead from the opening to the target.
     let mut remainder = invert(&opening);
     remainder.extend_from_slice(&target);
-    let solution = Search::new().solution(
-        &facelets(&remainder),
-        MAX_SOLUTION,
-        SOLVER_PROBES,
-        0,
-        INVERSE_SOLUTION,
-    );
-    let Some(solution) = parse_outer(&solution) else {
-        bail!("The solver failed on {}: {solution}", case.name);
-    };
+    let solution = solve_facelets(&facelets(&remainder))
+        .map_err(|error| anyhow!("{} could not be scrambled: {error}", case.name))?;
 
     let scramble = simplify(opening.into_iter().chain(solution));
     if facelets(&scramble) != facelets(&target) {
@@ -226,7 +245,7 @@ mod tests {
 
     #[test]
     fn every_default_algorithm_solves_its_case() {
-        for set in all_sets() {
+        for set in all_sets().filter(|set| !set.is_stage()) {
             for case in set.cases {
                 assert_eq!(
                     check_algorithm(set, case, case.algorithm),
@@ -372,7 +391,7 @@ mod tests {
     #[test]
     fn every_generated_scramble_produces_its_case() {
         let mut random = JavaRandom::new(11);
-        for set in all_sets() {
+        for set in all_sets().filter(|set| set.event == WcaEvent::Cube3x3) {
             for case in set.cases {
                 for _ in 0..8 {
                     let scramble = generate_scramble(set, case, &mut random).unwrap();
@@ -399,7 +418,7 @@ mod tests {
                             });
                             assert!(solved, "{}", case.name);
                         }
-                        Step::Reference => panic!("{} can't be drilled", set.name),
+                        Step::Setup | Step::RandomLastLayer | Step::Stage | Step::Reference => {}
                     }
                 }
             }

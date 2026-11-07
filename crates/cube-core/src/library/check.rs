@@ -143,3 +143,19 @@ pub fn check(set: &AlgSet, case: &AlgCase, algorithm: &str) -> Result<(), Custom
         Err(CustomAlgError::WrongCase)
     }
 }
+
+/// Returns whether `algorithm` solves the position `state`, held any way and
+/// with any of the allowed turns on either side. This is what it means for a
+/// scramble to produce a case.
+pub fn solves_from(set: &AlgSet, state: &[u16], algorithm: &[Op]) -> bool {
+    let model = set.model();
+    let turns = free_turns(set);
+    model.holds(state).iter().any(|hold| {
+        turns.iter().any(|turn| {
+            let mut last = hold.clone();
+            model.apply(&mut last, turn)
+                && model.apply(&mut last, algorithm)
+                && finished(set, &last, &turns)
+        })
+    })
+}

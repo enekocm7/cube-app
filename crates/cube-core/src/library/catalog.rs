@@ -12,7 +12,8 @@
 //! turn U                    turns allowed on either side of an algorithm
 //! show all                  stickers to draw in color, by where they began
 //! view top                  `top` or `solid`
-//! step permute              only for a set the trainer drills
+//! step setup                only for a set the trainer drills: `orient`,
+//!                           `permute`, `setup` or `random-ll`
 //! source speedcubedb        where the algorithms came from
 //! group T                   the group of the cases that follow
 //! case T 1 | recognition | algorithm | algorithm
@@ -118,6 +119,8 @@ impl Draft {
         let step = match self.step {
             "orient" => Step::OrientLastLayer,
             "permute" => Step::PermuteLastLayer,
+            "setup" => Step::Setup,
+            "random-ll" => Step::RandomLastLayer,
             _ => Step::Reference,
         };
         Box::leak(Box::new(AlgSet {

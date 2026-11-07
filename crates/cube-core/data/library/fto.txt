@@ -1,6 +1,7 @@
 # The FTO sets. See library/catalog.rs for the format.
 
 set fto-reduction
+step setup
 name Reduction
 method Bencisco
 before all -layer:U -layer:R
@@ -51,6 +52,7 @@ case Reduction 39 |  | R U R' U' R'
 case Reduction 40 |  | R U R U R
 
 set fto-ll
+step setup
 name Last layer
 method Bencisco
 before all -layer:U

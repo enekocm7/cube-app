@@ -1,6 +1,7 @@
 # The 5x5x5 sets. See library/catalog.rs for the format.
 
 set 5x5-parity
+step setup
 name Edge parity
 method Reduction
 before touching:3 touching:1
@@ -13,6 +14,7 @@ group Parity
 case OLL parity |  | 2R2 B2 U2 2L U2 2R' U2 2R U2 F2 2R F2 2L' B2 2R2
 
 set 5x5-l2e
+step setup
 name L2E
 method Reduction
 before touching:1
@@ -36,6 +38,7 @@ case L2E 12 |  | Rw' U2 Rw' U2 B2 Rw' B2 Rw' F2 Lw2 F2 Rw U2 Rw2 | Rw' U2 Rw U2 
 case L2E 13 |  | Rw U R U' Rw2 U' R U Rw2 U R U' Rw' | r U R' U' r2 U' R' U r2 U R' U' r'
 
 set 5x5-l2c
+step setup
 name L2C
 method Reduction
 before touching:1 -face:U -face:F

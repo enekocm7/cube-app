@@ -43,7 +43,7 @@ impl Face {
         }
     }
 
-    const fn from_letter(letter: char) -> Option<Self> {
+    pub(super) const fn from_letter(letter: char) -> Option<Self> {
         match letter {
             'U' => Some(Self::U),
             'R' => Some(Self::R),
