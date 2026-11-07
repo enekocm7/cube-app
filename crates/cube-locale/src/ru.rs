@@ -579,7 +579,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_label: "Дисциплины через запятую (например, 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "Создать",
     relays_preparing: "Готовим скрамблы: {count}…",
-    relays_ready: "Нажмите {key}, чтобы начать, и затем после каждой собранной головоломки.",
     relays_running: "Головоломка {current} из {total}: {event}. Нажмите {key}, когда она собрана.",
     relays_empty: "Здесь появятся ваши попытки в эстафетах.",
     relays_unavailable: "Не удалось прочитать ваши эстафеты, поэтому пока их нельзя менять.",
@@ -591,4 +590,8 @@ pub const STRINGS: Strings = Strings {
     relays_scrambles_copied: "Скрамблы скопированы",
     toast_relay_load_failed: "Не удалось прочитать ваши эстафеты: {error}",
     toast_relay_save_failed: "Не удалось сохранить ваши эстафеты: {error}",
+    action_toggle_relay_key_splits: "Переключить клавишу таймера между остановкой эстафеты и завершением каждой головоломки",
+    relays_key_stops: "Клавиша останавливает эстафету",
+    relays_key_splits: "Клавиша завершает каждую головоломку",
+    relays_running_stop: "Головоломка {current} из {total}: {event}. Нажмите {key}, чтобы остановить эстафету, {split}, чтобы завершить эту головоломку.",
 };

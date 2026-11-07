@@ -579,7 +579,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_label: "项目以逗号分隔(例如 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "创建",
     relays_preparing: "正在准备 {count} 个打乱…",
-    relays_ready: "按 {key} 开始,之后每还原一个魔方就按一次。",
     relays_running: "第 {current}/{total} 个魔方:{event}。还原后按 {key}。",
     relays_empty: "你的接力记录将显示在这里。",
     relays_unavailable: "无法读取你的接力,因此暂时无法修改。",
@@ -591,4 +590,8 @@ pub const STRINGS: Strings = Strings {
     relays_scrambles_copied: "已复制打乱",
     toast_relay_load_failed: "无法读取你的接力:{error}",
     toast_relay_save_failed: "无法保存你的接力:{error}",
+    action_toggle_relay_key_splits: "在计时键停止接力与结束每个魔方之间切换",
+    relays_key_stops: "按键停止接力",
+    relays_key_splits: "按键结束每个魔方",
+    relays_running_stop: "第 {current}/{total} 个魔方:{event}。按 {key} 停止接力,按 {split} 结束当前魔方。",
 };

@@ -24,12 +24,16 @@ attempts you made at it stay.
 
 ## Timing an attempt
 
-1. Press the timer key or the **New relay** button. cube prepares a scramble for every puzzle and shows them all before you start. `Ctrl + B` copies
-   them.
-2. Press the timer key again. With inspection on there is one inspection for the whole relay; otherwise hold and
+1. Press the **New relay** button. cube prepares a scramble for every puzzle and shows them all on top, with the timer
+   under them as on the timer screen. `Ctrl + B` copies them.
+2. Press the timer key to start. With inspection on there is one inspection for the whole relay; otherwise hold and
    release as usual.
-3. Press the timer key as you finish each puzzle. The scramble of the next one appears and the split is kept.
-4. The last press stops the timer and records the relay.
+3. Press `Enter` as you finish each puzzle to keep its split and move to the next.
+4. Press the timer key to stop the whole relay and record it.
+
+If you would rather end each puzzle with the timer key, switch with the button beside the relay dropdown or `Ctrl + L`:
+then every press of the timer key ends a puzzle and the last one stops the relay. The choice is saved. A puzzle you
+never ended has no time of its own: the time since the last split goes to the puzzle you were on.
 
 `Esc` abandons scrambles you have not started on, or cancels a relay that is running.
 

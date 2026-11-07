@@ -914,8 +914,6 @@ pub struct Strings {
     pub relays_create: &'static str,
     /// `{count}`: the number of scrambles.
     pub relays_preparing: &'static str,
-    /// `{key}`: the timer key.
-    pub relays_ready: &'static str,
     /// `{current}`: the puzzle being solved. `{total}`: how many. `{event}`: its name. `{key}`: the timer key.
     pub relays_running: &'static str,
     pub relays_empty: &'static str,
@@ -934,6 +932,12 @@ pub struct Strings {
     pub toast_relay_load_failed: &'static str,
     /// `{error}`: the cause.
     pub toast_relay_save_failed: &'static str,
+    pub action_toggle_relay_key_splits: &'static str,
+    pub relays_key_stops: &'static str,
+    pub relays_key_splits: &'static str,
+    /// `{current}`, `{total}`, `{event}`: the puzzle. `{key}`: the timer key.
+    /// `{split}`: the key that finishes a puzzle.
+    pub relays_running_stop: &'static str,
 }
 
 #[cfg(test)]
@@ -1064,9 +1068,11 @@ mod tests {
                     .contains("{error}")
             );
             assert!(strings.relays_preparing.contains("{count}"));
-            assert!(strings.relays_ready.contains("{key}"));
             for placeholder in ["{current}", "{total}", "{event}", "{key}"] {
                 assert!(strings.relays_running.contains(placeholder));
+            }
+            for placeholder in ["{current}", "{total}", "{event}", "{key}", "{split}"] {
+                assert!(strings.relays_running_stop.contains(placeholder));
             }
             assert!(strings.relays_too_few.contains("{min}"));
             assert!(strings.relays_too_many.contains("{max}"));

@@ -579,7 +579,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_label: "Onderdelen, gescheiden door komma's (bijvoorbeeld 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "Maken",
     relays_preparing: "{count} scrambles voorbereiden…",
-    relays_ready: "Druk op {key} om te starten en daarna na elke opgeloste puzzel.",
     relays_running: "Puzzel {current} van {total}: {event}. Druk op {key} als hij opgelost is.",
     relays_empty: "Je estafettepogingen verschijnen hier.",
     relays_unavailable: "Je estafettes konden niet worden gelezen en kunnen voorlopig niet worden gewijzigd.",
@@ -591,4 +590,8 @@ pub const STRINGS: Strings = Strings {
     relays_scrambles_copied: "Scrambles gekopieerd",
     toast_relay_load_failed: "Je estafettes konden niet worden gelezen: {error}",
     toast_relay_save_failed: "Je estafettes konden niet worden opgeslagen: {error}",
+    action_toggle_relay_key_splits: "De timertoets wisselen tussen de estafette stoppen en elke puzzel afronden",
+    relays_key_stops: "Toets stopt de estafette",
+    relays_key_splits: "Toets rondt elke puzzel af",
+    relays_running_stop: "Puzzel {current} van {total}: {event}. Druk op {key} om de estafette te stoppen, {split} om deze puzzel af te ronden.",
 };

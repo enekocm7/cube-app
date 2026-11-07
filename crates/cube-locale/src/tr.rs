@@ -579,7 +579,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_label: "Virgülle ayrılmış kategoriler (örneğin 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "Oluştur",
     relays_preparing: "{count} karıştırma hazırlanıyor…",
-    relays_ready: "Başlamak için {key} tuşuna bas, sonra her bulmaca çözüldüğünde yine bas.",
     relays_running: "Bulmaca {current}/{total}: {event}. Çözülünce {key} tuşuna bas.",
     relays_empty: "Bayrak denemelerin burada görünecek.",
     relays_unavailable: "Bayraklarınız okunamadı, bu yüzden şimdilik değiştirilemez.",
@@ -591,4 +590,8 @@ pub const STRINGS: Strings = Strings {
     relays_scrambles_copied: "Karıştırmalar kopyalandı",
     toast_relay_load_failed: "Bayraklarınız okunamadı: {error}",
     toast_relay_save_failed: "Bayraklarınız kaydedilemedi: {error}",
+    action_toggle_relay_key_splits: "Zamanlayıcı tuşunu bayrağı durdurma ve her bulmacayı bitirme arasında değiştir",
+    relays_key_stops: "Tuş bayrağı durdurur",
+    relays_key_splits: "Tuş her bulmacayı bitirir",
+    relays_running_stop: "Bulmaca {current}/{total}: {event}. Bayrağı durdurmak için {key}, bu bulmacayı bitirmek için {split} tuşuna bas.",
 };

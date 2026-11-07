@@ -105,6 +105,7 @@ for valid bindings.
 | `Ctrl + E` | Create a custom relay, on the Relays screen |
 | `Ctrl + D` | Delete the selected custom relay, on the Relays screen |
 | `Ctrl + B` | Copy the relay's scrambles, on the Relays screen |
+| `Ctrl + L` | Switch the timer key between stopping the relay and ending each puzzle |
 | `/` | Jump to the search field in the shortcuts, settings, trainer and library |
 | `V` | Show the next charts view |
 | `F` | Filter charts by the next event |
@@ -158,7 +159,7 @@ Around the shortcuts:
 **Relays**
 
 - Time several puzzles as one attempt, with a split for each: a dropdown of presets such as 2x2x2 to 7x7x7, or a custom list of events.
-- See every scramble before starting, one inspection for the whole relay, and a key press at the end of each puzzle.
+- See every scramble before starting, one inspection for the whole relay, and a key to end each puzzle or to stop the whole relay.
 - Total, splits, best and mean per relay, with a `+2` or DNF on any puzzle.
 
 **Trainer**

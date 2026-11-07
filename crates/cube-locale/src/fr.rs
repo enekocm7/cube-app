@@ -580,7 +580,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_label: "Épreuves séparées par des virgules (par exemple 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "Créer",
     relays_preparing: "Préparation de {count} mélanges…",
-    relays_ready: "Appuyez sur {key} pour démarrer, puis après chaque puzzle résolu.",
     relays_running: "Puzzle {current} sur {total} : {event}. Appuyez sur {key} une fois résolu.",
     relays_empty: "Vos tentatives de relais apparaîtront ici.",
     relays_unavailable: "Vos relais n'ont pas pu être lus, ils ne peuvent donc pas être modifiés pour l'instant.",
@@ -592,4 +591,8 @@ pub const STRINGS: Strings = Strings {
     relays_scrambles_copied: "Mélanges copiés",
     toast_relay_load_failed: "Impossible de lire vos relais : {error}",
     toast_relay_save_failed: "Impossible d'enregistrer vos relais : {error}",
+    action_toggle_relay_key_splits: "Basculer la touche du chrono entre arrêter le relais et terminer chaque puzzle",
+    relays_key_stops: "La touche arrête le relais",
+    relays_key_splits: "La touche termine chaque puzzle",
+    relays_running_stop: "Puzzle {current} sur {total} : {event}. Appuyez sur {key} pour arrêter le relais, {split} pour finir ce puzzle.",
 };

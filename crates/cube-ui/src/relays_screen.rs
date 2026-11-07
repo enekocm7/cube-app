@@ -143,6 +143,7 @@ impl CubeApp {
             Action::NewRelay if idle => self.open_new_relay(window, cx),
             Action::DeleteRelay if idle => self.delete_custom_relay(window, cx),
             Action::CopyRelayScrambles => self.copy_relay_scrambles(window, cx),
+            Action::ToggleRelayKeySplits => self.toggle_relay_key_splits(window, cx),
             Action::OpenSolve
             | Action::PreviousSolve
             | Action::NextSolve
@@ -489,6 +490,7 @@ impl CubeApp {
         h_flex()
             .flex_none()
             .gap_2()
+            .child(self.render_relay_mode_button(cx))
             .child(
                 Button::new("relay-select")
                     .outline()
@@ -567,12 +569,6 @@ impl CubeApp {
         let strings = self.strings();
         let theme = cx.theme();
         let (background, muted) = (theme.background, theme.muted_foreground);
-        let timer_key = self
-            .keybinds()
-            .label(Action::Timer)
-            .unwrap_or_else(|| strings.unassigned.to_owned());
-        let key_hint = |text: &str| text.replace("{key}", &timer_key);
-
         let body = match &self.relays.phase {
             Phase::Idle => self.render_relay_attempts(cx),
             Phase::Preparing { .. } => empty_message_owned(
@@ -582,16 +578,7 @@ impl CubeApp {
                 muted,
             ),
             Phase::Ready { scrambles } => {
-                if self.timer.is_active() {
-                    self.render_relay_running(scrambles, window, cx)
-                } else {
-                    self.render_relay_scrambles(
-                        scrambles,
-                        &key_hint(strings.relays_ready),
-                        background,
-                        cx,
-                    )
-                }
+                self.render_relay_attempt_view(scrambles, background, window, cx)
             }
         };
 
@@ -774,112 +761,92 @@ impl CubeApp {
             .into_any_element()
     }
 
-    /// The scrambles of every puzzle, shown before the attempt starts.
-    fn render_relay_scrambles(
-        &self,
-        scrambles: &[String],
-        hint: &str,
-        background: Hsla,
-        cx: &mut Context<Self>,
-    ) -> AnyElement {
+    /// The button that switches what the timer key does during a relay.
+    fn render_relay_mode_button(&self, cx: &mut Context<Self>) -> impl IntoElement + use<> {
         let strings = self.strings();
-        let theme = cx.theme();
-        let muted = theme.muted_foreground;
-        let mono = theme.mono_font_family.clone();
-        let scramble_color = Palette::of(cx).scramble;
-        let events = self.relays.current.clone();
-
-        v_flex()
-            .flex_1()
-            .min_h_0()
-            .gap_2()
-            .child(
-                h_flex()
-                    .flex_none()
-                    .justify_between()
-                    .gap_2()
-                    .child(div().text_sm().text_color(muted).child(hint.to_owned()))
-                    .child(
-                        Button::new("relay-copy")
-                            .outline()
-                            .small()
-                            .label(strings.action_copy_relay_scrambles)
-                            .tab_stop(false)
-                            .on_click(cx.listener(|app, _, window, cx| {
-                                app.copy_relay_scrambles(window, cx);
-                                app.focus.focus(window, cx);
-                            })),
-                    ),
-            )
-            .child(
-                FadeScroll::new("relay-scrambles", background)
-                    .flex_1()
-                    .min_h_0()
-                    .gap_1()
-                    .font_family(mono)
-                    .text_color(scramble_color)
-                    .children(scrambles.iter().enumerate().map(|(index, scramble)| {
-                        h_flex()
-                            .flex_none()
-                            .gap_3()
-                            .items_start()
-                            .child(
-                                div()
-                                    .flex_none()
-                                    .w(NUMBER_WIDTH)
-                                    .text_right()
-                                    .text_color(muted)
-                                    .child((index + 1).to_string()),
-                            )
-                            .child(
-                                div()
-                                    .flex_none()
-                                    .w(EVENT_WIDTH)
-                                    .truncate()
-                                    .text_color(muted)
-                                    .child(events[index].name()),
-                            )
-                            .child(div().flex_1().min_w_0().child(scramble.clone()))
-                            .into_any_element()
-                    })),
-            )
-            .into_any_element()
+        let label = if self.settings.relay_key_splits {
+            strings.relays_key_splits
+        } else {
+            strings.relays_key_stops
+        };
+        Button::new("relay-key-mode")
+            .ghost()
+            .small()
+            .label(label)
+            .tooltip(strings.action_toggle_relay_key_splits)
+            .tab_stop(false)
+            .on_click(cx.listener(|app, _, window, cx| {
+                app.toggle_relay_key_splits(window, cx);
+                app.focus.focus(window, cx);
+            }))
     }
 
-    /// The digits while the key is held, in inspection or running, with the
-    /// scramble of the puzzle being solved and the splits so far.
-    #[allow(clippy::too_many_lines, reason = "the digits and what surrounds them")]
-    fn render_relay_running(
+    /// Switches the timer key between stopping the relay and ending each
+    /// puzzle, saving the setting.
+    fn toggle_relay_key_splits(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.timer.is_active() {
+            self.update_settings(window, cx, |settings| {
+                settings.relay_key_splits = !settings.relay_key_splits;
+            });
+        }
+    }
+
+    /// The scrambles of every puzzle on top and the timer under them, as on
+    /// the timer screen. The same view serves before, during and after the
+    /// start, so the key starts the relay from where it is.
+    #[allow(clippy::too_many_lines, reason = "the scrambles and the digits")]
+    fn render_relay_attempt_view(
         &self,
         scrambles: &[String],
+        background: Hsla,
         window: &Window,
         cx: &mut Context<Self>,
     ) -> AnyElement {
         let strings = self.strings();
         let colors = Palette::of(cx);
         let theme = cx.theme();
-        let (foreground, muted) = (theme.foreground, theme.muted_foreground);
+        let (foreground, muted, accent) = (theme.foreground, theme.muted_foreground, theme.accent);
         let mono = theme.mono_font_family.clone();
         let now = Instant::now();
+        let events = &self.relays.current;
+        let unassigned = || strings.unassigned.to_owned();
         let timer_key = self
             .keybinds()
             .label(Action::Timer)
-            .unwrap_or_else(|| strings.unassigned.to_owned());
+            .unwrap_or_else(unassigned);
+        let split_key = self
+            .keybinds()
+            .label(Action::OpenSolve)
+            .unwrap_or_else(unassigned);
+
         let splits = *self.timer.splits();
-        let current = splits.current().min(self.relays.current.len() - 1);
-        let running_hint = strings
-            .relays_running
-            .replace("{current}", &(current + 1).to_string())
-            .replace("{total}", &self.relays.current.len().to_string())
-            .replace("{event}", self.relays.current[current].name())
-            .replace("{key}", &timer_key);
+        let active = self.timer.is_active();
+        let running = matches!(self.timer.phase(), TimerPhase::Running { .. });
+        let current = if running {
+            splits.current().min(events.len() - 1)
+        } else {
+            0
+        };
+        let elapsed_ms = self.timer.elapsed(now).as_millis() as u64;
+        let done = if running {
+            splits.durations(elapsed_ms)
+        } else {
+            Vec::new()
+        };
+
+        let running_hint = if self.settings.relay_key_splits {
+            strings.relays_running
+        } else {
+            strings.relays_running_stop
+        }
+        .replace("{current}", &(current + 1).to_string())
+        .replace("{total}", &events.len().to_string())
+        .replace("{event}", events[current].name())
+        .replace("{key}", &timer_key)
+        .replace("{split}", &split_key);
 
         let (text, color, hint) = match self.timer.phase() {
-            TimerPhase::Running { .. } => (
-                format_ms(self.timer.elapsed(now).as_millis() as u64),
-                foreground,
-                running_hint,
-            ),
+            TimerPhase::Running { .. } => (format_ms(elapsed_ms), foreground, running_hint),
             TimerPhase::Inspecting { .. } => {
                 let elapsed = self.timer.elapsed(now);
                 let modifier = self.timer.inspection_modifier(elapsed);
@@ -910,60 +877,98 @@ impl CubeApp {
                     colors.green,
                     strings.hint_release.replace("{key}", &timer_key),
                 ),
-                Readiness::Released => (format_ms(0), foreground, running_hint),
+                Readiness::Released => (
+                    format_ms(0),
+                    foreground,
+                    strings.hint_start.replace("{key}", &timer_key),
+                ),
             },
         };
 
-        let elapsed_ms = self.timer.elapsed(now).as_millis() as u64;
-        let done = if matches!(self.timer.phase(), TimerPhase::Running { .. }) {
-            splits.durations(elapsed_ms)
-        } else {
-            Vec::new()
-        };
-        let scramble = scrambles.get(current).cloned().unwrap_or_default();
-        let scramble_color = colors.scramble;
+        let rows = FadeScroll::new("relay-scrambles", background)
+            .flex_1()
+            .min_h_0()
+            .gap_1()
+            .children(scrambles.iter().enumerate().map(|(index, scramble)| {
+                let finished = index < splits.marked() && running;
+                let is_current = running && index == current;
+                h_flex()
+                    .flex_none()
+                    .px_2()
+                    .py_1()
+                    .gap_3()
+                    .items_start()
+                    .rounded_sm()
+                    .when(is_current, |row| row.bg(accent))
+                    .child(
+                        div()
+                            .flex_none()
+                            .w(NUMBER_WIDTH)
+                            .text_right()
+                            .text_color(muted)
+                            .child((index + 1).to_string()),
+                    )
+                    .child(
+                        div()
+                            .flex_none()
+                            .w(EVENT_WIDTH)
+                            .truncate()
+                            .text_color(muted)
+                            .child(events[index].name()),
+                    )
+                    .child(
+                        div()
+                            .flex_1()
+                            .min_w_0()
+                            .font_family(mono.clone())
+                            .text_color(if finished { muted } else { colors.scramble })
+                            .child(scramble.clone()),
+                    )
+                    .when(finished, |row| {
+                        row.child(
+                            div()
+                                .flex_none()
+                                .whitespace_nowrap()
+                                .font_family(mono.clone())
+                                .child(format_ms(done[index])),
+                        )
+                    })
+                    .into_any_element()
+            }));
+
         v_flex()
             .flex_1()
             .min_h_0()
-            .items_center()
-            .justify_center()
-            .gap_3()
-            .child(digits_panel(
+            .gap_2()
+            .when(!active, |column| {
+                column.child(
+                    h_flex()
+                        .flex_none()
+                        .justify_end()
+                        .gap_2()
+                        .child(self.render_relay_mode_button(cx))
+                        .child(
+                            Button::new("relay-copy")
+                                .outline()
+                                .small()
+                                .label(strings.action_copy_relay_scrambles)
+                                .tab_stop(false)
+                                .on_click(cx.listener(|app, _, window, cx| {
+                                    app.copy_relay_scrambles(window, cx);
+                                    app.focus.focus(window, cx);
+                                })),
+                        ),
+                )
+            })
+            .child(rows)
+            .child(div().flex_none().py_4().child(digits_panel(
                 text,
                 color,
                 &hint,
                 muted,
                 mono.clone(),
                 window,
-            ))
-            .child(
-                div()
-                    .max_w_full()
-                    .px_6()
-                    .text_center()
-                    .font_family(mono.clone())
-                    .text_color(scramble_color)
-                    .child(scramble),
-            )
-            .child(
-                v_flex()
-                    .items_center()
-                    .text_sm()
-                    .text_color(muted)
-                    .font_family(mono)
-                    .children(
-                        done.iter()
-                            .take(splits.marked())
-                            .enumerate()
-                            .map(|(index, &ms)| {
-                                div().child(format!(
-                                    "{} {}",
-                                    self.relays.current[index].name(),
-                                    format_ms(ms)
-                                ))
-                            }),
-                    ),
-            )
+            )))
             .into_any_element()
     }
 }

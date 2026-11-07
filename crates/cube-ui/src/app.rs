@@ -818,8 +818,17 @@ impl CubeApp {
             cx.stop_propagation();
             self.key_down = false;
             self.stop_repeat_key = Some(press.key().to_owned());
-            if self.keybinds.action_for(&press) == Some(Action::Cancel) {
+            let action = self.keybinds.action_for(&press);
+            if action == Some(Action::Cancel) {
                 self.cancel(window, cx);
+            } else if self.screen == Screen::Relays
+                && !self.timer.mark_on_press
+                && action == Some(Action::OpenSolve)
+            {
+                // The key stops the relay, so this one ends the puzzle.
+                self.timer.mark(Instant::now());
+                self.stop_repeat_key = None;
+                cx.notify();
             } else if !self.hardware_timing()
                 && let Some(outcome) = self.timer.press(Instant::now())
             {
@@ -1013,6 +1022,7 @@ impl CubeApp {
             | Action::NewRelay
             | Action::DeleteRelay
             | Action::CopyRelayScrambles
+            | Action::ToggleRelayKeySplits
             | Action::Cancel
             | Action::NextTrainerSet
             | Action::ToggleTrainerCase
@@ -1180,6 +1190,7 @@ impl CubeApp {
             let separate = self.drilling() || self.screen == Screen::MultiBlind;
             let relaying = self.screen == Screen::Relays;
             self.timer.puzzles = if relaying { self.relay_puzzles() } else { 1 };
+            self.timer.mark_on_press = self.settings.relay_key_splits;
             self.timer.inspection = self.settings.timer().inspection && !separate;
             self.timer.blindfolded = self.shown_event().is_blindfolded() && !separate;
         }

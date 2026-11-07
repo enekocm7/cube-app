@@ -79,11 +79,12 @@ const MULTI_BLIND_ACTIONS: [Action; 2] = [
     Action::CopyMultiBlindScrambles,
     Action::SaveMultiBlindScrambles,
 ];
-const RELAY_ACTIONS: [Action; 4] = [
+const RELAY_ACTIONS: [Action; 5] = [
     Action::NextRelay,
     Action::NewRelay,
     Action::DeleteRelay,
     Action::CopyRelayScrambles,
+    Action::ToggleRelayKeySplits,
 ];
 const TRAINER_ACTIONS: [Action; 11] = [
     Action::NextTrainerSet,
@@ -545,6 +546,7 @@ fn action_label(strings: &'static Strings, action: Action) -> &'static str {
         Action::NewRelay => strings.action_new_relay,
         Action::DeleteRelay => strings.action_delete_relay,
         Action::CopyRelayScrambles => strings.action_copy_relay_scrambles,
+        Action::ToggleRelayKeySplits => strings.action_toggle_relay_key_splits,
         Action::EditTags => strings.action_edit_tags,
         Action::ActiveTags => strings.action_active_tags,
         Action::ManageTags => strings.tags_manage,

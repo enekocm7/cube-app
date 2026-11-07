@@ -579,7 +579,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_label: "Eventos separados por comas (por ejemplo 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "Crear",
     relays_preparing: "Preparando {count} mezclas…",
-    relays_ready: "Pulsa {key} para empezar y de nuevo al terminar cada puzzle.",
     relays_running: "Puzzle {current} de {total}: {event}. Pulsa {key} al terminarlo.",
     relays_empty: "Tus intentos de relevo aparecerán aquí.",
     relays_unavailable: "No se pudieron leer tus relevos, así que por ahora no se pueden cambiar.",
@@ -591,4 +590,8 @@ pub const STRINGS: Strings = Strings {
     relays_scrambles_copied: "Mezclas copiadas",
     toast_relay_load_failed: "No se pudieron leer tus relevos: {error}",
     toast_relay_save_failed: "No se pudieron guardar tus relevos: {error}",
+    action_toggle_relay_key_splits: "Cambiar la tecla del temporizador entre parar el relevo y terminar cada puzzle",
+    relays_key_stops: "La tecla para el relevo",
+    relays_key_splits: "La tecla termina cada puzzle",
+    relays_running_stop: "Puzzle {current} de {total}: {event}. Pulsa {key} para parar el relevo, {split} para terminar este puzzle.",
 };

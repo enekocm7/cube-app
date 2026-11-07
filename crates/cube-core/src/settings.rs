@@ -538,6 +538,9 @@ pub struct Settings {
     pub toasts: bool,
     /// Asks before deleting a solve or session; Undo works either way.
     pub confirm_delete: bool,
+    /// On the Relays screen, makes the timer key end each puzzle instead of
+    /// stopping the whole relay.
+    pub relay_key_splits: bool,
     /// Keeps the 3x3x3 solver searching for shorter scrambles, like `TNoodle`.
     pub accurate_3x3: bool,
     /// Adds a rolling ao5 column to the solve list.
@@ -630,6 +633,7 @@ impl Default for Settings {
             language: String::new(),
             toasts: true,
             confirm_delete: true,
+            relay_key_splits: false,
             accurate_3x3: false,
             solve_list_ao5: false,
             always_show_scrollbar: false,
@@ -1075,6 +1079,13 @@ mod tests {
         ));
         settings.adopt_existing_history(&[History::new(), history]);
         assert!(!settings.shows_start_hint());
+    }
+
+    #[test]
+    fn the_relay_key_stops_the_whole_relay_by_default() {
+        assert!(!Settings::default().relay_key_splits);
+        let settings: Settings = toml::from_str("relay_key_splits = true").unwrap();
+        assert!(settings.relay_key_splits);
     }
 
     #[test]

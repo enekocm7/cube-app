@@ -579,7 +579,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_label: "종목을 쉼표로 구분 (예: 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "만들기",
     relays_preparing: "스크램블 {count}개 준비 중…",
-    relays_ready: "{key}을(를) 눌러 시작하고, 퍼즐을 풀 때마다 다시 누르세요.",
     relays_running: "퍼즐 {current}/{total}: {event}. 풀었으면 {key}을(를) 누르세요.",
     relays_empty: "릴레이 기록이 여기에 표시됩니다.",
     relays_unavailable: "릴레이를 읽을 수 없어 당분간 변경할 수 없습니다.",
@@ -591,4 +590,8 @@ pub const STRINGS: Strings = Strings {
     relays_scrambles_copied: "스크램블을 복사했습니다",
     toast_relay_load_failed: "릴레이를 읽을 수 없습니다: {error}",
     toast_relay_save_failed: "릴레이를 저장할 수 없습니다: {error}",
+    action_toggle_relay_key_splits: "타이머 키를 릴레이 정지와 각 퍼즐 종료 사이에서 전환",
+    relays_key_stops: "키로 릴레이 정지",
+    relays_key_splits: "키로 각 퍼즐 종료",
+    relays_running_stop: "퍼즐 {current}/{total}: {event}. {key}(으)로 릴레이를 멈추고, {split}(으)로 이 퍼즐을 끝냅니다.",
 };

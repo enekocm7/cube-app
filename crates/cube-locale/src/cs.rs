@@ -579,7 +579,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_label: "Disciplíny oddělené čárkami (například 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "Vytvořit",
     relays_preparing: "Připravuji scrambly: {count}…",
-    relays_ready: "Stiskněte {key} pro start a pak po složení každého hlavolamu.",
     relays_running: "Hlavolam {current} z {total}: {event}. Stiskněte {key}, až je složený.",
     relays_empty: "Zde se zobrazí vaše pokusy ve štafetách.",
     relays_unavailable: "Vaše štafety se nepodařilo přečíst, takže je zatím nelze měnit.",
@@ -591,4 +590,8 @@ pub const STRINGS: Strings = Strings {
     relays_scrambles_copied: "Scrambly zkopírovány",
     toast_relay_load_failed: "Vaše štafety se nepodařilo přečíst: {error}",
     toast_relay_save_failed: "Vaše štafety se nepodařilo uložit: {error}",
+    action_toggle_relay_key_splits: "Přepnout klávesu časovače mezi zastavením štafety a dokončením každého hlavolamu",
+    relays_key_stops: "Klávesa zastaví štafetu",
+    relays_key_splits: "Klávesa dokončí každý hlavolam",
+    relays_running_stop: "Hlavolam {current} z {total}: {event}. Stiskněte {key} pro zastavení štafety, {split} pro dokončení tohoto hlavolamu.",
 };

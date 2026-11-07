@@ -200,6 +200,10 @@ pub struct Timer {
     /// there is one inspection for all of them, and the first presses of a
     /// running attempt mark the end of each puzzle but the last.
     pub puzzles: usize,
+    /// Whether a press of the timer key marks the end of a puzzle of a relay.
+    /// When off, the key stops the whole attempt, and puzzles are marked with
+    /// [`Timer::mark`] instead.
+    pub mark_on_press: bool,
     splits: Splits,
 }
 
@@ -212,6 +216,7 @@ impl Timer {
             hold,
             blindfolded: false,
             puzzles: 1,
+            mark_on_press: true,
             splits: Splits::NONE,
         }
     }
@@ -268,7 +273,7 @@ impl Timer {
                 };
                 None
             }
-            TimerPhase::Running { started, .. } if self.splits.pending() => {
+            TimerPhase::Running { started, .. } if self.mark_on_press && self.splits.pending() => {
                 self.splits
                     .mark(now.duration_since(started).as_millis() as u64);
                 None
@@ -299,6 +304,21 @@ impl Timer {
                 })
             }
         }
+    }
+
+    /// Marks the end of the current puzzle of a relay without stopping the
+    /// attempt. Returns whether a puzzle was marked: it is not when the
+    /// attempt is not running or the last puzzle is the one being solved.
+    pub fn mark(&mut self, now: Instant) -> bool {
+        let TimerPhase::Running { started, .. } = self.phase else {
+            return false;
+        };
+        if !self.splits.pending() {
+            return false;
+        }
+        self.splits
+            .mark(now.duration_since(started).as_millis() as u64);
+        true
     }
 
     /// Handles the timer key going up.
@@ -867,6 +887,32 @@ mod tests {
         assert_eq!(durations, vec![2_000, 0, 7_000, 0]);
         // Marks beyond the total are held to it.
         assert_eq!(splits.durations(1_500).iter().sum::<u64>(), 1_500);
+    }
+
+    #[test]
+    fn with_marking_off_the_key_stops_the_whole_relay() {
+        let mut timer = Timer::new(false, LIMIT, HOLD);
+        timer.mark_on_press = false;
+        let start = Instant::now();
+        start_relay(&mut timer, 3, start);
+        let begun = start + HOLD;
+        assert!(timer.mark(begun + ms(1_000)));
+        let outcome = timer.press(begun + ms(4_000)).expect("stops the relay");
+        assert_eq!(outcome.time_ms, 4_000);
+        // The puzzles not marked have no time of their own.
+        assert_eq!(timer.splits().durations(4_000), vec![1_000, 3_000, 0]);
+    }
+
+    #[test]
+    fn marking_needs_a_running_attempt_and_a_puzzle_to_spare() {
+        let mut timer = Timer::new(false, LIMIT, HOLD);
+        let start = Instant::now();
+        timer.puzzles = 2;
+        assert!(!timer.mark(start));
+        timer.press(start);
+        timer.release(start + HOLD);
+        assert!(timer.mark(start + HOLD + ms(500)));
+        assert!(!timer.mark(start + HOLD + ms(900)));
     }
 
     #[test]

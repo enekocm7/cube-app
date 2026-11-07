@@ -91,6 +91,7 @@ nothing is selected.
 | Create a custom relay | `Ctrl + E` | On the Relays screen |
 | Delete the selected custom relay | `Ctrl + D` | On the Relays screen. Its past attempts are kept |
 | Copy the relay's scrambles | `Ctrl + B` | On the Relays screen, once the scrambles are ready |
+| Switch the relay timer key | `Ctrl + L` | On the Relays screen: the timer key either stops the whole relay (the default) or ends each puzzle. Saved as a setting |
 | Show the next charts view | `V` | Cycles Trends, Calendar, Compare, Tags and All-time bests |
 | Filter charts by the next event | `F` | Cycles all events and every event with solves |
 | Filter charts by the next range | `R` | Cycles all solves, the last 50, 100 or 500 solves and the last 7, 30, 90 or 365 days |
@@ -143,7 +144,7 @@ timer. See [Algorithm library](/cube-app/docs/library/).
 
 ## Relays
 
-On the Relays screen the timer key gets the scrambles of the selected relay, then starts the timer once they are ready (after the inspection, if it is on), and each press after that marks the end of a puzzle. The last press stops the relay and records it. `1` selects the next relay and `Ctrl + E` creates a custom one: type its events separated by commas, such as `2x2x2, 3x3x3, Pyraminx`, or a range of cubes such as `2x2x2-5x5x5`. `Up` and `Down` select an attempt, `Left` and `Right` select one of its puzzles, `2` and `Shift + D` give that puzzle a `+2` or DNF (press again to remove it), and `D` deletes the attempt. They follow the bindings of the solve and average actions. In the dialog, `Enter` creates the relay. See [Relays](/cube-app/docs/relays/).
+On the Relays screen the timer key gets the scrambles of the selected relay, then starts the timer once they are ready (after the inspection, if it is on). By default the timer key then stops the whole relay and `Enter` ends the current puzzle; with `Ctrl + L` the timer key ends each puzzle instead and the last one stops the relay. `1` selects the next relay and `Ctrl + E` creates a custom one: type its events separated by commas, such as `2x2x2, 3x3x3, Pyraminx`, or a range of cubes such as `2x2x2-5x5x5`. `Up` and `Down` select an attempt, `Left` and `Right` select one of its puzzles, `2` and `Shift + D` give that puzzle a `+2` or DNF (press again to remove it), and `D` deletes the attempt. They follow the bindings of the solve and average actions. In the dialog, `Enter` creates the relay. See [Relays](/cube-app/docs/relays/).
 
 ## Multi-Blind
 

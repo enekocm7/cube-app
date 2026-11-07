@@ -70,6 +70,7 @@ pub enum Action {
     NewRelay,
     DeleteRelay,
     CopyRelayScrambles,
+    ToggleRelayKeySplits,
     EditTags,
     ActiveTags,
     ManageTags,
@@ -100,7 +101,7 @@ pub enum Action {
 
 impl Action {
     /// Every action, in the order the help dialog lists them.
-    pub const ALL: [Self; 82] = [
+    pub const ALL: [Self; 83] = [
         Self::Timer,
         Self::Cancel,
         Self::NextScramble,
@@ -159,6 +160,7 @@ impl Action {
         Self::NewRelay,
         Self::DeleteRelay,
         Self::CopyRelayScrambles,
+        Self::ToggleRelayKeySplits,
         Self::EditTags,
         Self::ActiveTags,
         Self::ManageTags,
@@ -246,6 +248,7 @@ impl Action {
             Self::NewRelay => "new_relay",
             Self::DeleteRelay => "delete_relay",
             Self::CopyRelayScrambles => "copy_relay_scrambles",
+            Self::ToggleRelayKeySplits => "toggle_relay_key_splits",
             Self::EditTags => "edit_tags",
             Self::ActiveTags => "active_tags",
             Self::ManageTags => "manage_tags",
@@ -496,6 +499,7 @@ impl Default for Keybinds {
             (Action::NewRelay, "Ctrl+E"),
             (Action::DeleteRelay, "Ctrl+D"),
             (Action::CopyRelayScrambles, "Ctrl+B"),
+            (Action::ToggleRelayKeySplits, "Ctrl+L"),
             (Action::EditTags, "t"),
             (Action::ActiveTags, "Shift+T"),
             (Action::ManageTags, "Ctrl+T"),

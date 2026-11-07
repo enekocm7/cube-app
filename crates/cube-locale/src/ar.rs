@@ -579,7 +579,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_label: "الفعاليات مفصولة بفواصل (مثل 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "إنشاء",
     relays_preparing: "جارٍ تحضير {count} خلطة…",
-    relays_ready: "اضغط {key} للبدء، ثم اضغطه بعد حل كل مكعب.",
     relays_running: "اللغز {current} من {total}: {event}. اضغط {key} عند حله.",
     relays_empty: "ستظهر محاولات التتابع هنا.",
     relays_unavailable: "تعذرت قراءة التتابعات، لذا لا يمكن تعديلها حاليًا.",
@@ -591,4 +590,8 @@ pub const STRINGS: Strings = Strings {
     relays_scrambles_copied: "تم نسخ الخلطات",
     toast_relay_load_failed: "تعذرت قراءة التتابعات: {error}",
     toast_relay_save_failed: "تعذر حفظ التتابعات: {error}",
+    action_toggle_relay_key_splits: "تبديل مفتاح المؤقت بين إيقاف التتابع وإنهاء كل لغز",
+    relays_key_stops: "المفتاح يوقف التتابع",
+    relays_key_splits: "المفتاح ينهي كل لغز",
+    relays_running_stop: "اللغز {current} من {total}: {event}. اضغط {key} لإيقاف التتابع، و{split} لإنهاء هذا اللغز.",
 };

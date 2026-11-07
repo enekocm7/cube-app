@@ -579,7 +579,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_label: "Eventi separati da virgole (ad esempio 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "Crea",
     relays_preparing: "Preparazione di {count} scramble…",
-    relays_ready: "Premi {key} per iniziare, poi dopo ogni puzzle risolto.",
     relays_running: "Puzzle {current} di {total}: {event}. Premi {key} quando è risolto.",
     relays_empty: "I tuoi tentativi di staffetta appariranno qui.",
     relays_unavailable: "Impossibile leggere le tue staffette, quindi per ora non si possono modificare.",
@@ -591,4 +590,8 @@ pub const STRINGS: Strings = Strings {
     relays_scrambles_copied: "Scramble copiati",
     toast_relay_load_failed: "Impossibile leggere le tue staffette: {error}",
     toast_relay_save_failed: "Impossibile salvare le tue staffette: {error}",
+    action_toggle_relay_key_splits: "Alterna il tasto del timer tra fermare la staffetta e terminare ogni puzzle",
+    relays_key_stops: "Il tasto ferma la staffetta",
+    relays_key_splits: "Il tasto termina ogni puzzle",
+    relays_running_stop: "Puzzle {current} di {total}: {event}. Premi {key} per fermare la staffetta, {split} per finire questo puzzle.",
 };

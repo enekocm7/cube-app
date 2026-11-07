@@ -579,7 +579,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_label: "Disziplinen, durch Kommas getrennt (z. B. 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "Erstellen",
     relays_preparing: "{count} Scrambles werden vorbereitet…",
-    relays_ready: "Drücke {key} zum Starten und danach nach jedem gelösten Puzzle.",
     relays_running: "Puzzle {current} von {total}: {event}. Drücke {key}, wenn es gelöst ist.",
     relays_empty: "Deine Staffelversuche erscheinen hier.",
     relays_unavailable: "Deine Staffeln konnten nicht gelesen werden und lassen sich vorerst nicht ändern.",
@@ -591,4 +590,8 @@ pub const STRINGS: Strings = Strings {
     relays_scrambles_copied: "Scrambles kopiert",
     toast_relay_load_failed: "Deine Staffeln konnten nicht gelesen werden: {error}",
     toast_relay_save_failed: "Deine Staffeln konnten nicht gespeichert werden: {error}",
+    action_toggle_relay_key_splits: "Die Timer-Taste zwischen Staffel stoppen und jedes Puzzle beenden umschalten",
+    relays_key_stops: "Taste stoppt die Staffel",
+    relays_key_splits: "Taste beendet jedes Puzzle",
+    relays_running_stop: "Puzzle {current} von {total}: {event}. Drücke {key}, um die Staffel zu stoppen, {split}, um dieses Puzzle zu beenden.",
 };

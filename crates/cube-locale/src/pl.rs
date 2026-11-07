@@ -579,7 +579,6 @@ pub const STRINGS: Strings = Strings {
     relays_new_label: "Konkurencje oddzielone przecinkami (na przykład 2x2x2, 3x3x3, Pyraminx)",
     relays_create: "Utwórz",
     relays_preparing: "Przygotowywanie scramble'i: {count}…",
-    relays_ready: "Naciśnij {key}, aby zacząć, a potem po ułożeniu każdej łamigłówki.",
     relays_running: "Łamigłówka {current} z {total}: {event}. Naciśnij {key}, gdy będzie ułożona.",
     relays_empty: "Tutaj pojawią się Twoje próby sztafet.",
     relays_unavailable: "Nie udało się odczytać Twoich sztafet, więc na razie nie można ich zmieniać.",
@@ -591,4 +590,8 @@ pub const STRINGS: Strings = Strings {
     relays_scrambles_copied: "Skopiowano scramble'e",
     toast_relay_load_failed: "Nie udało się odczytać Twoich sztafet: {error}",
     toast_relay_save_failed: "Nie udało się zapisać Twoich sztafet: {error}",
+    action_toggle_relay_key_splits: "Przełącz klawisz timera między zatrzymaniem sztafety a kończeniem każdej łamigłówki",
+    relays_key_stops: "Klawisz zatrzymuje sztafetę",
+    relays_key_splits: "Klawisz kończy każdą łamigłówkę",
+    relays_running_stop: "Łamigłówka {current} z {total}: {event}. Naciśnij {key}, aby zatrzymać sztafetę, {split}, aby zakończyć tę łamigłówkę.",
 };
