@@ -2,8 +2,16 @@
 //! selected category on the right.
 
 use std::cell::Cell;
+use std::collections::HashSet;
 use std::rc::Rc;
 
+use crate::app::CubeApp;
+use crate::dialog_size::{
+    DialogSize, dialog_body_height, dialog_close_button, dialog_title, dialog_width, text_scale,
+};
+use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
+use crate::scroll_fade::FadeScroll;
+use crate::search_bar::{focus_on_search_key, new_search, query, search_bar};
 use cube_core::dialogs::{reveal_shift, settings_nav_width};
 use cube_core::library::catalog;
 use cube_core::persistence;
@@ -19,7 +27,7 @@ use cube_core::settings::{
 use cube_core::theme;
 use cube_core::theme::{ThemeColor, ThemeFile};
 use cube_core::trainer::AlgSet;
-use cube_core::{Action, SetVisibility, Settings, SettingsCategory};
+use cube_core::{Action, SetVisibility, Settings, SettingsCategory, WcaEvent};
 use cube_locale::{Language, Strings};
 use gpui_kit::assets::IconName;
 use gpui_kit::base::{Disableable as _, ElementExt as _};
@@ -33,14 +41,6 @@ use gpui_kit::component::{
 };
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
-
-use crate::app::CubeApp;
-use crate::dialog_size::{
-    DialogSize, dialog_body_height, dialog_close_button, dialog_title, dialog_width, text_scale,
-};
-use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
-use crate::scroll_fade::FadeScroll;
-use crate::search_bar::{focus_on_search_key, new_search, query, search_bar};
 
 const ROW_MIN_HEIGHT: Rems = Rems(3.5);
 const HEADER_HEIGHT: Rems = Rems(3.25);
@@ -86,6 +86,8 @@ struct SettingsView {
     /// The category list's one tab stop. Up and Down move inside the list, so
     /// Tab goes straight on to the settings.
     categories_focus: FocusHandle,
+    /// The library's puzzles and methods whose sets are showing.
+    open_library_groups: HashSet<LibraryGroup>,
     /// The scroll position of the settings pane.
     pane_scroll: ScrollHandle,
     /// One handle per row on screen, to tell which row holds focus.
@@ -100,6 +102,13 @@ struct Section {
     category: SettingsCategory,
     heading: &'static str,
     rows: Vec<(String, AnyElement)>,
+}
+
+/// A part of the library's tree whose sets can be shown or hidden together.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+enum LibraryGroup {
+    Puzzle(WcaEvent),
+    Method(WcaEvent, &'static str),
 }
 
 impl SettingsView {
@@ -497,6 +506,114 @@ impl SettingsView {
             )),
             cx,
         )
+    }
+
+    /// Opens or closes a puzzle or method in the library settings.
+    fn toggle_library_group(&mut self, group: LibraryGroup, cx: &mut Context<Self>) {
+        if !self.open_library_groups.remove(&group) {
+            self.open_library_groups.insert(group);
+        }
+        cx.notify();
+    }
+
+    /// The two switches that change every set of a library group.
+    fn library_group_switches(
+        &self,
+        key: &str,
+        sets: &[&'static AlgSet],
+        settings: &Settings,
+        strings: &'static Strings,
+        cx: &mut Context<Self>,
+    ) -> AnyElement {
+        let show = sets.iter().any(|set| settings.shows_set_in_library(set.id));
+        let train = sets
+            .iter()
+            .any(|set| settings.includes_set_in_training(set.id));
+        let library_sets = sets.to_vec();
+        let training_sets = sets.to_vec();
+        let library = Switch::new(format!("{key}-show"))
+            .checked(show)
+            .label(strings.setting_show_in_library)
+            .accessibility_label(strings.setting_show_in_library)
+            .on_click(cx.listener(move |view, value: &bool, window, cx| {
+                let value = *value;
+                let sets = library_sets.clone();
+                view.change(window, cx, move |settings| {
+                    for set in &sets {
+                        settings.show_set_in_library(set.id, value);
+                    }
+                });
+            }));
+        let training = Switch::new(format!("{key}-train"))
+            .checked(train)
+            .label(strings.setting_include_in_training)
+            .accessibility_label(strings.setting_include_in_training)
+            .on_click(cx.listener(move |view, value: &bool, window, cx| {
+                let value = *value;
+                let sets = training_sets.clone();
+                view.change(window, cx, move |settings| {
+                    for set in &sets {
+                        settings.include_set_in_training(set.id, value);
+                    }
+                });
+            }));
+        h_flex()
+            .gap_4()
+            .child(library)
+            .child(training)
+            .into_any_element()
+    }
+
+    /// A puzzle or method, with its switches and the control that opens it.
+    #[allow(clippy::too_many_arguments, reason = "one row of the library tree")]
+    fn library_group_row(
+        &self,
+        key: &str,
+        label: &str,
+        open: bool,
+        group: LibraryGroup,
+        sets: &[&'static AlgSet],
+        settings: &Settings,
+        strings: &'static Strings,
+        cx: &mut Context<Self>,
+    ) -> AnyElement {
+        let name = format!("{label} · {}", strings.settings_library);
+        let icon = if open {
+            IconName::ChevronDown
+        } else {
+            IconName::ChevronRight
+        };
+        let chevron = Button::new(format!("{key}-open"))
+            .ghost()
+            .xsmall()
+            .icon(icon)
+            .accessibility_label(name)
+            .on_click(cx.listener(move |view, _, _, cx| {
+                view.toggle_library_group(group, cx);
+            }));
+        let switches = self.library_group_switches(key, sets, settings, strings, cx);
+        h_flex()
+            .min_h(ROW_MIN_HEIGHT)
+            .w_full()
+            .px_4()
+            .py_2()
+            .gap_2()
+            .items_center()
+            .child(chevron)
+            .child(
+                div()
+                    .id(format!("{key}-label"))
+                    .flex_1()
+                    .min_w_0()
+                    .truncate()
+                    .cursor_pointer()
+                    .on_click(cx.listener(move |view, _, _, cx| {
+                        view.toggle_library_group(group, cx);
+                    }))
+                    .child(label.to_owned()),
+            )
+            .child(switches)
+            .into_any_element()
     }
 
     /// One of the library's sets, with its switches for the library and the
@@ -1582,34 +1699,134 @@ impl SettingsView {
             )],
         );
 
+        let searching = !query(&self.search, cx).is_empty();
+        let visibility_state = |on: bool| {
+            if on {
+                strings.search_on
+            } else {
+                strings.search_off
+            }
+        };
         let mut library_texts = Vec::new();
         let mut library_rows = Vec::new();
-        for puzzle in catalog() {
-            for &set in &puzzle.sets {
-                let visibility = settings
-                    .set_visibility
-                    .get(set.id)
-                    .copied()
-                    .unwrap_or_default();
-                let state = |on: bool| {
-                    if on {
-                        strings.search_on
-                    } else {
-                        strings.search_off
-                    }
-                };
-                library_texts.push(format!(
+        for (index, puzzle) in catalog().iter().enumerate() {
+            let event = puzzle.event;
+            let methods = puzzle.methods();
+            let puzzle_open = searching
+                || self
+                    .open_library_groups
+                    .contains(&LibraryGroup::Puzzle(event));
+            let methods_text = methods
+                .iter()
+                .map(|(method, _)| *method)
+                .collect::<Vec<_>>()
+                .join(" ");
+            let sets_text = puzzle
+                .sets
+                .iter()
+                .map(|set| set.name)
+                .collect::<Vec<_>>()
+                .join(" ");
+            let puzzle_text = format!(
+                "{} {} {} {} {} {} {} {}",
+                event.name(),
+                strings.settings_library,
+                methods_text,
+                sets_text,
+                strings.setting_show_in_library,
+                visibility_state(
+                    puzzle
+                        .sets
+                        .iter()
+                        .any(|set| settings.shows_set_in_library(set.id))
+                ),
+                strings.setting_include_in_training,
+                visibility_state(
+                    puzzle
+                        .sets
+                        .iter()
+                        .any(|set| settings.includes_set_in_training(set.id))
+                )
+            );
+            library_texts.push(puzzle_text);
+            library_rows.push(self.library_group_row(
+                &format!("library-puzzle-{index}"),
+                event.name(),
+                puzzle_open,
+                LibraryGroup::Puzzle(event),
+                &puzzle.sets,
+                settings,
+                strings,
+                cx,
+            ));
+            if !puzzle_open {
+                continue;
+            }
+            for (at, (method, sets)) in methods.into_iter().enumerate() {
+                let method_open = searching
+                    || self
+                        .open_library_groups
+                        .contains(&LibraryGroup::Method(event, method));
+                let row_text = format!(
                     "{} {} {} {} {} {} {} {}",
-                    set.name,
-                    puzzle.event.name(),
-                    set.method,
+                    event.name(),
+                    method,
+                    strings.settings_library,
+                    sets.iter()
+                        .map(|set| set.name)
+                        .collect::<Vec<_>>()
+                        .join(" "),
                     strings.setting_show_in_library,
-                    state(visibility.library),
+                    visibility_state(sets.iter().any(|set| settings.shows_set_in_library(set.id))),
                     strings.setting_include_in_training,
-                    state(visibility.training),
-                    strings.settings_library
-                ));
-                library_rows.push(self.library_set_row(set, visibility, strings, cx));
+                    visibility_state(
+                        sets.iter()
+                            .any(|set| settings.includes_set_in_training(set.id))
+                    )
+                );
+                library_texts.push(row_text);
+                library_rows.push(
+                    div()
+                        .pl_5()
+                        .child(self.library_group_row(
+                            &format!("library-method-{index}-{at}"),
+                            method,
+                            method_open,
+                            LibraryGroup::Method(event, method),
+                            &sets,
+                            settings,
+                            strings,
+                            cx,
+                        ))
+                        .into_any_element(),
+                );
+                if !method_open {
+                    continue;
+                }
+                for &set in &sets {
+                    let visibility = settings
+                        .set_visibility
+                        .get(set.id)
+                        .copied()
+                        .unwrap_or_default();
+                    library_texts.push(format!(
+                        "{} {} {} {} {} {} {} {}",
+                        set.name,
+                        event.name(),
+                        method,
+                        strings.setting_show_in_library,
+                        visibility_state(visibility.library),
+                        strings.setting_include_in_training,
+                        visibility_state(visibility.training),
+                        strings.settings_library
+                    ));
+                    library_rows.push(
+                        div()
+                            .pl_10()
+                            .child(self.library_set_row(set, visibility, strings, cx))
+                            .into_any_element(),
+                    );
+                }
             }
         }
         let library = tagged(library_texts, library_rows);
@@ -2141,6 +2358,7 @@ impl CubeApp {
                 focus: cx.focus_handle(),
                 category: SettingsCategory::default(),
                 categories_focus: cx.focus_handle().tab_stop(true),
+                open_library_groups: HashSet::new(),
                 pane_scroll: ScrollHandle::default(),
                 row_focus: Vec::new(),
                 revealed_row: Rc::default(),
