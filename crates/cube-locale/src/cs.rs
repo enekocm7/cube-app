@@ -499,6 +499,7 @@ pub const STRINGS: Strings = Strings {
     library_grade_good: "Dobré",
     library_grade_easy: "Snadné",
     library_add_algorithm: "Přidat algoritmus",
+    library_setup: "Příprava",
     library_train: "Trénovat",
     library_add_hint: "Před uložením se ověří na daném případu.",
     library_edit_note: "Upravit poznámku",

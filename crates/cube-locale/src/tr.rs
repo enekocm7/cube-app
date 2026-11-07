@@ -499,6 +499,7 @@ pub const STRINGS: Strings = Strings {
     library_grade_good: "İyi",
     library_grade_easy: "Kolay",
     library_add_algorithm: "Algoritma ekle",
+    library_setup: "Hazırlık",
     library_train: "Çalış",
     library_add_hint: "Kaydedilmeden önce duruma göre denetlenir.",
     library_edit_note: "Notu düzenle",

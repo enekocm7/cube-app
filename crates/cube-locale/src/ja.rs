@@ -499,6 +499,7 @@ pub const STRINGS: Strings = Strings {
     library_grade_good: "普通",
     library_grade_easy: "簡単",
     library_add_algorithm: "手順を追加",
+    library_setup: "セットアップ",
     library_train: "練習",
     library_add_hint: "保存する前にケースと照合します。",
     library_edit_note: "メモを編集",

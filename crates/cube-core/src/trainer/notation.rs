@@ -223,15 +223,6 @@ pub fn parse(algorithm: &str) -> Result<Vec<Turn>, AlgError> {
     if any { Ok(turns) } else { Err(AlgError::Empty) }
 }
 
-/// Returns the turns that undo `turns`.
-pub fn invert(turns: &[Turn]) -> Vec<Turn> {
-    turns
-        .iter()
-        .rev()
-        .map(|turn| Turn::new(turn.face, 4 - turn.quarters))
-        .collect()
-}
-
 /// Merges turns of one face, including those with only the opposite face
 /// between them, and drops what cancels out.
 pub fn simplify(turns: impl IntoIterator<Item = Turn>) -> Vec<Turn> {
@@ -293,6 +284,7 @@ pub(super) fn parse_outer(text: &str) -> Option<Vec<Turn>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::library::invert;
     use tnoodle::min2phase::tools::from_scramble;
 
     fn cube(algorithm: &str) -> String {

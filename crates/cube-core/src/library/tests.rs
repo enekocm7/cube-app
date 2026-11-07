@@ -8,7 +8,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use super::{case_origins, case_state, catalog, check, find_set, library_sets, recognition};
+use super::{case_origins, case_state, catalog, check, find_set, library_sets, recognition, setup};
 use crate::event::WcaEvent;
 use crate::trainer::{OLL, PLL, Step, puzzles};
 
@@ -151,6 +151,62 @@ fn the_trainer_drills_the_library_s_own_sets() {
             }
         }
     }
+}
+
+#[test]
+fn every_case_has_a_setup_that_undoes_its_algorithm() {
+    for set in library_sets() {
+        let model = set.model();
+        for case in set.cases {
+            let text = setup(set, case).unwrap_or_else(|error| {
+                panic!("{} {} has no setup: {error:?}", set.id, case.name);
+            });
+            let ops = model.parse(&text).unwrap();
+            let mut state = model.solved();
+            assert!(model.apply(&mut state, &ops), "{} {}", set.id, case.name);
+            let algorithm = model.parse(case.algorithm).unwrap();
+            assert!(
+                model.apply(&mut state, &algorithm),
+                "{} {}",
+                set.id,
+                case.name
+            );
+            assert!(
+                model.holds(&state).contains(&model.solved()),
+                "{} {}",
+                set.id,
+                case.name
+            );
+        }
+    }
+}
+
+#[test]
+fn every_case_shows_a_setup_in_its_puzzle_s_notation() {
+    for set in library_sets() {
+        let model = set.model();
+        for case in set.cases {
+            let text = setup(set, case)
+                .unwrap_or_else(|error| panic!("{} {} has no setup: {error:?}", set.id, case.name));
+            assert!(!text.is_empty(), "{} {}", set.id, case.name);
+            assert!(
+                model.parse(&text).is_ok(),
+                "{} {}: {text}",
+                set.id,
+                case.name
+            );
+        }
+    }
+}
+
+#[test]
+fn a_pll_setup_is_its_algorithm_undone() {
+    let set = find_set("pll").unwrap();
+    let case = set.case("T").unwrap();
+    assert_eq!(
+        setup(set, case).as_deref(),
+        Ok("F R U' R' U R U R2 F' R U R U' R'")
+    );
 }
 
 #[test]

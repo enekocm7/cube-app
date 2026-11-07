@@ -13,7 +13,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use cube_core::library::{
     Grade, LibraryData, LibraryPuzzle, Status, check, find_set, first_visible_set, recognition,
-    search_visible_cases, visible_catalog,
+    search_visible_cases, setup, visible_catalog,
 };
 use cube_core::trainer::notation::AlgError;
 use cube_core::trainer::{
@@ -1346,6 +1346,7 @@ impl CubeApp {
                     .child(hint)
             }))
             .child(self.render_library_algorithms(set, case, cx))
+            .children(self.render_library_setup(set, case, cx))
             .child(
                 h_flex()
                     .w_full()
@@ -1388,6 +1389,36 @@ impl CubeApp {
             .when(!note.is_empty(), |panel| {
                 panel.child(div().w_full().text_sm().child(note))
             })
+    }
+
+    /// The moves that set the case up from solved, if it has a readable
+    /// algorithm.
+    fn render_library_setup(
+        &self,
+        set: &'static AlgSet,
+        case: &'static AlgCase,
+        cx: &mut Context<Self>,
+    ) -> Option<Div> {
+        let theme = cx.theme();
+        let (muted, mono) = (theme.muted_foreground, theme.mono_font_family.clone());
+        let setup = setup(set, case).ok().filter(|setup| !setup.is_empty())?;
+        Some(
+            v_flex()
+                .w_full()
+                .mt_1()
+                .gap_1()
+                .p_2()
+                .items_center()
+                .rounded(theme.radius_lg)
+                .bg(theme.muted)
+                .child(
+                    div()
+                        .text_xs()
+                        .text_color(muted)
+                        .child(self.strings().library_setup),
+                )
+                .child(div().w_full().text_center().font_family(mono).child(setup)),
+        )
     }
 
     /// Every algorithm of a case, each with what can be done to it.
@@ -1436,11 +1467,11 @@ impl CubeApp {
                                 Button::new(("library-favourite", index))
                                     .ghost()
                                     .xsmall()
-                                    .icon(IconName::Star)
-                                    .when(
-                                        is_chosen,
-                                        gpui_kit::component::button::ButtonVariants::primary,
-                                    )
+                                    .icon(if is_chosen {
+                                        IconName::StarFill
+                                    } else {
+                                        IconName::Star
+                                    })
                                     .tooltip(strings.library_favourite)
                                     .accessibility_label(strings.library_favourite)
                                     .tab_stop(false)

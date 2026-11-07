@@ -21,7 +21,8 @@ pub use catalog::{
     search_visible_cases, visible_catalog, visible_sets,
 };
 pub use check::{
-    Recognition, case_origins, case_state, check, free_turns, recognition, solves_from,
+    Recognition, case_origins, case_state, check, free_turns, invert, recognition, setup,
+    solves_from,
 };
 pub use data::{CaseEntry, DueCase, LibraryData, Outcome, Progress, Status};
 pub use review::{Grade, Review};

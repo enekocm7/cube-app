@@ -806,6 +806,7 @@ pub struct Strings {
     pub library_grade_easy: &'static str,
     pub library_add_algorithm: &'static str,
     pub library_train: &'static str,
+    pub library_setup: &'static str,
     pub library_add_hint: &'static str,
     pub library_edit_note: &'static str,
     pub library_note_placeholder: &'static str,
