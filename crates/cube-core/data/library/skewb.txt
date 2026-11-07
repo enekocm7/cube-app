@@ -1,6 +1,7 @@
 # The Skewb sets. See library/catalog.rs for the format.
 
 set skewb-beginner
+step setup
 name Beginner
 method Sarah
 before above:D:0.3
@@ -15,6 +16,7 @@ case Beginner 3 |  | B' L R L B R U' | U' L B R L R B'
 case Beginner 4 |  | U R' B' L' R' L' B | B R' L' R' B' L' U
 
 set skewb-intermediate
+step setup
 name Intermediate
 method Sarah
 before above:D:0.3
@@ -93,6 +95,7 @@ case Intermediate 67 |  | L' R B L R L B' R' U | R' L U B U B R' U' B
 case Intermediate 68 |  | R L' B' R' L' R' B L U' | L R' U' B' U' B' L U B'
 
 set skewb-advanced
+step setup
 name Advanced
 method Sarah
 before above:D:0.3

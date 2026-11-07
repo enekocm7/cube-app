@@ -1,6 +1,7 @@
 # The 7x7x7 sets. See library/catalog.rs for the format.
 
 set 7x7-parity
+step setup
 name Edge parity
 method Reduction
 before touching:3 touching:1
@@ -14,6 +15,7 @@ case OLL parity (layer 2) |  | 2R2 B2 U2 2L U2 2R' U2 2R U2 F2 2R F2 2L' B2 2R2
 case OLL parity (layer 3) |  | 3R2 B2 U2 3L U2 3R' U2 3R U2 F2 3R F2 3L' B2 3R2
 
 set 7x7-edges
+step setup
 name Last edges
 method Reduction
 before touching:1
@@ -27,6 +29,7 @@ case Flipped pair (layer 2) |  | Uw' R U R' F R' F' R Uw
 case Flipped pair (layer 3) |  | 3Uw' R U R' F R' F' R 3Uw
 
 set 7x7-centers
+step setup
 name Last centers
 method Reduction
 before touching:3 touching:2

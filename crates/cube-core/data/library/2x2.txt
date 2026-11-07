@@ -8,6 +8,7 @@ after face:D face:U
 turn U y
 show face:U face:D
 view top
+step setup
 source speedcubedb
 case Sune |  | R U R' U R U2 R' | R U R2 U' R2 U R | R U' L' U R' U' L | y' R' U2 R U R' U R
 case Anti Sune |  | R U2 R' U' R U' R' | y L' U' L U' L' U2 L | y' R' U' R U' R' U2 R | R' F R F' R U R'
@@ -25,6 +26,7 @@ after all
 turn U D y
 show all
 view top
+step setup
 source speedcubedb
 case Adj |  | y R U R' F' R U R' U' R' F R2 U' R' | y R' F R F' R U2 R' U R U2 R' | y R U R' U' R' F R2 U' R' U' R U R' F' | y2 R' F R' F2 R U' R' F2 R2
 case Opp |  | R U' R' U' F2 U' R U R' U F2 | F R U' R' U' R U R' F' R U R' U' R' F R F' | R U' R' U' F2 U' R U R' D R2 | F R' F R2 U' R' U' R U R' F' R U R' U' F'
@@ -41,6 +43,7 @@ after all
 turn U y
 show all
 view top
+step setup
 source speedcubedb
 group AS
 case CLL AS 1 |  | R' U' R U' R' U2 R | y R U2 R' U' R U' R' | y2 L' U' L U' L' U2 L | U2 L' U' L U' L' U2 L
@@ -98,6 +101,7 @@ after all
 turn U D y
 show all
 view top
+step setup
 source speedcubedb
 group AS
 case EG1 AS 1 |  | y R' F R2 U R' F' U' R U' R' | y U2 B U' R2 F2 U' F | y U' L' U' L U' F' L' U L2 F L' | y L' U L2 F L' F' U' L F' L'
@@ -155,6 +159,7 @@ after all
 turn U D y
 show all
 view top
+step setup
 source speedcubedb
 group AS
 case EG2 AS 1 |  | F R2 U R' U2 R U R2 U F' | U2 R' U2 R2 U' R' U R' F R F R2 | x U' R2 F R2 F' U R' U2 R' U x' | U2 F R2 U2 R' U R' U2 R U' F'

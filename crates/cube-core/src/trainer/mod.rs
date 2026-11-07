@@ -16,14 +16,17 @@ mod diagram;
 mod drill;
 mod grid;
 pub mod notation;
+mod small;
+mod stage;
 mod three_by_three;
 
 pub use cube::{CustomAlgError, check_algorithm, generate_scramble};
-pub use data::{Attempt, CaseStats, TrainerData, slowest_first};
+pub use data::{Attempt, CaseStats, TrainerData, slowest_first, weighted_cases};
 pub use deck::Deck;
 pub use diagram::{case_diagram, case_thumbnail, diagram_ratio};
 pub use drill::{Drill, Prompt};
 pub use grid::{GridStep, grid_step, rows_before};
+pub use stage::STAGES;
 pub use three_by_three::{OLL, PLL};
 
 use std::sync::{LazyLock, OnceLock};
@@ -40,6 +43,15 @@ pub enum Step {
     OrientLastLayer,
     /// The last layer starts oriented and ends up solved.
     PermuteLastLayer,
+    /// A case is set up exactly: the algorithm's inverse with a free turn on
+    /// either side. It suits any set whose cases say all there is to know.
+    Setup,
+    /// Like [`Setup`](Self::Setup), with the last layer scrambled first, for
+    /// cases such as an F2L pair that work however the last layer is.
+    RandomLastLayer,
+    /// Each case is a stage of the solve with no algorithm: a random state
+    /// with everything before that stage solved.
+    Stage,
     /// Listed in the library, with no way yet to drill it.
     Reference,
 }
@@ -86,6 +98,11 @@ pub struct AlgSet {
 }
 
 impl AlgSet {
+    /// Returns whether the set is made of stages and not of algorithm cases.
+    pub fn is_stage(&self) -> bool {
+        self.step == Step::Stage
+    }
+
     /// Returns the rules of the set's puzzle.
     pub fn model(&self) -> &'static Model {
         Model::of(self.event)
@@ -182,6 +199,22 @@ pub struct TrainerPuzzle {
     pub sets: Vec<&'static AlgSet>,
 }
 
+impl TrainerPuzzle {
+    /// Returns the puzzle's methods with their sets, each method once, in the
+    /// order they first come up.
+    #[must_use]
+    pub fn methods(&self) -> Vec<(&'static str, Vec<&'static AlgSet>)> {
+        let mut methods: Vec<(&'static str, Vec<&'static AlgSet>)> = Vec::new();
+        for &set in &self.sets {
+            match methods.iter_mut().find(|(name, _)| *name == set.method) {
+                Some((_, sets)) => sets.push(set),
+                None => methods.push((set.method, vec![set])),
+            }
+        }
+        methods
+    }
+}
+
 /// Returns every puzzle the trainer can drill, in the order they are listed.
 pub fn puzzles() -> &'static [TrainerPuzzle] {
     static PUZZLES: LazyLock<Vec<TrainerPuzzle>> = LazyLock::new(|| {
@@ -191,6 +224,10 @@ pub fn puzzles() -> &'static [TrainerPuzzle] {
                 sets.filter(|set| set.step != Step::Reference).collect();
             // The shortest set is the one to start from.
             sets.sort_by_key(|set| set.cases.len());
+            // The stages of a solve come after the sets of cases.
+            if puzzle.event == WcaEvent::Cube3x3 {
+                sets.push(*STAGES);
+            }
             TrainerPuzzle {
                 event: puzzle.event,
                 sets,
@@ -309,8 +346,52 @@ mod tests {
 
     #[test]
     fn sets_come_round_in_order() {
-        assert_eq!(next_set(&PLL).id, "oll");
-        assert_eq!(next_set(&OLL).id, "pll");
+        let sets: Vec<&AlgSet> = all_sets().collect();
+        for (index, set) in sets.iter().enumerate() {
+            let next = sets[(index + 1) % sets.len()];
+            assert_eq!(next_set(set).id, next.id);
+        }
+    }
+
+    #[test]
+    fn the_stages_are_the_last_set_of_the_cube() {
+        let cube = puzzles()
+            .iter()
+            .find(|puzzle| puzzle.event == WcaEvent::Cube3x3);
+        let sets = &cube.unwrap().sets;
+        assert!(sets.last().unwrap().is_stage());
+        assert_eq!(sets.iter().filter(|set| set.is_stage()).count(), 1);
+    }
+
+    #[test]
+    fn the_trainer_offers_a_second_puzzle() {
+        let events: Vec<WcaEvent> = puzzles().iter().map(|puzzle| puzzle.event).collect();
+        assert!(events.contains(&WcaEvent::Cube3x3));
+        assert!(events.contains(&WcaEvent::Cube2x2));
+    }
+
+    #[test]
+    fn every_generated_scramble_produces_the_chosen_case() {
+        let mut random = tnoodle::java::JavaRandom::new(41);
+        for set in all_sets().filter(|set| !set.is_stage()) {
+            let model = set.model();
+            for case in set.cases {
+                let algorithm = model.parse(case.algorithm).unwrap();
+                for _ in 0..2 {
+                    let scramble = generate_scramble(set, case, &mut random)
+                        .unwrap_or_else(|error| panic!("{} {}: {error}", set.id, case.name));
+                    let mut state = model.solved();
+                    let ops = model.parse(&scramble).unwrap();
+                    assert!(model.apply(&mut state, &ops));
+                    assert!(
+                        crate::library::solves_from(set, &state, &algorithm),
+                        "{} {}: {scramble}",
+                        set.id,
+                        case.name
+                    );
+                }
+            }
+        }
     }
 
     #[test]

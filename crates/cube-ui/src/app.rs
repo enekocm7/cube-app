@@ -979,11 +979,14 @@ impl CubeApp {
             | Action::AddLibraryAlgorithm
             | Action::EditLibraryNote
             | Action::StartLibraryReview
+            | Action::TrainLibraryCase
             | Action::GradeAgain
             | Action::GradeHard
             | Action::GradeGood
             | Action::GradeEasy
-            | Action::TrainerCaseAttempts => {}
+            | Action::TrainerCaseAttempts
+            | Action::SelectLearningCases
+            | Action::SelectDueCases => {}
         }
     }
 

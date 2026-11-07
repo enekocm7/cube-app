@@ -1,6 +1,7 @@
 # The Megaminx sets. See library/catalog.rs for the format.
 
 set mega-eo
+step setup
 name Edge orientation
 method 2-look last layer
 before all -layer:U
@@ -14,6 +15,7 @@ case EO2 |  | F U R U' R' F'
 case EO3 |  | F R U2 R2' F R F' U2' F'
 
 set mega-co
+step setup
 name Corner orientation
 method 2-look last layer
 before all -layer:U face:U&touching:2 face:U&touching:1
@@ -40,6 +42,7 @@ case CO 15 |  | R U R' U2 R U2' R' U R U2' R'
 case CO 16 |  | R U2 R' U' R U2 R' U2' R U' R'
 
 set mega-ep
+step setup
 name Edge permutation
 method 2-look last layer
 before all -layer:U face:U
@@ -55,6 +58,7 @@ case EP 4 |  | R U R' U R' U' R2 U' R' U R' U R U2'
 case EP 5 |  | L R U2 L' U R' L U' R U2 L' U2 R'
 
 set mega-cp
+step setup
 name Corner permutation
 method 2-look last layer
 before all -layer:U face:U
@@ -80,6 +84,7 @@ case CP 14 |  | R2 U2' R2' U' R2 U R2' U' R2 U R2' U' R2 U2' R2'
 case CP 15 |  | R2 U2 R2' U R2 U' R2' U R2 U' R2' U R2 U2 R2'
 
 set mega-oll-01
+step setup
 name OLL 1
 method OLL
 before all -layer:U
@@ -92,6 +97,7 @@ case 1A |  | L R U R' U' R' F R F' L'
 case 1B |  | L F R' F' R U R U' R' L'
 
 set mega-oll-02
+step setup
 name OLL 2
 method OLL
 before all -layer:U
@@ -106,6 +112,7 @@ case 2C |  | R' U2 R U R' U2 R | y R U2 R' U R U2 R' | y' R' U2' R U' R' U2' R |
 case 2D |  | R' F R BR' R' F' R BR
 
 set mega-oll-03
+step setup
 name OLL 3
 method OLL
 before all -layer:U
@@ -120,6 +127,7 @@ case 3B- |  | R' U2' R U R' U R | y R U R' U2 R U2 R'
 case 3B+ |  | R U2 R' U' R U' R' | y' R' U' R U2' R' U2' R
 
 set mega-oll-04
+step setup
 name OLL 4
 method OLL
 before all -layer:U
@@ -136,6 +144,7 @@ case 4E- |  | R' U2' R2 U R2' U R2 U2' R'
 case 4E+ |  | R U2 R2' U' R2 U' R2' U2 R
 
 set mega-oll-05
+step setup
 name OLL 5
 method OLL
 before all -layer:U
@@ -148,6 +157,7 @@ case 5- |  | R U2 R' U' R U2 R' U2' R U' R' | y2' R' U' R U2' R' U2 R U' R' U2 R
 case 5+ |  | R U R' U2 R U2' R' U R U2' R' | y2' R' U2' R U R' U2' R U2 R' U R
 
 set mega-oll-06
+step setup
 name OLL 6
 method OLL
 before all -layer:U
@@ -160,6 +170,7 @@ case 6A |  | R U2' R' F R' F' R U' R U2' R'
 case 6B |  | F R U' R' U2 R U R' F'
 
 set mega-oll-07
+step setup
 name OLL 7
 method OLL
 before all -layer:U
@@ -172,6 +183,7 @@ case 7A |  | R U R' U' R' F R F'
 case 7B |  | F R U R' U' F' | y R' F' U' F U R
 
 set mega-oll-08
+step setup
 name OLL 8
 method OLL
 before all -layer:U
@@ -186,6 +198,7 @@ case 8B- |  | F R U R' U' R U R' U R U2' R' F' | y2 F R2 U R' U R' U' R2 U' R2' 
 case 8B+ |  | R U R2' U' R' F R U R U' F'
 
 set mega-oll-09
+step setup
 name OLL 9
 method OLL
 before all -layer:U
@@ -200,6 +213,7 @@ case 9B- |  | F U R U R' U2' F'
 case 9B+ |  | R' U' F' U' F U2 R
 
 set mega-oll-10
+step setup
 name OLL 10
 method OLL
 before all -layer:U
@@ -214,6 +228,7 @@ case 10B- |  | R U2 R' U R' F R F' R U2 R'
 case 10B+ |  | R U' R' U2' R' F R F' U2 R U R'
 
 set mega-oll-11
+step setup
 name OLL 11
 method OLL
 before all -layer:U
@@ -228,6 +243,7 @@ case 11B- |  | R U2' R' U' R' F R F' U R U2 R'
 case 11B+ |  | R' U2' R' F R F' R U R' U R
 
 set mega-oll-12
+step setup
 name OLL 12
 method OLL
 before all -layer:U
@@ -240,6 +256,7 @@ case 12- |  | R' U2' R U' R' U F' U F U R
 case 12+ |  | F R U' R' U2 R U R' U R U' R' F' | y2 R U R' U2' R' F' U' F U R2 U R'
 
 set mega-oll-13
+step setup
 name OLL 13
 method OLL
 before all -layer:U
@@ -252,6 +269,7 @@ case 13- |  | F R' F' U2' F R F' R' U2 R
 case 13+ |  | R' F R U2 R' F' R F U2' F'
 
 set mega-oll-14
+step setup
 name OLL 14
 method OLL
 before all -layer:U
@@ -266,6 +284,7 @@ case 14B- |  | R' F' U' F R U2' R' U2' R
 case 14B+ |  | R' U2 R U2 R' F' U F R
 
 set mega-oll-15
+step setup
 name OLL 15
 method OLL
 before all -layer:U
@@ -280,6 +299,7 @@ case 15B- |  | F R' F' U' F R F' R' U' R U R' U R | y' R2' F R F' R U R' F' U' F
 case 15B+ |  | L' F U R U R' U2' F' L | y2 R' U2 R U R' F R' F' R U2 R
 
 set mega-oll-16
+step setup
 name OLL 16
 method OLL
 before all -layer:U
@@ -294,6 +314,7 @@ case 16B- |  | R' U' R U' R' F U R U' R' F' U2 R | R' F' U2' F U' R U R' U2 R
 case 16B+ |  | F R U2 R' U' F R' F' R U' F'
 
 set mega-oll-17
+step setup
 name OLL 17
 method OLL
 before all -layer:U
@@ -308,6 +329,7 @@ case 17B- |  | L F R U R' U' F' L'
 case 17B+ |  | BL' F R U R' U' F' BL | y BR' R' F' U' F U R BR | y2 R' U2' R U R' F' U' F U2 R
 
 set mega-oll-18
+step setup
 name OLL 18
 method OLL
 before all -layer:U
@@ -324,6 +346,7 @@ case 18E- |  | R' F' U' F U' R U R' U R
 case 18E+ |  | R' F' U2' F R U R' U R
 
 set mega-oll-19
+step setup
 name OLL 19
 method OLL
 before all -layer:U
@@ -346,6 +369,7 @@ case 19F- |  | R' U2' R2 U R2' U R U2' R' F R F'
 case 19F+ |  | R U2' R' U2' R U R' U2' R' F R F'
 
 set mega-oll-20
+step setup
 name OLL 20
 method OLL
 before all -layer:U
@@ -368,6 +392,7 @@ case 20F- |  | R' U' R F U' R' U2 R U2 R U' R' F'
 case 20F+ |  | R U2' R' U' R U' R' U' R' F R F'
 
 set mega-oll-21
+step setup
 name OLL 21
 method OLL
 before all -layer:U
@@ -388,6 +413,7 @@ case 21E- |  | F R U R' U' R U2 R' U2' F'
 case 21E+ |  | BR' R' U' R U R' U2' R U2 BR
 
 set mega-oll-22
+step setup
 name OLL 22
 method OLL
 before all -layer:U
@@ -400,6 +426,7 @@ case 22A |  | R U2 R2' F R F' R U2' R'
 case 22B |  | F R' F' R U R U' R'
 
 set mega-oll-23
+step setup
 name OLL 23
 method OLL
 before all -layer:U
@@ -412,6 +439,7 @@ case 23A |  | R U2 R' U R U' R' U2' R' F R F'
 case 23B |  | R U2' R' U' F R' F' R U' R U' R'
 
 set mega-oll-24
+step setup
 name OLL 24
 method OLL
 before all -layer:U
@@ -426,6 +454,7 @@ case 24B- |  | R' U' F U R U' R' F' R
 case 24B+ |  | R U BR' U' R' U R BR R' | R U2 R' U' F' U F R U' R'
 
 set mega-oll-25
+step setup
 name OLL 25
 method OLL
 before all -layer:U
@@ -440,6 +469,7 @@ case 25B- |  | F R U2 R' F' U' F R U' R' F' | F R' F' R U2 R U R' U' R U2' R'
 case 25B+ |  | R' U2 R U2 R' F R' F' R U R
 
 set mega-oll-26
+step setup
 name OLL 26
 method OLL
 before all -layer:U
@@ -454,6 +484,7 @@ case 26B- |  | BR' U' R' U2 R U R' U2' R U BR | y R' U2' R2 U R' U' R' U2 F R F'
 case 26B+ |  | F U R U' BR R' F' R BR' R' | F U R U2' R' U' R U2 R' U' F'
 
 set mega-oll-27
+step setup
 name OLL 27
 method OLL
 before all -layer:U
@@ -468,6 +499,7 @@ case 27B- |  | R' F R F' R' F R F' R U R' U' R U R'
 case 27B+ |  | F R' F' R U2' R U' R' U R U2 R'
 
 set mega-oll-28
+step setup
 name OLL 28
 method OLL
 before all -layer:U
@@ -480,6 +512,7 @@ case 28- |  | F' L2' BL L BL' L F
 case 28+ |  | F R2 BR' R' BR R' F'
 
 set mega-oll-29
+step setup
 name OLL 29
 method OLL
 before all -layer:U
@@ -492,6 +525,7 @@ case 29- |  | BR' U2' R' U R U' R' U2 R BR | R U2' R' U' R U R' F' U' F R U2' R'
 case 29+ |  | F U2 R U' R' U R U2' R' F'
 
 set mega-oll-30
+step setup
 name OLL 30
 method OLL
 before all -layer:U
@@ -506,6 +540,7 @@ case 30B- |  | R U' R' U R U' R' U' F R' F' R2 U R'
 case 30B+ |  | BR' L R' F R' F' R2 L' BR
 
 set mega-oll-31
+step setup
 name OLL 31
 method OLL
 before all -layer:U
@@ -520,6 +555,7 @@ case 31B- |  | BR' U' R' U' R U R' U R BR
 case 31B+ |  | F U R U R' U' R U' R' F'
 
 set mega-oll-32
+step setup
 name OLL 32
 method OLL
 before all -layer:U
@@ -534,6 +570,7 @@ case 32B- |  | R U R' U R' F R F' R U2' R' | y F U F' R' F R U' R' F' R
 case 32B+ |  | R U2' R2' F R F' R U2 R'
 
 set mega-oll-33
+step setup
 name OLL 33
 method OLL
 before all -layer:U
@@ -548,6 +585,7 @@ case 33B- |  | BR' U' R' U' R U R' U' R U R' U R BR
 case 33B+ |  | F U R U R' U' R U R' U' R U' R' F'
 
 set mega-oll-34
+step setup
 name OLL 34
 method OLL
 before all -layer:U
@@ -564,6 +602,7 @@ case 34E- |  | F R' F' R U R U' R2' U2' R U R' U R
 case 34E+ |  | F R U' R' U' R U R' F' R U2 R' U' R U' R'
 
 set mega-oll-35
+step setup
 name OLL 35
 method OLL
 before all -layer:U
@@ -586,6 +625,7 @@ case 35F- |  | R U R2' F R F' U F R' F' R
 case 35F+ |  | F' U' F2 R' F' R U' R' F R F' | y R' U2' F U R U2' R' U2' R U R' F' R
 
 set mega-oll-36
+step setup
 name OLL 36
 method OLL
 before all -layer:U
@@ -608,6 +648,7 @@ case 36F- |  | F' R U2' R2' F R F' R U2 R' F
 case 36F+ |  | R U2' R2' U2' R U' R' U2' F R F' | y' F R U R' U R U2 R' U2' R U R' F' | y2' F U R U' R' F' R U2 R' U R U2 R' | y2' F R2 U R' U R' U' R U R U2' R2' F'
 
 set mega-oll-37
+step setup
 name OLL 37
 method OLL
 before all -layer:U
@@ -628,6 +669,7 @@ case 37E- |  | R' U' R U' R' U F' U' F U2 R | R U2' R' U F' U' F U2' R U' R'
 case 37E+ |  | F R' F' R U2' R U2' R' U R U2' R'
 
 set mega-pll-a
+step setup
 name PLL A
 method PLL
 before all -layer:U face:U
@@ -642,6 +684,7 @@ case A2- |  | BR' R2' U L U' R U L' U' R BR
 case A2+ |  | BR' R' U L U' R' U L' U' R2 BR | R' U2' R U' R' F' R U R' U' R' F R U2' R
 
 set mega-pll-b
+step setup
 name PLL B
 method PLL
 before all -layer:U face:U
@@ -656,6 +699,7 @@ case B2- |  | R2' U' R2 U2' R' U2 R' U' R U R' U R2 U2' R' U' R | y2 R' U R U2 R
 case B2+ |  | R2 U R2' U2 R U2' R U R' U' R U' R2' U2 R U R' | y2' R U' R' U2' R2 U R' U R U' R' U2 R' U2' R2 U' R2'
 
 set mega-pll-c
+step setup
 name PLL C
 method PLL
 before all -layer:U face:U
@@ -678,6 +722,7 @@ case C6- |  | R' U R U2' R2' U' R U2' R' U R U R' U R U R
 case C6+ |  | R U' R' U2 R2 U R' U2 R U' R' U' R U' R' U' R'
 
 set mega-pll-d
+step setup
 name PLL D
 method PLL
 before all -layer:U face:U
@@ -690,6 +735,7 @@ case D- |  | R' U2' R U R' U' R U' R' U2 R U2' R' U2' R
 case D+ |  | R U2 R' U' R U R' U R U2' R' U2 R U2 R'
 
 set mega-pll-e
+step setup
 name PLL E
 method PLL
 before all -layer:U face:U
@@ -703,6 +749,7 @@ case E2 |  | x' R U' R' DR R U R' DR' R U R' DR R U' R' DR' x | y' R2 U R' U' y 
 case E3 |  | L' R U2 R' U' R U R' U' R U R' U' R U' R' L
 
 set mega-pll-f
+step setup
 name PLL F
 method PLL
 before all -layer:U face:U
@@ -723,6 +770,7 @@ case F5- |  | R' U2' R' U2 R U2 R U2' R2' U2' R2 U R' U R
 case F5+ |  | R U2 R U2' R' U2' R' U2 R2 U2 R2' U' R U' R'
 
 set mega-pll-g
+step setup
 name PLL G
 method PLL
 before all -layer:U face:U
@@ -737,6 +785,7 @@ case G2- |  | F U2' R' U' R F' R' U' R F U' R' U2' R U2 F'
 case G2+ |  | R U2' R' U' R U2' R2' U2 L U' R U L' R' U2' R | y2 R' U2 R L U' R' U L' U2' R2 U2 R' U R U2 R'
 
 set mega-pll-h
+step setup
 name PLL H
 method PLL
 before all -layer:U face:U
@@ -751,6 +800,7 @@ case H2- |  | R2' U2' R2 U R2' U R2 y R2 U R2' U R2 U2' R2'
 case H2+ |  | R2 U2 R2' U' R2 U' R2' y' R2' U' R2 U' R2' U2 R2
 
 set mega-pll-i
+step setup
 name PLL I
 method PLL
 before all -layer:U face:U
@@ -773,6 +823,7 @@ case I6- |  | R2' F2 R2 U' R2' F2' R2 U2 R2' F2 R2 U' R2' F2' R2 | y2' R2' F2 R2
 case I6+ |  | R2 BR2' R2' U' R2 BR2 R2' U2 R2 BR2' R2' U' R2 BR2 R2'
 
 set mega-pll-j
+step setup
 name PLL J
 method PLL
 before all -layer:U face:U
@@ -789,6 +840,7 @@ case J3- |  | F U F' R2' F U' F U' R2 U R2' U F2' R2 | y2' R U' R2' U' R U' R' U
 case J3+ |  | R U R' U' R' U2' R U R U R2' U R2 U2 R2' U2' R
 
 set mega-pll-k
+step setup
 name PLL K
 method PLL
 before all -layer:U face:U
@@ -803,6 +855,7 @@ case K2- |  | R2 U2' R2' U' R2 U2' R' U R' U' R' F R2 U' R' U' R U R' F'
 case K2+ |  | R' U2 R U' R' U2 R U2' R' U' R U2' R' U R U2' R' U R
 
 set mega-pll-l
+step setup
 name PLL L
 method PLL
 before all -layer:U face:U
@@ -823,6 +876,7 @@ case L6- |  | R' U' R U2' R' U R U' R' U2' R2 U R' U R U2' R'
 case L6+ |  | R U R' U2 R U' R' U R U2 R2' U' R U' R' U2 R
 
 set mega-pll-m
+step setup
 name PLL M
 method PLL
 before all -layer:U face:U
@@ -834,6 +888,7 @@ source speedcubedb
 case M |  | R U R' U2' R' U2' R U R' U R2 U' R' U2 R U' R' U R U' R' | y2' R U R' U' R U R' U2' R U R2' U' R U' R' U2 R U2 R U' R'
 
 set mega-pll-n
+step setup
 name PLL N
 method PLL
 before all -layer:U face:U
@@ -847,6 +902,7 @@ case N1+ |  | R U2 R' F' R U R' U' R' F R2 U2' R' | y2' R U2 R U2' R' U' R U2' R
 case N2- |  | R' L' U2' R U' L R' U L' U2' R U2' L
 
 set mega-pll-p
+step setup
 name PLL P
 method PLL
 before all -layer:U face:U
@@ -865,6 +921,7 @@ case P4- |  | R2 U2 R2' U' R2 U' R' U2 R' U' R' U2' R2 U R2' U R
 case P4+ |  | R2' U2' R2 U R2' U R U2' R U R U2 R2' U' R2 U' R'
 
 set mega-pll-q
+step setup
 name PLL Q
 method PLL
 before all -layer:U face:U
@@ -879,6 +936,7 @@ case Q2- |  | R U2 R' U R U2 R2' U2 R U R' U2 R
 case Q2+ |  | R' U2' R U' R' U2' R2 U2' R' U' R U2' R'
 
 set mega-pll-r
+step setup
 name PLL R
 method PLL
 before all -layer:U face:U
@@ -897,6 +955,7 @@ case R4- |  | R U R' U' R U' R2' U' R U' R' U' R U R U R2' U R
 case R4+ |  | R' U' R U R' U R2 U R' U R U R' U' R' U' R2 U' R'
 
 set mega-pll-s
+step setup
 name PLL S
 method PLL
 before all -layer:U face:U
@@ -919,6 +978,7 @@ case S6- |  | R' U' R' U' R U' R' U' R U2 R' U R2 U2 R' U' R
 case S6+ |  | R U R U R' U R U R' U2' R U' R2' U2' R U R'
 
 set mega-pll-t
+step setup
 name PLL T
 method PLL
 before all -layer:U face:U
@@ -936,6 +996,7 @@ case T4- |  | R' U' R U2' R2' U2' R2 U' R2' U2' R2 U R' U R | y R' U' R U' R2' U
 case T4+ |  | R U R' F' R U R' U' R' F R U' R' F R2 U' R' U' R U R' F' | y R U R' U2 R2 U2 R2' U R2 U2 R2' U' R U' R' | R U R' U R2 U2' R2' U' R2 U2' R2' U2' R U' R'
 
 set mega-pll-u
+step setup
 name PLL U
 method PLL
 before all -layer:U face:U
@@ -950,6 +1011,7 @@ case U2- |  | R U2 R' U R' U' R2 U' R' U R' U R U2' R U' R'
 case U2+ |  | R U R' U2 R' U' R U' R U R2' U R U' R U2' R'
 
 set mega-pll-v
+step setup
 name PLL V
 method PLL
 before all -layer:U face:U
@@ -968,6 +1030,7 @@ case V4- |  | R U' R U R2' U R' U' R' U R U' R' U' R2 U R
 case V4+ |  | R' U R' U' R2 U' R U R U' R' U R U R2' U' R'
 
 set mega-pll-w
+step setup
 name PLL W
 method PLL
 before all -layer:U face:U
@@ -979,6 +1042,7 @@ source speedcubedb
 case W |  | R' U2' R' U2 R U2 R U' R2' U2 R2 U2 R' U R
 
 set mega-pll-x
+step setup
 name PLL X
 method PLL
 before all -layer:U face:U
@@ -999,6 +1063,7 @@ case X7- |  | R U R2' F' R U2' R U' R' U2' R' F R U R U R' U2' R U' R'
 case X7+ |  | R U R' U' F' U' F U R U R' U R U2' F R' F' R U R U' R2'
 
 set mega-pll-y
+step setup
 name PLL Y
 method PLL
 before all -layer:U face:U
@@ -1015,6 +1080,7 @@ case Y3- |  | R2' U' R2 U' R2' U2 R2 U2' R2' U' R2 U' R2' U2 R2 | y2' R2' F2' R 
 case Y3+ |  | R2 U BR2' U R2' U R2 U' BR2 U2' R2' | y R2 U R2' U R2 U2' R2' U2 R2 U R2' U R2 U2' R2'
 
 set mega-pll-z
+step setup
 name PLL Z
 method PLL
 before all -layer:U face:U

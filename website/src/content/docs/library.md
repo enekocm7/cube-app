@@ -8,6 +8,11 @@ order: 6
 The library lists the algorithm sets of every puzzle. Open it with the
 **Library** tab in the title bar or `Shift + B`.
 
+## Training a case
+
+The **Train** button, or `5`, on the highlighted case opens the [trainer](/cube-app/docs/trainer/)
+with only that case selected and starts drilling it.
+
 ## Browsing
 
 The list on the left goes from puzzle to method to set, as dropdowns that show

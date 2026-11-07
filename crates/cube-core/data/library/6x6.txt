@@ -1,6 +1,7 @@
 # The 6x6x6 sets. See library/catalog.rs for the format.
 
 set 6x6-parity
+step setup
 name Parity
 method Reduction
 before touching:3 touching:1
@@ -15,6 +16,7 @@ case OLL parity (layer 3) |  | 3R2 B2 U2 3L U2 3R' U2 3R U2 F2 3R F2 3L' B2 3R2
 case PLL parity |  | 3R2 U2 3R2 U2 3U2 2U2 3R2 3U2 2U2
 
 set 6x6-edges
+step setup
 name Last edges
 method Reduction
 before touching:1
@@ -28,6 +30,7 @@ case Flipped pair (layer 2) |  | Uw' R U R' F R' F' R Uw
 case Flipped pair (layer 3) |  | 3Uw' R U R' F R' F' R 3Uw
 
 set 6x6-centers
+step setup
 name Last centers
 method Reduction
 before touching:3 touching:2

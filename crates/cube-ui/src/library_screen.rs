@@ -38,7 +38,7 @@ use crate::scroll_fade::{FadeScroll, fading_scroll};
 use crate::search_bar::{focus_on_search_key, new_search, query, search_field};
 
 /// Width of the list of puzzles and sets.
-const NAV_WIDTH: Rems = Rems(14.);
+pub(crate) const NAV_WIDTH: Rems = Rems(14.);
 /// A row of that list, which follows the text size.
 const TREE_ROW: Rems = Rems(1.9);
 /// How far what a dropdown holds sits in from it.
@@ -80,7 +80,7 @@ struct ReviewRun {
 
 /// The library's state.
 pub(crate) struct LibraryState {
-    data: LibraryData,
+    pub(crate) data: LibraryData,
     /// Where the data is saved; `None` keeps saving off.
     path: Option<PathBuf>,
     set: &'static AlgSet,
@@ -272,7 +272,7 @@ fn algorithm_error(strings: &'static Strings, case: &AlgCase, error: CustomAlgEr
 }
 
 /// A row of the list of puzzles.
-fn tree_row(id: impl Into<ElementId>, selected: bool, cx: &App) -> Stateful<Div> {
+pub(crate) fn tree_row(id: impl Into<ElementId>, selected: bool, cx: &App) -> Stateful<Div> {
     let theme = cx.theme();
     let (accent, hover) = (theme.accent, theme.accent.opacity(0.5));
     h_flex()
@@ -289,7 +289,7 @@ fn tree_row(id: impl Into<ElementId>, selected: bool, cx: &App) -> Stateful<Div>
 }
 
 /// What a dropdown holds, hanging from a line under it.
-fn tree_children(cx: &App) -> Div {
+pub(crate) fn tree_children(cx: &App) -> Div {
     v_flex()
         .ml(TREE_INDENT)
         .pl_1()
@@ -298,7 +298,7 @@ fn tree_children(cx: &App) -> Div {
         .border_color(cx.theme().border)
 }
 
-fn chevron(open: bool, cx: &App) -> Icon {
+pub(crate) fn chevron(open: bool, cx: &App) -> Icon {
     let icon = if open {
         IconName::ChevronDown
     } else {
@@ -310,7 +310,7 @@ fn chevron(open: bool, cx: &App) -> Icon {
 }
 
 /// How much of a row's cases are learned, at the end of the row.
-fn tree_count(count: String, cx: &App) -> Div {
+pub(crate) fn tree_count(count: String, cx: &App) -> Div {
     let theme = cx.theme();
     div()
         .flex_none()
@@ -336,7 +336,7 @@ impl CubeApp {
 
     /// Writes the library's data to disk. Without a path, which means the file
     /// on disk could not be read, nothing is written over it.
-    fn save_library(&self, window: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn save_library(&self, window: &mut Window, cx: &mut Context<Self>) {
         if let Some(path) = &self.library.path
             && let Err(error) = persistence::save_library(path, &self.library.data)
         {
@@ -452,7 +452,15 @@ impl CubeApp {
             Action::EditLibraryNote => self.open_library_text(TextField::Note, window, cx),
             Action::DeleteSolve => self.remove_library_algorithm(window, cx),
             Action::StartLibraryReview => self.start_library_review(window, cx),
+            Action::TrainLibraryCase => self.train_library_case(window, cx),
             _ => {}
+        }
+    }
+
+    /// Starts training the highlighted case in the trainer.
+    fn train_library_case(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some((set, case)) = self.library.selected() {
+            self.train_case(set, case, window, cx);
         }
     }
 
@@ -499,6 +507,30 @@ impl CubeApp {
             algorithm.saturating_sub(1)
         };
         cx.notify();
+    }
+
+    /// Shows `case` of `set` in the library.
+    pub(crate) fn open_in_library(
+        &mut self,
+        set: &'static AlgSet,
+        case: &'static AlgCase,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.select_library_set(set, window, cx);
+        self.library.reveal_set();
+        if let Some(at) = self
+            .library
+            .rows
+            .iter()
+            .position(|row| row.1.name == case.name)
+        {
+            self.library.cursor = at;
+            self.library
+                .list_scroll
+                .scroll_to_item(at, ScrollStrategy::Center);
+        }
+        self.show_screen(Screen::Library, cx);
     }
 
     fn select_library_set(
@@ -617,19 +649,6 @@ impl CubeApp {
             self.follow_library_algorithm(set, case, custom, window, cx);
         }
         cx.notify();
-    }
-
-    /// Takes on an algorithm chosen in the trainer.
-    pub(crate) fn adopt_trainer_algorithm(
-        &mut self,
-        set: &'static AlgSet,
-        case: &'static AlgCase,
-        algorithm: Option<&str>,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        self.library.data.adopt(set, case, algorithm);
-        self.save_library(window, cx);
     }
 
     /// Saves what a dialog was given. An algorithm must solve the case.
@@ -1249,6 +1268,17 @@ impl CubeApp {
                             .tab_stop(false)
                             .on_click(cx.listener(|app, _, window, cx| {
                                 app.open_library_text(TextField::Algorithm, window, cx);
+                            })),
+                    )
+                    .child(
+                        Button::new("library-train")
+                            .ghost()
+                            .xsmall()
+                            .icon(IconName::Timer)
+                            .label(strings.library_train)
+                            .tab_stop(false)
+                            .on_click(cx.listener(|app, _, window, cx| {
+                                app.train_library_case(window, cx);
                             })),
                     )
                     .child(

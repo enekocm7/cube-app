@@ -146,7 +146,9 @@ fn the_trainer_drills_the_library_s_own_sets() {
     for puzzle in puzzles() {
         for set in &puzzle.sets {
             assert_ne!(set.step, Step::Reference, "{}", set.id);
-            assert!(std::ptr::eq(*set, find_set(set.id).unwrap()), "{}", set.id);
+            if !set.is_stage() {
+                assert!(std::ptr::eq(*set, find_set(set.id).unwrap()), "{}", set.id);
+            }
         }
     }
 }

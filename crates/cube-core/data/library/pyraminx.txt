@@ -1,6 +1,7 @@
 # The Pyraminx sets. See library/catalog.rs for the format.
 
 set pyra-first
+step setup
 name First layer
 method Layer by layer
 before above:D:-0.5 -layer:U -layer:R -layer:u -layer:l -layer:r -layer:b
@@ -106,6 +107,7 @@ case First 94 |  | R' U' R' U R' L R' L' | B' R' B R' U R' U' R' | L' U L R U L 
 case First 95 |  | R L' R U' R' U R' L | L' R U' R U R' L R' | R' U R' L' U L' R' L' | L R L U' L R U' R
 
 set pyra-ll
+step setup
 name L3E
 method Layer by layer
 before all -layer:U -layer:u -layer:l -layer:r -layer:b
@@ -121,6 +123,7 @@ case Righty Bars |  | U' R' L' U' L U R | L U R U' R' L'
 case 2 Flip |  | L R' L' R U' R U R' | R' L R L' U L' U' L | R' U L' U' L U' R | L U' R U R' U L'
 
 set pyra-l4e
+step setup
 name L4E
 method L4E
 before touching:3

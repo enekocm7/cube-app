@@ -83,11 +83,14 @@ for valid bindings.
 | `Shift + A` | Select or clear every case, in the trainer |
 | `Q` | Start training the selected cases |
 | `H` | Show or hide the current case, in the trainer |
-| `Shift + H` | Edit the highlighted case's algorithm, in the trainer |
+| `Shift + H` | Open the highlighted case in the library, from the trainer |
 | `Shift + Y` | Sort cases by slowest, in the trainer |
 | `Shift + Q` | See the highlighted case's attempts, in the trainer |
+| `3` | Select the cases you are learning, in the trainer |
+| `4` | Select the cases due for review, in the trainer |
 | `Shift + B` | Show the library, or return to the timer |
 | `Shift + U` | Next puzzle, in the library |
+| `5` | Train the highlighted case in the trainer, from the library |
 | `Shift + X` | Change the highlighted case's status, in the library |
 | `Shift + F` | Make the highlighted algorithm your favourite, in the library |
 | `Shift + I` | Add an algorithm, in the library |
@@ -149,11 +152,13 @@ Around the shortcuts:
 
 **Trainer**
 
-- PLL and OLL trainer: pick whole sets or single cases and drill them in random order, with every case coming up once per round.
+- Drill any set of the library, on every puzzle: pick whole sets or single cases, or those you are learning or that are due, with slower cases coming up more often.
+- Train the stages of a solve: the last layer, F2L with the cross solved, or one chosen slot.
+- Results move cases along in the library: their status and review date.
 - Past attempts of each case, which can be reviewed and deleted.
 - Search for cases by name or group.
 - A history that names the case of each attempt, and per-case stats sorted by slowest.
-- Your own algorithm for any case, checked against it.
+- A book on each case opens it in the library, to add your own algorithm.
 
 **Library**
 

@@ -185,6 +185,56 @@ impl StickerModel {
         }
     }
 
+    /// Rewrites `ops` with no whole-puzzle rotations, which a scramble can't
+    /// hold: each move after a rotation becomes the move that does the same
+    /// from the turned puzzle, and the rotation itself moves to the end, where
+    /// it is dropped. The puzzle is then held differently, which a case never
+    /// depends on. Returns `ops` as they were if a move has no such twin.
+    pub fn without_rotations(&self, ops: &[Op]) -> Vec<Op> {
+        let places = self.stickers.len() as u16;
+        let identity: Vec<u16> = (0..places).collect();
+        // `then(a, b)[p]` is where place `p` comes from after `a` and then `b`.
+        let then =
+            |a: &[u16], b: &[u16]| -> Vec<u16> { b.iter().map(|&i| a[i as usize]).collect() };
+        let power_of = |base: usize, power: u8| {
+            let mut result = identity.clone();
+            for _ in 0..power {
+                result = then(&result, &self.moves[base].source);
+            }
+            result
+        };
+        let mut twins: Vec<(u16, u8, Vec<u16>)> = Vec::new();
+        for (base, turn) in self.moves.iter().enumerate() {
+            if !turn.rotation {
+                for power in 1..turn.order {
+                    twins.push((base as u16, power, power_of(base, power)));
+                }
+            }
+        }
+        let mut held = identity.clone();
+        let mut result = Vec::with_capacity(ops.len());
+        for &op in ops {
+            let Op::Turn { base, power } = op else {
+                return ops.to_vec();
+            };
+            let perm = power_of(base as usize, power);
+            if self.moves[base as usize].rotation {
+                held = then(&held, &perm);
+                continue;
+            }
+            let mut inverse = identity.clone();
+            for (place, &from) in held.iter().enumerate() {
+                inverse[from as usize] = place as u16;
+            }
+            let moved = then(&then(&held, &perm), &inverse);
+            let Some(&(base, power, _)) = twins.iter().find(|twin| twin.2 == moved) else {
+                return ops.to_vec();
+            };
+            result.push(Op::Turn { base, power });
+        }
+        result
+    }
+
     /// Reads the moves of `text`, which need no spaces between them.
     fn parse(&self, text: &str) -> Result<Vec<Op>, AlgError> {
         let is_gap = |letter: char| letter.is_whitespace() || "()[],".contains(letter);
@@ -489,6 +539,57 @@ impl Model {
             }
         }
         true
+    }
+
+    /// Drops the rotations of `ops`, where a puzzle of stickers can, and merges
+    /// moves of the same turn that follow each other: `U U U` is `U'`.
+    pub fn tidy(&self, ops: &[Op]) -> Vec<Op> {
+        let Self::Stickers(model) = self else {
+            return ops.to_vec();
+        };
+        let mut tidy: Vec<Op> = Vec::new();
+        for op in model.without_rotations(ops) {
+            let Op::Turn { base, power } = op else {
+                tidy.push(op);
+                continue;
+            };
+            match tidy.last().copied() {
+                Some(Op::Turn {
+                    base: before,
+                    power: earlier,
+                }) if before == base => {
+                    tidy.pop();
+                    let merged = (earlier + power) % model.order(base);
+                    if merged != 0 {
+                        tidy.push(Op::Turn {
+                            base,
+                            power: merged,
+                        });
+                    }
+                }
+                _ => tidy.push(op),
+            }
+        }
+        tidy
+    }
+
+    /// Writes moves in the puzzle's notation, which [`parse`](Self::parse) reads.
+    pub fn write(&self, ops: &[Op]) -> String {
+        let words: Vec<String> = ops
+            .iter()
+            .map(|op| match (self, *op) {
+                (Self::Stickers(model), Op::Turn { base, power }) => model.text(base, power),
+                (_, Op::Layers { top, bottom }) => format!("({top},{bottom})"),
+                (_, Op::Slash) => "/".to_owned(),
+                (_, Op::Dial { turn, amount }) => {
+                    let sign = if amount < 0 { '-' } else { '+' };
+                    format!("{}{}{sign}", CLOCK_TURNS[turn as usize], amount.abs())
+                }
+                (_, Op::Flip) => "y2".to_owned(),
+                _ => String::new(),
+            })
+            .collect();
+        words.join(" ")
     }
 
     /// Returns the moves that undo `ops`.

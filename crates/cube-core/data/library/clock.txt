@@ -1,6 +1,7 @@
 # The Clock sets. See library/catalog.rs for the format.
 
 set clock-flips
+step setup
 name Flip patterns
 method Simul
 before 
@@ -23,6 +24,7 @@ group All pins
 case ALL |  | ALL1+ | ALL1+ y2
 
 set clock-memo
+step setup
 name Memo pairs
 method Simul
 before 

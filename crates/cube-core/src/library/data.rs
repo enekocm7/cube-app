@@ -78,6 +78,26 @@ pub struct Progress {
     pub learned: usize,
 }
 
+/// How many attempts in a row without a DNF make a case being learned count
+/// as learned.
+const LEARNED_STREAK: usize = 3;
+
+/// A timed attempt much faster than the case's average is easy, and one much
+/// slower is hard. Thousandths of the average.
+const EASY_RATIO: u64 = 800;
+const HARD_RATIO: u64 = 1_500;
+
+/// How an attempt at a case went, as the library needs to know it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Outcome {
+    /// The time that counted, or `None` for a DNF.
+    pub time_ms: Option<u64>,
+    /// The case's average before this attempt, if it had been timed.
+    pub mean_before_ms: Option<u64>,
+    /// How many attempts in a row, this one included, were not a DNF.
+    pub clean_streak: usize,
+}
+
 /// The contents of `library.json`.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
@@ -250,6 +270,45 @@ impl LibraryData {
         }
         due.sort_by_key(|case| case.due_unix_ms);
         due
+    }
+
+    /// Takes in an attempt made in the trainer. Training a case starts
+    /// learning it, and a few clean attempts in a row learn it. A learned case
+    /// that is due is graded by how the attempt compares with its average,
+    /// and one that is forgotten, which a DNF says, comes back sooner. The
+    /// stages of a solve are not cases of the library and change nothing.
+    pub fn record_attempt(&mut self, set: &AlgSet, name: &str, outcome: Outcome, now_unix_ms: u64) {
+        if set.is_stage() {
+            return;
+        }
+        match self.status(set, name) {
+            Status::NotStarted => self.set_status(set, name, Status::Learning, now_unix_ms),
+            Status::Learning => {}
+            Status::Learned => {
+                let due = self
+                    .entry(set, name)
+                    .and_then(|entry| entry.review)
+                    .is_some_and(|review| review.is_due(now_unix_ms));
+                let grade = match (outcome.time_ms, outcome.mean_before_ms) {
+                    (None, _) => Some(Grade::Again),
+                    (Some(_), _) if !due => None,
+                    (Some(time), Some(mean)) if time * 1_000 <= mean * EASY_RATIO => {
+                        Some(Grade::Easy)
+                    }
+                    (Some(time), Some(mean)) if time * 1_000 > mean * HARD_RATIO => {
+                        Some(Grade::Hard)
+                    }
+                    (Some(_), _) => Some(Grade::Good),
+                };
+                if let Some(grade) = grade {
+                    self.grade(set.id, name, grade, now_unix_ms);
+                }
+                return;
+            }
+        }
+        if self.status(set, name) == Status::Learning && outcome.clean_streak >= LEARNED_STREAK {
+            self.set_status(set, name, Status::Learned, now_unix_ms);
+        }
     }
 
     /// Records how a review went. A forgotten case stays learned and simply
@@ -431,5 +490,84 @@ mod tests {
         data.set_note(&PLL, "Z", "note".to_owned());
         let text = serde_json::to_string(&data).unwrap();
         assert_eq!(serde_json::from_str::<LibraryData>(&text).unwrap(), data);
+    }
+
+    fn outcome(time_ms: Option<u64>, mean_before_ms: Option<u64>, clean_streak: usize) -> Outcome {
+        Outcome {
+            time_ms,
+            mean_before_ms,
+            clean_streak,
+        }
+    }
+
+    #[test]
+    fn a_first_attempt_starts_learning_the_case() {
+        let mut data = LibraryData::default();
+        data.record_attempt(&PLL, "T", outcome(Some(2_000), None, 1), NOW);
+        assert_eq!(data.status(&PLL, "T"), Status::Learning);
+        assert_eq!(data.due(NOW + 30 * DAY_MS), Vec::new());
+    }
+
+    #[test]
+    fn clean_attempts_in_a_row_learn_the_case() {
+        let mut data = LibraryData::default();
+        data.set_status(&PLL, "T", Status::Learning, NOW);
+        data.record_attempt(&PLL, "T", outcome(Some(2_000), None, 2), NOW);
+        assert_eq!(data.status(&PLL, "T"), Status::Learning);
+        data.record_attempt(&PLL, "T", outcome(Some(2_000), None, 3), NOW);
+        assert_eq!(data.status(&PLL, "T"), Status::Learned);
+        assert_eq!(data.due(NOW + DAY_MS).len(), 1);
+    }
+
+    #[test]
+    fn a_dnf_keeps_a_case_from_being_learned() {
+        let mut data = LibraryData::default();
+        data.set_status(&PLL, "T", Status::Learning, NOW);
+        data.record_attempt(&PLL, "T", outcome(None, None, 0), NOW);
+        assert_eq!(data.status(&PLL, "T"), Status::Learning);
+    }
+
+    #[test]
+    fn a_due_case_is_graded_by_its_time() {
+        let later = NOW + DAY_MS;
+        let reviewed = |time: Option<u64>| {
+            let mut data = LibraryData::default();
+            data.set_status(&PLL, "T", Status::Learned, NOW);
+            data.record_attempt(&PLL, "T", outcome(time, Some(2_000), 1), later);
+            data.entry(&PLL, "T").unwrap().review.unwrap()
+        };
+        let (easy, good, hard) = (
+            reviewed(Some(1_500)),
+            reviewed(Some(2_000)),
+            reviewed(Some(4_000)),
+        );
+        assert!(easy.ease > good.ease);
+        assert!(good.ease > hard.ease);
+        let forgotten = reviewed(None);
+        assert_eq!((forgotten.interval_days, forgotten.lapses), (1, 1));
+    }
+
+    #[test]
+    fn a_case_not_yet_due_keeps_its_schedule_unless_forgotten() {
+        let mut data = LibraryData::default();
+        data.set_status(&PLL, "T", Status::Learned, NOW);
+        let before = data.entry(&PLL, "T").unwrap().review;
+        data.record_attempt(&PLL, "T", outcome(Some(1_000), Some(2_000), 1), NOW);
+        assert_eq!(data.entry(&PLL, "T").unwrap().review, before);
+        data.record_attempt(&PLL, "T", outcome(None, Some(2_000), 0), NOW);
+        assert_eq!(data.entry(&PLL, "T").unwrap().review.unwrap().lapses, 1);
+        assert_eq!(data.status(&PLL, "T"), Status::Learned);
+    }
+
+    #[test]
+    fn the_stages_are_not_kept_in_the_library() {
+        let mut data = LibraryData::default();
+        data.record_attempt(
+            &crate::trainer::STAGES,
+            "F2L",
+            outcome(Some(9_000), None, 1),
+            NOW,
+        );
+        assert_eq!(data, LibraryData::default());
     }
 }

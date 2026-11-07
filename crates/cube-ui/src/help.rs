@@ -78,7 +78,7 @@ const MULTI_BLIND_ACTIONS: [Action; 2] = [
     Action::CopyMultiBlindScrambles,
     Action::SaveMultiBlindScrambles,
 ];
-const TRAINER_ACTIONS: [Action; 9] = [
+const TRAINER_ACTIONS: [Action; 11] = [
     Action::NextTrainerSet,
     Action::ToggleTrainerCase,
     Action::ToggleTrainerGroup,
@@ -88,8 +88,10 @@ const TRAINER_ACTIONS: [Action; 9] = [
     Action::EditTrainerAlgorithm,
     Action::SortTrainerCases,
     Action::TrainerCaseAttempts,
+    Action::SelectLearningCases,
+    Action::SelectDueCases,
 ];
-const LIBRARY_ACTIONS: [Action; 11] = [
+const LIBRARY_ACTIONS: [Action; 12] = [
     Action::OpenLibrary,
     Action::NextLibraryPuzzle,
     Action::CycleCaseStatus,
@@ -97,6 +99,7 @@ const LIBRARY_ACTIONS: [Action; 11] = [
     Action::AddLibraryAlgorithm,
     Action::EditLibraryNote,
     Action::StartLibraryReview,
+    Action::TrainLibraryCase,
     Action::GradeAgain,
     Action::GradeHard,
     Action::GradeGood,
@@ -509,9 +512,11 @@ fn action_label(strings: &'static Strings, action: Action) -> &'static str {
         Action::ToggleTrainerSet => strings.trainer_toggle_all,
         Action::StartTrainer => strings.trainer_start,
         Action::RevealTrainerCase => strings.trainer_reveal,
-        Action::EditTrainerAlgorithm => strings.trainer_edit_algorithm,
+        Action::EditTrainerAlgorithm => strings.trainer_open_in_library,
         Action::SortTrainerCases => strings.trainer_sort_slowest,
         Action::TrainerCaseAttempts => strings.trainer_case_attempts,
+        Action::SelectLearningCases => strings.trainer_select_learning,
+        Action::SelectDueCases => strings.trainer_select_due,
         Action::OpenLibrary => strings.action_open_library,
         Action::NextLibraryPuzzle => strings.action_next_library_puzzle,
         Action::CycleCaseStatus => strings.action_cycle_case_status,
@@ -519,6 +524,7 @@ fn action_label(strings: &'static Strings, action: Action) -> &'static str {
         Action::AddLibraryAlgorithm => strings.library_add_algorithm,
         Action::EditLibraryNote => strings.library_edit_note,
         Action::StartLibraryReview => strings.action_start_library_review,
+        Action::TrainLibraryCase => strings.library_train,
         Action::GradeAgain => strings.library_grade_again,
         Action::GradeHard => strings.library_grade_hard,
         Action::GradeGood => strings.library_grade_good,

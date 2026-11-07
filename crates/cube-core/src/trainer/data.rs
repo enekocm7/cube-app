@@ -113,6 +113,12 @@ impl TrainerData {
         }
     }
 
+    /// Selects exactly the cases at `positions`, clearing any others.
+    pub fn select_only(&mut self, set: &AlgSet, positions: &[usize]) {
+        self.selections.remove(set.id);
+        self.set_selected(set, positions, true);
+    }
+
     /// Selects the cases at `positions`, or clears them if all are selected.
     pub fn toggle_selected(&mut self, set: &AlgSet, positions: &[usize]) {
         let all = positions
@@ -164,6 +170,16 @@ impl TrainerData {
             .collect()
     }
 
+    /// Returns how many of the latest attempts at a case went by without a
+    /// DNF, counting back from the newest.
+    pub fn clean_streak(&self, set: &AlgSet, name: &str) -> usize {
+        let attempts = self.case_attempts(set, name);
+        attempts
+            .into_iter()
+            .take_while(|&index| self.attempts[index].modifier != Modifier::DNF)
+            .count()
+    }
+
     /// Returns how each case of `set` has gone, by name.
     pub fn stats(&self, set: &AlgSet) -> HashMap<&str, CaseStats> {
         let mut by_case: HashMap<&str, (usize, Vec<u64>)> = HashMap::new();
@@ -207,6 +223,43 @@ pub fn slowest_first<S: BuildHasher>(
     };
     cases.sort_by_key(|&case| std::cmp::Reverse(mean(case)));
     vec![CaseGroup { name: "", cases }]
+}
+
+/// Returns the cases to deal, with the ones that need the most work in
+/// several times: three for a case that is much slower than the rest or has
+/// only had DNFs, two for one that is slower or has not been tried, one for
+/// the others. Everything is dealt once before anything comes back, so a fast
+/// case still comes up in every round.
+pub fn weighted_cases<S: BuildHasher>(
+    set: &AlgSet,
+    selected: &[usize],
+    stats: &HashMap<&str, CaseStats, S>,
+) -> Vec<usize> {
+    let of = |case: usize| stats.get(set.cases[case].name);
+    let times: Vec<u64> = selected
+        .iter()
+        .filter_map(|&case| of(case).and_then(|stats| stats.recent_ms))
+        .collect();
+    let average = mean(&times);
+    let copies = |case: usize| match (of(case), average) {
+        (None, _) => 2,
+        (Some(stats), _) if stats.attempts == 0 => 2,
+        (Some(stats), Some(average)) => match stats.recent_ms {
+            None => 3,
+            Some(time) if time * 10 >= average * 15 => 3,
+            Some(time) if time * 10 >= average * 11 => 2,
+            Some(_) => 1,
+        },
+        (Some(_), None) => 3,
+    };
+    // With nothing timed yet there is nothing to weigh.
+    if times.is_empty() && selected.iter().all(|&case| of(case).is_none()) {
+        return selected.to_vec();
+    }
+    selected
+        .iter()
+        .flat_map(|&case| std::iter::repeat_n(case, copies(case)))
+        .collect()
 }
 
 #[cfg(test)]
@@ -381,5 +434,74 @@ mod tests {
     fn unknown_keys_are_tolerated() {
         let data: Result<TrainerData, _> = serde_json::from_str(r#"{"new_field":1}"#);
         assert!(data.is_ok());
+    }
+
+    fn timed(case: &str, time_ms: u64) -> Attempt {
+        attempt(case, time_ms, Modifier::None)
+    }
+
+    #[test]
+    fn selecting_only_some_cases_clears_the_rest() {
+        let mut data = TrainerData::default();
+        data.toggle_selected(&PLL, &[0, 1, 2]);
+        data.select_only(&PLL, &[5, 6]);
+        assert_eq!(data.selected(&PLL), [5, 6]);
+        data.select_only(&PLL, &[]);
+        assert_eq!(data, TrainerData::default());
+    }
+
+    #[test]
+    fn the_clean_streak_stops_at_a_dnf() {
+        let data = with_attempts(vec![
+            timed("T", 1_000),
+            attempt("T", 1_000, Modifier::DNF),
+            timed("T", 1_000),
+            timed("Z", 1_000),
+            timed("T", 1_000),
+        ]);
+        assert_eq!(data.clean_streak(&PLL, "T"), 2);
+        assert_eq!(data.clean_streak(&PLL, "H"), 0);
+    }
+
+    #[test]
+    fn slower_cases_are_dealt_more_often() {
+        let t = PLL.position("T").unwrap();
+        let z = PLL.position("Z").unwrap();
+        let h = PLL.position("H").unwrap();
+        let mut attempts = Vec::new();
+        attempts.extend((0..3).map(|_| timed("T", 4_000)));
+        attempts.extend((0..3).map(|_| timed("Z", 1_000)));
+        let data = with_attempts(attempts);
+        let dealt = weighted_cases(&PLL, &[t, z, h], &data.stats(&PLL));
+        let count = |case: usize| dealt.iter().filter(|&&other| other == case).count();
+        assert_eq!(count(t), 3);
+        assert_eq!(count(z), 1);
+        // A case that has not been tried needs practice too.
+        assert_eq!(count(h), 2);
+    }
+
+    #[test]
+    fn a_dnf_only_case_counts_as_the_slowest() {
+        let t = PLL.position("T").unwrap();
+        let z = PLL.position("Z").unwrap();
+        let data = with_attempts(vec![attempt("T", 1_000, Modifier::DNF), timed("Z", 1_000)]);
+        let dealt = weighted_cases(&PLL, &[t, z], &data.stats(&PLL));
+        assert_eq!(dealt.iter().filter(|&&case| case == t).count(), 3);
+    }
+
+    #[test]
+    fn with_no_history_every_case_is_dealt_once() {
+        let data = TrainerData::default();
+        let stats = data.stats(&PLL);
+        assert_eq!(weighted_cases(&PLL, &[3, 1, 2], &stats), [3, 1, 2]);
+    }
+
+    #[test]
+    fn similar_times_are_all_dealt_once() {
+        let t = PLL.position("T").unwrap();
+        let z = PLL.position("Z").unwrap();
+        let data = with_attempts(vec![timed("T", 1_000), timed("Z", 1_050)]);
+        let dealt = weighted_cases(&PLL, &[t, z], &data.stats(&PLL));
+        assert_eq!(dealt, [t, z]);
     }
 }
