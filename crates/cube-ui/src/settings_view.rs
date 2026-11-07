@@ -11,9 +11,9 @@ use cube_core::settings::{
     parse_text_pt, parse_timer_pt,
 };
 use cube_core::settings::{
-    FontChoice, InvalidSizePt, MAX_SCRAMBLE_PT, MAX_TEXT_PT, MAX_TIMER_PT, MIN_SCRAMBLE_PT,
-    MIN_TEXT_PT, MIN_TIMER_PT, ScrambleSize, TextSize, ThemePreference, TimerSize, UpdateChannel,
-    UpdateFrequency,
+    FontChoice, InvalidSizePt, LibrarySize, MAX_SCRAMBLE_PT, MAX_TEXT_PT, MAX_TIMER_PT,
+    MIN_SCRAMBLE_PT, MIN_TEXT_PT, MIN_TIMER_PT, ScrambleSize, TextSize, ThemePreference, TimerSize,
+    UpdateChannel, UpdateFrequency,
 };
 use cube_core::theme;
 use cube_core::theme::{ThemeColor, ThemeFile};
@@ -732,6 +732,44 @@ impl SettingsView {
         )
     }
 
+    /// How large the library's cases are drawn.
+    fn library_size_row(
+        &self,
+        settings: &Settings,
+        strings: &'static Strings,
+        cx: &App,
+    ) -> AnyElement {
+        let current = settings.library_size;
+        let app = self.app.clone();
+        row(
+            strings.setting_library_size,
+            strings.setting_library_size_desc,
+            Button::new("library-size")
+                .outline()
+                .small()
+                .label(library_size_label(strings, current))
+                .dropdown_caret(true)
+                .dropdown_menu(move |mut menu, _, _| {
+                    for choice in LibrarySize::ALL {
+                        let app = app.clone();
+                        menu = menu.item(
+                            PopupMenuItem::new(library_size_label(strings, choice))
+                                .checked(choice == current)
+                                .on_click(move |_, window, cx| {
+                                    app.update(cx, |app, cx| {
+                                        app.update_settings(window, cx, |settings| {
+                                            settings.library_size = choice;
+                                        });
+                                    });
+                                }),
+                        );
+                    }
+                    menu
+                }),
+            cx,
+        )
+    }
+
     /// Opens the dialog that sizes the preview, timer and scramble per event.
     fn event_sizes_row(&self, strings: &'static Strings, cx: &App) -> AnyElement {
         let app = self.app.clone();
@@ -1438,6 +1476,12 @@ impl SettingsView {
             font_size_rows.extend(custom);
         }
         font_size_texts.push(text(
+            strings.setting_library_size,
+            strings.setting_library_size_desc,
+            library_size_label(strings, settings.library_size),
+        ));
+        font_size_rows.push(self.library_size_row(settings, strings, cx));
+        font_size_texts.push(text(
             strings.setting_event_sizes,
             strings.setting_event_sizes_desc,
             strings.event_sizes_open,
@@ -1881,6 +1925,15 @@ pub(crate) fn scramble_size_label(strings: &'static Strings, size: ScrambleSize)
         ScrambleSize::Large => strings.scramble_size_large,
         ScrambleSize::Largest => strings.scramble_size_largest,
         ScrambleSize::Custom => strings.scramble_size_custom,
+    }
+}
+
+/// The menu label for a library size.
+fn library_size_label(strings: &'static Strings, size: LibrarySize) -> &'static str {
+    match size {
+        LibrarySize::Small => strings.library_size_small,
+        LibrarySize::Normal => strings.library_size_normal,
+        LibrarySize::Big => strings.library_size_big,
     }
 }
 

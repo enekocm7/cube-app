@@ -256,6 +256,34 @@ impl PreviewSize {
     }
 }
 
+/// How large the library's cases are drawn.
+///
+/// The scale applies to the case rows, their thumbnails, the detail drawing and
+/// the panels around them. Every dimension it scales is in rems, so it also
+/// follows the text size.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum LibrarySize {
+    Small,
+    #[default]
+    Normal,
+    Big,
+}
+
+impl LibrarySize {
+    /// Every size, in the order the settings menu lists them.
+    pub const ALL: [Self; 3] = [Self::Small, Self::Normal, Self::Big];
+
+    /// How many times the original dimensions are drawn.
+    pub const fn scale(self) -> f32 {
+        match self {
+            Self::Small => 1.,
+            Self::Normal => 1.2,
+            Self::Big => 1.45,
+        }
+    }
+}
+
 /// Reads a per-event map leniently: an unknown event or a value that does not
 /// parse is dropped instead of stopping the file from loading.
 fn lenient_event_map<'de, D, V>(deserializer: D) -> Result<BTreeMap<WcaEvent, V>, D::Error>
@@ -587,6 +615,8 @@ pub struct Settings {
         skip_serializing_if = "BTreeMap::is_empty"
     )]
     pub scramble_sizes: BTreeMap<WcaEvent, SizeChoice<ScrambleSize>>,
+    /// How large the library's cases are drawn.
+    pub library_size: LibrarySize,
     /// Whether the start hint has been used, so it is no longer shown while idle.
     pub start_hint_seen: bool,
     /// The tags the next solves get. They stay until changed.
@@ -648,6 +678,7 @@ impl Default for Settings {
             preview_sizes: BTreeMap::new(),
             scramble_custom_pt: None,
             scramble_sizes: BTreeMap::new(),
+            library_size: LibrarySize::default(),
             start_hint_seen: false,
             active_tags: Vec::new(),
             user_backup_dir: String::new(),
@@ -800,6 +831,11 @@ impl Settings {
         change_event_choice(&mut self.scramble_sizes, event, general, |choice| {
             choice.custom_pt = points.map(|pt| pt.clamp(MIN_SCRAMBLE_PT, MAX_SCRAMBLE_PT));
         });
+    }
+
+    /// How many times the original library dimensions are drawn.
+    pub const fn library_scale(&self) -> f32 {
+        self.library_size.scale()
     }
 
     /// The preview size for `event`: `Normal` unless chosen, never above what
@@ -1234,6 +1270,37 @@ mod tests {
         settings.timer_size = TimerSize::Custom;
         assert_eq!(settings.timer_pt(), 90);
         assert!((settings.timer_digits_px(WcaEvent::Cube3x3) - 120.).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn library_size_defaults_to_normal_and_scales_in_order() {
+        let settings = Settings::default();
+        assert_eq!(settings.library_size, LibrarySize::Normal);
+        assert!((settings.library_scale() - 1.2).abs() < f32::EPSILON);
+
+        assert!(
+            LibrarySize::ALL
+                .windows(2)
+                .all(|pair| pair[0].scale() < pair[1].scale())
+        );
+        let parsed: Settings = toml::from_str("library_size = 'big'").unwrap();
+        assert_eq!(parsed.library_size, LibrarySize::Big);
+        assert!(parsed.library_scale() > settings.library_scale());
+    }
+
+    #[test]
+    fn library_size_round_trips_and_older_files_get_normal() {
+        let old: Settings = toml::from_str("inspection = false").unwrap();
+        assert_eq!(old.library_size, LibrarySize::Normal);
+        let settings = Settings {
+            library_size: LibrarySize::Big,
+            ..Settings::default()
+        };
+        let text = toml::to_string(&settings).unwrap();
+        assert_eq!(
+            toml::from_str::<Settings>(&text).unwrap().library_size,
+            LibrarySize::Big
+        );
     }
 
     #[test]
