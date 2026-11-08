@@ -596,6 +596,8 @@ pub const STRINGS: Strings = Strings {
     relays_empty: "ستظهر محاولات التتابع هنا.",
     relays_unavailable: "تعذرت قراءة التتابعات، لذا لا يمكن تعديلها حاليًا.",
     relays_total: "المجموع",
+    relays_edit_title: "تعديل محاولة التتابع",
+    relays_edit_invalid_split: "اللغز {puzzle}: أدخل وقتًا مثل 9.12.",
     relays_too_few: "يحتاج التتابع إلى {min} فعاليات على الأقل.",
     relays_too_many: "يمكن أن يضم التتابع {max} فعاليات كحد أقصى.",
     relays_unknown: "«{name}» ليست فعالية.",

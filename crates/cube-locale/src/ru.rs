@@ -596,6 +596,8 @@ pub const STRINGS: Strings = Strings {
     relays_empty: "Здесь появятся ваши попытки в эстафетах.",
     relays_unavailable: "Не удалось прочитать ваши эстафеты, поэтому пока их нельзя менять.",
     relays_total: "Итого",
+    relays_edit_title: "Изменить попытку в эстафете",
+    relays_edit_invalid_split: "Головоломка {puzzle}: введите время, например 9.12.",
     relays_too_few: "Для эстафеты нужно не меньше {min} дисциплин.",
     relays_too_many: "В эстафете может быть не больше {max} дисциплин.",
     relays_unknown: "«{name}» не дисциплина.",

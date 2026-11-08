@@ -30,7 +30,7 @@ nothing is selected.
 | Turn manual mode on or off | `M` | Type a time from another timer. See [Manual mode](#manual-mode) |
 | Select the newer solve | `Up` | Moves the highlight up the list, or up the stats table. See [Charts](#charts) for the charts screen |
 | Select the older solve | `Down` | Moves the highlight down the list, or down the stats table |
-| Open the selected solve | `Enter` | Opens the details and edit dialog, from the solve list or the stats table |
+| Open the selected solve | `Enter` | Opens the details and edit dialog, from the solve list or the stats table, or edits the selected Multi-Blind or relay attempt |
 | Delete the selected solve | `D` | Asks for confirmation (can be turned off in settings) and shows an Undo toast. Each entry in the session dropdown also has a trash button, reachable with `Tab` and pressed with `Enter` or `Space` |
 | Toggle `+2` on the selected solve | `2` | |
 | Toggle DNF on the selected solve | `Shift + D` | |
@@ -154,7 +154,7 @@ settings; the library tree, search, counts and review queue follow them.
 
 ## Relays
 
-On the Relays screen the timer key gets the scrambles of the selected relay, then starts the timer once they are ready (after the inspection, if it is on). By default the timer key then stops the whole relay and `Enter` ends the current puzzle; with `Ctrl + L` the timer key ends each puzzle instead and the last one stops the relay. `1` selects the next relay and `Ctrl + E` creates a custom one: type its events separated by commas, such as `2x2x2, 3x3x3, Pyraminx`, or a range of cubes such as `2x2x2-5x5x5`. `Up` and `Down` select an attempt, `Left` and `Right` select one of its puzzles, `2` and `Shift + D` give that puzzle a `+2` or DNF (press again to remove it), and `D` deletes the attempt. They follow the bindings of the solve and average actions. In the dialog, `Enter` creates the relay. See [Relays](/cube-app/docs/relays/).
+On the Relays screen the timer key gets the scrambles of the selected relay, then starts the timer once they are ready (after the inspection, if it is on). By default the timer key then stops the whole relay and `Enter` ends the current puzzle; with `Ctrl + L` the timer key ends each puzzle instead and the last one stops the relay. `1` selects the next relay and `Ctrl + E` creates a custom one: type its events separated by commas, such as `2x2x2, 3x3x3, Pyraminx`, or a range of cubes such as `2x2x2-5x5x5`. `Up` and `Down` select an attempt, `Left` and `Right` select one of its puzzles, `2` and `Shift + D` give that puzzle a `+2` or DNF (press again to remove it), and `D` deletes the attempt. `Enter` opens the selected attempt to edit its splits and penalties (the newest when none is selected); the pencil and trash buttons in each row do the same for the mouse. They follow the bindings of the solve and average actions. In the New relay dialog, `Enter` creates the relay; in the edit dialog, `Tab` moves between the fields and `Enter` saves. See [Relays](/cube-app/docs/relays/).
 
 ## Multi-Blind
 

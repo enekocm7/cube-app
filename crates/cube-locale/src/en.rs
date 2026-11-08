@@ -596,6 +596,8 @@ pub const STRINGS: Strings = Strings {
     relays_empty: "Your relay attempts will appear here.",
     relays_unavailable: "Your relays could not be read, so they can't be changed for now.",
     relays_total: "Total",
+    relays_edit_title: "Edit relay attempt",
+    relays_edit_invalid_split: "Puzzle {puzzle}: enter a time such as 9.12.",
     relays_too_few: "A relay needs at least {min} events.",
     relays_too_many: "A relay can have at most {max} events.",
     relays_unknown: "“{name}” is not an event.",

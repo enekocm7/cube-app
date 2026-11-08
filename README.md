@@ -162,7 +162,7 @@ Around the shortcuts:
 
 - Time several puzzles as one attempt, with a split for each: a dropdown of presets such as 2x2x2 to 7x7x7, or a custom list of events.
 - See every scramble before starting, one inspection for the whole relay, and a key to end each puzzle or to stop the whole relay.
-- Total, splits, best and mean per relay, with a `+2` or DNF on any puzzle.
+- Total, splits, best and mean per relay, with a `+2` or DNF on any puzzle. Attempts can be edited or deleted.
 
 **Trainer**
 

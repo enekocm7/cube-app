@@ -19,6 +19,7 @@ use std::fmt::Write as _;
 use serde::{Deserialize, Serialize};
 
 use crate::event::WcaEvent;
+use crate::format::parse_time;
 use crate::scramble;
 use crate::solve::Modifier;
 use crate::timer::MAX_PUZZLES;
@@ -228,11 +229,7 @@ impl RelayAttempt {
     /// Returns the time of puzzle `index` with its penalty, or `None` for a DNF.
     pub fn split_ms(&self, index: usize) -> Option<u64> {
         let raw = *self.splits_ms.get(index)?;
-        match self.modifiers.get(index).copied().unwrap_or_default() {
-            Modifier::None => Some(raw),
-            Modifier::PlusTwo => Some(raw + PLUS_TWO_MS),
-            Modifier::DNF => None,
-        }
+        penalized_ms(raw, self.modifiers.get(index).copied().unwrap_or_default())
     }
 
     /// Returns the total, the sum of the splits, or `None` when any puzzle is
@@ -258,6 +255,21 @@ impl RelayAttempt {
         }
     }
 
+    /// Replaces the splits and penalties with what the edit dialog holds.
+    ///
+    /// # Errors
+    /// The index of the puzzle whose split is not a time, in which case
+    /// nothing changes. The lists must hold one entry per puzzle.
+    pub fn edit(&mut self, splits: &[String], modifiers: &[Modifier]) -> Result<(), usize> {
+        if splits.len() != self.puzzles() || modifiers.len() != self.puzzles() {
+            return Err(0);
+        }
+        let splits_ms = parse_splits(splits)?;
+        self.splits_ms = splits_ms;
+        self.modifiers.clone_from_slice(modifiers);
+        Ok(())
+    }
+
     /// Checks that the lists agree, so a file the app could not have written
     /// is refused rather than rewritten.
     pub fn is_consistent(&self) -> bool {
@@ -266,6 +278,41 @@ impl RelayAttempt {
             && self.modifiers.len() == self.events.len()
             && (self.scrambles.is_empty() || self.scrambles.len() == self.events.len())
     }
+}
+
+/// Returns `raw` with `modifier` applied, or `None` when the puzzle is a DNF.
+fn penalized_ms(raw: u64, modifier: Modifier) -> Option<u64> {
+    match modifier {
+        Modifier::None => Some(raw),
+        Modifier::PlusTwo => Some(raw + PLUS_TWO_MS),
+        Modifier::DNF => None,
+    }
+}
+
+/// Returns the total of `splits_ms` with their `modifiers`, or `None` when a
+/// puzzle is a DNF or the lists differ in length.
+pub fn total_of(splits_ms: &[u64], modifiers: &[Modifier]) -> Option<u64> {
+    if splits_ms.len() != modifiers.len() {
+        return None;
+    }
+    splits_ms
+        .iter()
+        .zip(modifiers)
+        .try_fold(0, |total, (&raw, &modifier)| {
+            Some(total + penalized_ms(raw, modifier)?)
+        })
+}
+
+/// Parses the split typed for each puzzle in the edit dialog.
+///
+/// # Errors
+/// The index of the first puzzle whose split is not a time above zero.
+pub fn parse_splits(texts: &[String]) -> Result<Vec<u64>, usize> {
+    texts
+        .iter()
+        .enumerate()
+        .map(|(index, text)| parse_time(text).filter(|&ms| ms > 0).ok_or(index))
+        .collect()
 }
 
 /// The contents of `relays.json`.
@@ -467,6 +514,57 @@ mod tests {
         attempt.toggle_penalty(2, Modifier::DNF);
         assert_eq!(attempt.modifiers[2], Modifier::None);
         attempt.toggle_penalty(9, Modifier::DNF);
+    }
+
+    #[test]
+    fn an_edit_replaces_the_splits_and_penalties() {
+        let mut attempt = attempt([1_000, 2_000, 3_000], [Modifier::None; 3]);
+        let modifiers = [Modifier::PlusTwo, Modifier::None, Modifier::DNF];
+        let texts = ["1.5".to_owned(), "2:03.250".to_owned(), "0:04".to_owned()];
+        assert_eq!(attempt.edit(&texts, &modifiers), Ok(()));
+        assert_eq!(attempt.splits_ms, vec![1_500, 123_250, 4_000]);
+        assert_eq!(attempt.modifiers, modifiers);
+        assert_eq!(attempt.total_ms(), None);
+    }
+
+    #[test]
+    fn an_edit_with_a_bad_split_says_which_puzzle_and_changes_nothing() {
+        let mut attempt = attempt([1_000, 2_000, 3_000], [Modifier::None; 3]);
+        let texts = ["1.5".to_owned(), "nope".to_owned(), "0:04".to_owned()];
+        assert_eq!(attempt.edit(&texts, &[Modifier::PlusTwo; 3]), Err(1));
+        assert_eq!(attempt.splits_ms, vec![1_000, 2_000, 3_000]);
+        assert_eq!(attempt.modifiers, [Modifier::None; 3]);
+        let texts = ["1.5".to_owned(), "0.000".to_owned(), "0:04".to_owned()];
+        assert_eq!(attempt.edit(&texts, &[Modifier::None; 3]), Err(1));
+    }
+
+    #[test]
+    fn an_edit_needs_one_split_and_penalty_per_puzzle() {
+        let mut attempt = attempt([1_000, 2_000, 3_000], [Modifier::None; 3]);
+        assert_eq!(
+            attempt.edit(&["1.5".to_owned()], &[Modifier::None; 3]),
+            Err(0)
+        );
+        let texts = ["1.5".to_owned(), "2.0".to_owned(), "3.0".to_owned()];
+        assert_eq!(attempt.edit(&texts, &[Modifier::None; 2]), Err(0));
+    }
+
+    #[test]
+    fn the_total_of_edited_splits_follows_their_penalties() {
+        let splits = [1_000, 2_000, 3_000];
+        assert_eq!(total_of(&splits, &[Modifier::None; 3]), Some(6_000));
+        assert_eq!(
+            total_of(
+                &splits,
+                &[Modifier::PlusTwo, Modifier::None, Modifier::None]
+            ),
+            Some(8_000)
+        );
+        assert_eq!(
+            total_of(&splits, &[Modifier::None, Modifier::DNF, Modifier::None]),
+            None
+        );
+        assert_eq!(total_of(&splits, &[Modifier::None; 2]), None);
     }
 
     #[test]

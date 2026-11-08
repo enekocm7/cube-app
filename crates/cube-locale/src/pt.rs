@@ -596,6 +596,8 @@ pub const STRINGS: Strings = Strings {
     relays_empty: "Suas tentativas de revezamento aparecerão aqui.",
     relays_unavailable: "Não foi possível ler seus revezamentos, então eles não podem ser alterados por enquanto.",
     relays_total: "Total",
+    relays_edit_title: "Editar tentativa de revezamento",
+    relays_edit_invalid_split: "Quebra-cabeça {puzzle}: insira um tempo como 9.12.",
     relays_too_few: "Um revezamento precisa de pelo menos {min} eventos.",
     relays_too_many: "Um revezamento pode ter no máximo {max} eventos.",
     relays_unknown: "“{name}” não é um evento.",

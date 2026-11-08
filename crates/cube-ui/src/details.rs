@@ -513,7 +513,7 @@ pub(crate) fn field_label(text: &'static str, muted: Hsla) -> impl IntoElement {
 
 /// Wraps a text field so presses inside it never reach the dialog
 /// background, which would pull focus away from the field just pressed.
-pub(crate) fn keep_focus(id: &'static str, field: impl IntoElement) -> impl IntoElement {
+pub(crate) fn keep_focus(id: impl Into<ElementId>, field: impl IntoElement) -> impl IntoElement {
     div()
         .id(id)
         .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())

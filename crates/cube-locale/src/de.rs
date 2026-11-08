@@ -596,6 +596,8 @@ pub const STRINGS: Strings = Strings {
     relays_empty: "Deine Staffelversuche erscheinen hier.",
     relays_unavailable: "Deine Staffeln konnten nicht gelesen werden und lassen sich vorerst nicht ändern.",
     relays_total: "Gesamt",
+    relays_edit_title: "Staffelversuch bearbeiten",
+    relays_edit_invalid_split: "Puzzle {puzzle}: Gib eine Zeit wie 9.12 ein.",
     relays_too_few: "Eine Staffel braucht mindestens {min} Disziplinen.",
     relays_too_many: "Eine Staffel kann höchstens {max} Disziplinen haben.",
     relays_unknown: "„{name}“ ist keine Disziplin.",
