@@ -67,6 +67,17 @@ impl CubeApp {
         self.timer_link.is_some()
     }
 
+    /// Returns whether the screen is ready for a hardware timer to time its
+    /// attempt. Multi-Blind and relays need their scrambles first; every other
+    /// screen times a normal solve.
+    fn hardware_attempt_ready(&self) -> bool {
+        match self.screen {
+            Screen::MultiBlind => self.multi_blind_ready(),
+            Screen::Relays => self.relays_ready(),
+            _ => true,
+        }
+    }
+
     /// The title bar's Bluetooth button, whose icon shows the connection.
     pub(crate) fn render_bluetooth_button(
         &self,
@@ -149,6 +160,12 @@ impl CubeApp {
     fn connect_timer(&mut self, device: Device, window: &mut Window, cx: &mut Context<Self>) {
         if self.timer_link.is_some() {
             return;
+        }
+        // From here the hardware owns attempts, so one in progress from the
+        // keyboard could no longer be stopped by it.
+        if self.timer.is_active() {
+            self.timer.cancel();
+            self.toast(self.strings().toast_cancelled, window, cx);
         }
         let (link, events) = self.bluetooth.connect(&device);
         let listener = cx.spawn_in(window, async move |this, cx| {
@@ -237,16 +254,32 @@ impl CubeApp {
     /// Pressing the timer's reset button reports [`HardwareState::Idle`],
     /// which only puts the digits back to zero, like cube-tui does.
     fn follow_timer(&mut self, state: HardwareState, window: &mut Window, cx: &mut Context<Self>) {
+        // Multi-Blind and relays can only be timed here once their scrambles
+        // are ready: there would be nothing to record without them, and a
+        // normal solve would be recorded over the mode. Leave the timer alone.
+        if !self.hardware_attempt_ready() {
+            if state == HardwareState::Running {
+                self.toast_warning(self.strings().bluetooth_no_attempt, window, cx);
+            }
+            self.timer.cancel();
+            return;
+        }
         let running = |phase| matches!(phase, TimerPhase::Running { .. });
         let was_running = running(self.timer.phase());
+        if !was_running && state == HardwareState::Running {
+            self.prepare_attempt(true);
+        }
         let outcome = self.timer.apply_hardware(state, std::time::Instant::now());
         if state == HardwareState::Idle {
             self.last_result = None;
         }
-        if !was_running && running(self.timer.phase()) {
-            self.last_result = None;
-        }
-        if self.timer.is_active() && self.screen != Screen::Timer && !self.drilling() {
+        // Multi-Blind and relays keep their own screen: the hardware times
+        // them there, the same as the timer key would.
+        if self.timer.is_active()
+            && self.screen != Screen::Timer
+            && !self.drilling()
+            && !matches!(self.screen, Screen::MultiBlind | Screen::Relays)
+        {
             self.show_screen(Screen::Timer, cx);
         }
         if let Some(outcome) = outcome {

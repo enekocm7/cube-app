@@ -16,7 +16,10 @@ Press `B` again to see the connected timer; `Enter` disconnects it. While connec
 
 ## While connected
 
-- The timer key and the digits do nothing: the solve starts and stops on the hardware, and the digits follow it.
+- The solve starts and stops on the hardware, and the digits follow it; the timer key does nothing on the timer screen.
+- Multi-Blind and relay attempts can be timed on the hardware too: prepare the scrambles, then start the timer. During a
+  relay, the timer key and `Enter` pass to the next puzzle, and the attempt is saved with its total only, since the timer
+  reports no time for each puzzle.
 - Inspection is skipped.
 - `Esc` still cancels the attempt so it is never recorded when the hardware stops.
 - Every other shortcut keeps working.

@@ -172,12 +172,25 @@ pub(crate) type Accept =
     Rc<dyn Fn(&mut CubeApp, &str, &mut Window, &mut Context<CubeApp>) -> Result<(), String>>;
 
 impl CubeApp {
+    /// Returns whether the scrambles of an attempt are ready to be timed.
+    pub(crate) fn multi_blind_ready(&self) -> bool {
+        matches!(self.multi_blind.phase, Phase::Ready { .. })
+    }
+
     /// Handles the timer key on this screen: it asks for a new attempt, starts
     /// the one that is ready, or asks for the result of the one just timed.
     pub(crate) fn multi_blind_timer_key(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         match self.multi_blind.phase {
             Phase::Idle => self.open_new_multi_blind(window, cx),
             Phase::Ready { .. } => {
+                // A connected hardware timer starts and stops the attempt
+                // itself, so the key leaves it alone.
+                if self.hardware_timing() {
+                    if !self.timer.is_active() {
+                        self.toast_warning(self.strings().bluetooth_blocks_start, window, cx);
+                    }
+                    return;
+                }
                 self.key_down = true;
                 self.press_timer(window, cx);
             }
@@ -757,14 +770,19 @@ impl CubeApp {
             ),
             Phase::Ready { scrambles } => {
                 if self.timer.is_active() {
-                    self.render_multi_blind_digits(&hint(strings.multi_blind_running), window, cx)
+                    let running = if self.hardware_timing() {
+                        strings.multi_blind_running_hardware
+                    } else {
+                        strings.multi_blind_running
+                    };
+                    self.render_multi_blind_digits(&hint(running), window, cx)
                 } else {
-                    self.render_multi_blind_scrambles(
-                        scrambles,
-                        &hint(strings.multi_blind_ready),
-                        background,
-                        cx,
-                    )
+                    let ready = if self.hardware_timing() {
+                        strings.multi_blind_ready_hardware
+                    } else {
+                        strings.multi_blind_ready
+                    };
+                    self.render_multi_blind_scrambles(scrambles, &hint(ready), background, cx)
                 }
             }
             Phase::Finished { scrambles, time_ms } => {

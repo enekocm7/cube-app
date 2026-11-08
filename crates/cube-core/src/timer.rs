@@ -413,7 +413,9 @@ impl Timer {
             HardwareState::HandsOn => self.phase = TimerPhase::Armed { ready: false },
             HardwareState::GetSet => self.phase = TimerPhase::Armed { ready: true },
             HardwareState::Running => {
-                self.splits = Splits::NONE;
+                // The UI sets `puzzles` before a hardware start, so a relay
+                // keeps one split per puzzle, passed with the split key.
+                self.splits = Splits::new(self.puzzles);
                 self.phase = TimerPhase::Running {
                     started: now,
                     modifier: Modifier::None,
@@ -599,6 +601,19 @@ mod tests {
         timer.apply_hardware(HardwareState::Running, now);
         timer.apply_hardware(HardwareState::Running, now + ms(500));
         assert_eq!(timer.elapsed(now + ms(1_000)), ms(1_000));
+    }
+
+    #[test]
+    fn a_hardware_start_lets_a_relay_pass_each_puzzle() {
+        let mut timer = hardware_timer();
+        timer.puzzles = 3;
+        let now = Instant::now();
+        timer.apply_hardware(HardwareState::Running, now);
+        assert_eq!(timer.splits().puzzles(), 3);
+        assert!(timer.mark(now + ms(1_000)));
+        assert!(timer.mark(now + ms(2_000)));
+        assert!(!timer.mark(now + ms(3_000)));
+        assert_eq!(timer.splits().marked(), 2);
     }
 
     #[test]

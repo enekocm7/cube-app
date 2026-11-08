@@ -706,6 +706,11 @@ pub struct Strings {
     pub bluetooth_connected: &'static str,
     pub bluetooth_disconnected: &'static str,
     pub bluetooth_lost: &'static str,
+    /// Shown when a connected Bluetooth timer stops the keyboard from starting
+    /// an attempt.
+    pub bluetooth_blocks_start: &'static str,
+    /// Shown when a hardware timer starts before the attempt has scrambles.
+    pub bluetooth_no_attempt: &'static str,
     pub bluetooth_no_adapter: &'static str,
     /// `{error}`: the cause.
     pub bluetooth_scan_failed: &'static str,
@@ -889,8 +894,12 @@ pub struct Strings {
     pub multi_blind_preparing: &'static str,
     /// `{key}`: the timer key.
     pub multi_blind_ready: &'static str,
+    /// Shown instead of `multi_blind_ready` while a Bluetooth timer is connected.
+    pub multi_blind_ready_hardware: &'static str,
     /// `{key}`: the timer key.
     pub multi_blind_running: &'static str,
+    /// Shown instead of `multi_blind_running` while a Bluetooth timer is timing.
+    pub multi_blind_running_hardware: &'static str,
     /// `{key}`: the timer key.
     pub multi_blind_start_hint: &'static str,
     pub multi_blind_result_title: &'static str,
@@ -933,14 +942,20 @@ pub struct Strings {
     pub relays_create: &'static str,
     /// `{count}`: the number of scrambles.
     pub relays_preparing: &'static str,
+    /// Shown on a prepared relay while a Bluetooth timer is connected.
+    pub relays_ready_hardware: &'static str,
     /// `{current}`: the puzzle being solved. `{total}`: how many. `{event}`: its name. `{key}`: the timer key.
     pub relays_running: &'static str,
+    /// `{current}`: the puzzle being solved. `{total}`: how many. `{event}`: its name. `{key}`: the key that passes a puzzle. Shown while a Bluetooth timer is timing.
+    pub relays_running_hardware: &'static str,
     pub relays_empty: &'static str,
     pub relays_unavailable: &'static str,
     pub relays_total: &'static str,
     pub relays_edit_title: &'static str,
     /// `{puzzle}`: the puzzle whose split could not be read.
     pub relays_edit_invalid_split: &'static str,
+    /// Shown for a puzzle the timer kept no time for.
+    pub relays_no_record: &'static str,
     /// `{min}`: the fewest events.
     pub relays_too_few: &'static str,
     /// `{max}`: the most events.

@@ -48,6 +48,9 @@ your solves, because the result is points and not a time.
 
 `Esc` backs out of scrambles you have not started on. A stopped attempt stays until you enter its result.
 
+With a Bluetooth timer connected, prepare the scrambles as usual and then start and stop the attempt on the timer; the
+result is entered from the keyboard like any other.
+
 ### Scoring
 
 cube scores attempts with the WCA rules:

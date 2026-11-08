@@ -37,6 +37,10 @@ never ended has no time of its own: the time since the last split goes to the pu
 
 `Esc` abandons scrambles you have not started on, or cancels a relay that is running.
 
+With a Bluetooth timer connected, the timer starts and stops the relay, and the key-split setting has no effect. The
+timer key and `Enter` both pass to the next puzzle, and the attempt is saved with its total only, because the timer
+reports no time for each puzzle.
+
 ## Penalties
 
 - An inspection `+2` counts against the first puzzle, and an inspection DNF makes the whole relay a DNF.
@@ -47,8 +51,10 @@ never ended has no time of its own: the time since the last split goes to the pu
 
 ## Results
 
-The screen lists the attempts at the selected relay, newest first, and the summary line shows the number of attempts
-and the best and mean totals, leaving DNFs out of both. The selected attempt shows the split of every puzzle.
+The screen lists the attempts at the selected relay, newest first, each with the relay's name and its total; the
+summary line shows the number of attempts and the best and mean totals, leaving DNFs out of both. The selected
+attempt shows the split of every puzzle, or **No record** for an attempt a Bluetooth timer timed, which has no split
+to show.
 
 Relay attempts are kept in `relays.json`, apart from `times.json`, so they never count toward the stats of any event
 and cube-tui never sees them. See [Your data](/cube-app/docs/data/).

@@ -1004,8 +1004,24 @@ mod tests {
             Modifier::PlusTwo,
             9,
         ));
+        data.attempts.push(RelayAttempt::timed_by_hardware(
+            presets()[0].clone(),
+            Vec::new(),
+            22_118,
+            10,
+        ));
         save_relays(&path, &data).unwrap();
         assert_eq!(load_relays(&path).unwrap(), data);
+        // Attempts saved before hardware timing existed have no total of their
+        // own and add up their splits, as they always did.
+        fs::write(
+            &path,
+            r#"{"attempts":[{"events":["Cube2x2","Cube3x3"],"splits_ms":[1,2],"modifiers":["None","None"]}]}"#,
+        )
+        .unwrap();
+        let legacy = load_relays(&path).unwrap();
+        assert_eq!(legacy.attempts[0].total_only_ms, None);
+        assert_eq!(legacy.attempts[0].total_ms(), Some(3));
         fs::remove_dir_all(dir).unwrap();
     }
 
