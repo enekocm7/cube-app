@@ -932,6 +932,9 @@ pub struct Strings {
     pub relays_empty: &'static str,
     pub relays_unavailable: &'static str,
     pub relays_total: &'static str,
+    pub relays_edit_title: &'static str,
+    /// `{puzzle}`: the puzzle whose split could not be read.
+    pub relays_edit_invalid_split: &'static str,
     /// `{min}`: the fewest events.
     pub relays_too_few: &'static str,
     /// `{max}`: the most events.
@@ -1091,6 +1094,7 @@ mod tests {
             }
             assert!(strings.relays_key_stops.contains("{key}"));
             assert!(strings.relays_key_splits.contains("{key}"));
+            assert!(strings.relays_edit_invalid_split.contains("{puzzle}"));
             assert!(strings.relays_too_few.contains("{min}"));
             assert!(strings.relays_too_many.contains("{max}"));
             assert!(strings.relays_unknown.contains("{name}"));

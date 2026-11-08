@@ -596,6 +596,8 @@ pub const STRINGS: Strings = Strings {
     relays_empty: "I tuoi tentativi di staffetta appariranno qui.",
     relays_unavailable: "Impossibile leggere le tue staffette, quindi per ora non si possono modificare.",
     relays_total: "Totale",
+    relays_edit_title: "Modifica tentativo di staffetta",
+    relays_edit_invalid_split: "Puzzle {puzzle}: inserisci un tempo come 9.12.",
     relays_too_few: "Una staffetta richiede almeno {min} eventi.",
     relays_too_many: "Una staffetta può avere al massimo {max} eventi.",
     relays_unknown: "«{name}» non è un evento.",

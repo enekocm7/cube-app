@@ -596,6 +596,8 @@ pub const STRINGS: Strings = Strings {
     relays_empty: "Bayrak denemelerin burada görünecek.",
     relays_unavailable: "Bayraklarınız okunamadı, bu yüzden şimdilik değiştirilemez.",
     relays_total: "Toplam",
+    relays_edit_title: "Bayrak denemesini düzenle",
+    relays_edit_invalid_split: "Bulmaca {puzzle}: 9.12 gibi bir süre girin.",
     relays_too_few: "Bir bayrak en az {min} kategori gerektirir.",
     relays_too_many: "Bir bayrakta en fazla {max} kategori olabilir.",
     relays_unknown: "“{name}” bir kategori değil.",

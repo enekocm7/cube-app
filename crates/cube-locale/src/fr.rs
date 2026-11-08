@@ -597,6 +597,8 @@ pub const STRINGS: Strings = Strings {
     relays_empty: "Vos tentatives de relais apparaîtront ici.",
     relays_unavailable: "Vos relais n'ont pas pu être lus, ils ne peuvent donc pas être modifiés pour l'instant.",
     relays_total: "Total",
+    relays_edit_title: "Modifier la tentative de relais",
+    relays_edit_invalid_split: "Puzzle {puzzle} : saisissez un temps comme 9.12.",
     relays_too_few: "Un relais nécessite au moins {min} épreuves.",
     relays_too_many: "Un relais peut avoir au plus {max} épreuves.",
     relays_unknown: "« {name} » n'est pas une épreuve.",

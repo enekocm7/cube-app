@@ -596,6 +596,8 @@ pub const STRINGS: Strings = Strings {
     relays_empty: "Je estafettepogingen verschijnen hier.",
     relays_unavailable: "Je estafettes konden niet worden gelezen en kunnen voorlopig niet worden gewijzigd.",
     relays_total: "Totaal",
+    relays_edit_title: "Estafettepoging bewerken",
+    relays_edit_invalid_split: "Puzzel {puzzle}: voer een tijd in zoals 9.12.",
     relays_too_few: "Een estafette heeft minstens {min} onderdelen nodig.",
     relays_too_many: "Een estafette kan hoogstens {max} onderdelen hebben.",
     relays_unknown: "“{name}” is geen onderdeel.",

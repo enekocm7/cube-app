@@ -596,6 +596,8 @@ pub const STRINGS: Strings = Strings {
     relays_empty: "Zde se zobrazí vaše pokusy ve štafetách.",
     relays_unavailable: "Vaše štafety se nepodařilo přečíst, takže je zatím nelze měnit.",
     relays_total: "Celkem",
+    relays_edit_title: "Upravit pokus ve štafetě",
+    relays_edit_invalid_split: "Hlavolam {puzzle}: zadejte čas, například 9.12.",
     relays_too_few: "Štafeta potřebuje alespoň {min} disciplín.",
     relays_too_many: "Štafeta může mít nejvýše {max} disciplín.",
     relays_unknown: "„{name}“ není disciplína.",

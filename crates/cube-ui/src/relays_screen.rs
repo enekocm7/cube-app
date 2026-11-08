@@ -11,18 +11,24 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
-use cube_core::format::format_ms;
+use cube_core::format::{format_ms, parse_time};
 use cube_core::relay::{self, RelayAttempt, RelayData, RelayError};
 use cube_core::{Action, Modifier, Readiness, TimerOutcome, TimerPhase, WcaEvent, persistence};
 use gpui_kit::assets::IconName;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
+use gpui_kit::component::input::{Input, InputEvent, InputState};
 use gpui_kit::component::menu::{DropdownMenu as _, PopupMenuItem};
 use gpui_kit::component::notification::Notification;
-use gpui_kit::component::{ActiveTheme as _, Icon, Sizable as _, WindowExt as _, h_flex, v_flex};
+use gpui_kit::component::{
+    ActiveTheme as _, Icon, Selectable as _, Sizable as _, WindowExt as _, h_flex, v_flex,
+};
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
 use crate::app::{CubeApp, Screen};
+use crate::details::{field_error, keep_focus};
+use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_title, dialog_width};
+use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
 use crate::multi_blind_screen::{Accept, Prompt, digits_panel, empty_message_owned};
 use crate::palette::Palette;
 use crate::scroll_fade::FadeScroll;
@@ -107,6 +113,121 @@ impl RelayState {
     }
 }
 
+/// The form of the dialog that edits a saved attempt: the split of each
+/// puzzle and its penalty. The total is the sum of the splits, so it follows
+/// what is typed.
+struct RelayEditForm {
+    events: Vec<WcaEvent>,
+    splits: Vec<Entity<InputState>>,
+    modifiers: Vec<Modifier>,
+    error: Option<String>,
+    strings: &'static cube_locale::Strings,
+}
+
+impl RelayEditForm {
+    /// The total of the splits as they are typed, `DNF` when a puzzle is one,
+    /// or `–` while a split is not a time.
+    fn total_text(&self, cx: &App) -> String {
+        let mut splits_ms = Vec::with_capacity(self.splits.len());
+        for input in &self.splits {
+            let text = input.read(cx).value().to_string();
+            let Some(ms) = parse_time(&text).filter(|&ms| ms > 0) else {
+                return "–".to_owned();
+            };
+            splits_ms.push(ms);
+        }
+        relay::total_of(&splits_ms, &self.modifiers).map_or_else(|| "DNF".to_owned(), format_ms)
+    }
+}
+
+impl Render for RelayEditForm {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let strings = self.strings;
+        let theme = cx.theme();
+        let (muted, border) = (theme.muted_foreground, theme.border);
+        let mono = theme.mono_font_family.clone();
+        let red = Palette::of(cx).red;
+        let total = self.total_text(cx);
+
+        let rows = (0..self.events.len()).map(|index| {
+            let event = self.events[index];
+            let modifier = self.modifiers[index];
+            let penalty = |id: (&'static str, usize), text: &'static str, value: Modifier| {
+                Button::new(id)
+                    .outline()
+                    .xsmall()
+                    .label(text)
+                    .selected(modifier == value)
+                    .accessibility_label(format!("{}: {}", event.name(), text))
+                    .on_click(cx.listener(move |form, _, _, cx| {
+                        form.modifiers[index] = value;
+                        form.error = None;
+                        cx.notify();
+                    }))
+            };
+            h_flex()
+                .id(("relay-edit-row", index))
+                .flex_none()
+                .items_center()
+                .gap_2()
+                .child(
+                    div()
+                        .flex_none()
+                        .w(NUMBER_WIDTH)
+                        .text_right()
+                        .text_color(muted)
+                        .child((index + 1).to_string()),
+                )
+                .child(
+                    div()
+                        .flex_1()
+                        .min_w_0()
+                        .truncate()
+                        .whitespace_nowrap()
+                        .child(event.name()),
+                )
+                .child(div().flex_none().w(Rems(9.)).child(keep_focus(
+                    ("relay-edit-split", index),
+                    Input::new(&self.splits[index]).focus_bordered(false),
+                )))
+                .child(penalty(
+                    ("relay-edit-none", index),
+                    strings.penalty_none,
+                    Modifier::None,
+                ))
+                .child(penalty(
+                    ("relay-edit-plus-two", index),
+                    "+2",
+                    Modifier::PlusTwo,
+                ))
+                .child(penalty(("relay-edit-dnf", index), "DNF", Modifier::DNF))
+                .into_any_element()
+        });
+
+        v_flex()
+            .gap_2()
+            .py_2()
+            .children(rows)
+            .child(
+                h_flex()
+                    .flex_none()
+                    .justify_between()
+                    .gap_3()
+                    .pt_2()
+                    .border_t_1()
+                    .border_color(border)
+                    .child(
+                        div()
+                            .text_sm()
+                            .text_color(muted)
+                            .child(strings.relays_total),
+                    )
+                    .child(div().font_family(mono).child(total)),
+            )
+            .children(field_error(self.error.as_ref(), red))
+    }
+}
+
 impl CubeApp {
     /// Handles the timer key on this screen: it asks for the scrambles of a
     /// new attempt, or starts, splits and stops the one that is ready.
@@ -131,7 +252,12 @@ impl CubeApp {
     ) -> bool {
         let idle = matches!(self.relays.phase, Phase::Idle);
         match action {
-            Action::OpenSolve if idle => self.prepare_relay(window, cx),
+            // As on the timer, Enter opens the selected attempt, or the
+            // newest; the timer key starts a new one.
+            Action::OpenSolve if idle => match self.relays.target() {
+                Some(index) => self.open_edit_relay(index, window, cx),
+                None => self.prepare_relay(window, cx),
+            },
             Action::PreviousSolve if idle => self.step_relay_attempt(true, cx),
             Action::NextSolve if idle => self.step_relay_attempt(false, cx),
             Action::PreviousAverage if idle => self.step_relay_puzzle(false, cx),
@@ -400,6 +526,138 @@ impl CubeApp {
         cx.notify();
     }
 
+    /// Opens the dialog that edits a saved attempt: the split of each puzzle
+    /// and its penalty.
+    #[allow(clippy::too_many_lines, reason = "the fields, the form and its dialog")]
+    fn open_edit_relay(&mut self, index: usize, window: &mut Window, cx: &mut Context<Self>) {
+        let strings = self.strings();
+        if self.relays.path.is_none() {
+            window.push_notification(Notification::warning(strings.relays_unavailable), cx);
+            return;
+        }
+        let Some(attempt) = self.relays.data.attempts.get(index) else {
+            return;
+        };
+        let events = attempt.events.clone();
+        let modifiers = attempt.modifiers.clone();
+        let splits: Vec<Entity<InputState>> = attempt
+            .splits_ms
+            .iter()
+            .map(|&ms| cx.new(|cx| InputState::new(window, cx).default_value(format_ms(ms))))
+            .collect();
+        let first = splits.first().cloned();
+        let form_events = events.clone();
+        let form_modifiers = modifiers.clone();
+        let form_splits = splits.clone();
+        self.relays.selected = Some(index);
+        self.relays.puzzle = 0;
+        let view = cx.new(|cx| {
+            for input in &splits {
+                cx.subscribe_in(
+                    input,
+                    window,
+                    |form: &mut RelayEditForm, _, event: &InputEvent, _, cx| {
+                        if matches!(event, InputEvent::Change) {
+                            form.error = None;
+                            cx.notify();
+                        }
+                    },
+                )
+                .detach();
+            }
+            RelayEditForm {
+                events: form_events,
+                splits: form_splits,
+                modifiers: form_modifiers,
+                error: None,
+                strings,
+            }
+        });
+        let app = cx.entity().downgrade();
+        let submitted = view.clone();
+        let first_build = std::cell::Cell::new(true);
+        window.open_dialog(cx, move |dialog, window, cx| {
+            if first_build.replace(false)
+                && let Some(first) = &first
+            {
+                first.focus_handle(cx).focus(window, cx);
+            }
+            let (app, form) = (app.clone(), submitted.clone());
+            let splits = splits.clone();
+            let submit: Submit = Rc::new(move |window, cx| {
+                let texts: Vec<String> = splits
+                    .iter()
+                    .map(|input| input.read(cx).value().to_string())
+                    .collect();
+                let modifiers = form.read(cx).modifiers.clone();
+                let outcome = app
+                    .update(cx, |app, cx| {
+                        app.apply_relay_edit(index, &texts, &modifiers, window, cx)
+                    })
+                    .unwrap_or(Ok(()));
+                match outcome {
+                    Ok(()) => window.close_dialog(cx),
+                    Err(message) => form.update(cx, |form, cx| {
+                        form.error = Some(message);
+                        cx.notify();
+                    }),
+                }
+            });
+            let background = cx.theme().background;
+            dialog
+                .title(dialog_title(strings.relays_edit_title, strings.close))
+                .close_button(false)
+                .w(dialog_width(DialogSize::FORM, window))
+                .submit_on_enter(&submit)
+                .child(dialog_body(
+                    FadeScroll::new("relay-edit", background)
+                        .max_h(dialog_body_height(DialogSize::FORM, window))
+                        .child(view.clone()),
+                ))
+                .footer(
+                    h_flex()
+                        .w_full()
+                        .justify_end()
+                        .gap_2()
+                        .child(
+                            Button::new("relay-edit-cancel")
+                                .outline()
+                                .label(strings.cancel)
+                                .on_click(|_, window, cx| window.close_dialog(cx)),
+                        )
+                        .child(
+                            Button::new("relay-edit-save")
+                                .primary()
+                                .label(strings.save)
+                                .on_click(on_press(&submit)),
+                        ),
+                )
+        });
+    }
+
+    /// Checks the edited splits and penalties and, if they hold, replaces
+    /// those of the attempt. The message says what to fix otherwise.
+    fn apply_relay_edit(
+        &mut self,
+        index: usize,
+        texts: &[String],
+        modifiers: &[Modifier],
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Result<(), String> {
+        let strings = self.strings();
+        if let Some(attempt) = self.relays.data.attempts.get_mut(index) {
+            attempt.edit(texts, modifiers).map_err(|puzzle| {
+                strings
+                    .relays_edit_invalid_split
+                    .replace("{puzzle}", &(puzzle + 1).to_string())
+            })?;
+        }
+        self.save_relays(window, cx);
+        cx.notify();
+        Ok(())
+    }
+
     /// Copies the scrambles of the attempt under way.
     pub(crate) fn copy_relay_scrambles(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.screen != Screen::Relays {
@@ -611,6 +869,43 @@ impl CubeApp {
             .into_any_element()
     }
 
+    /// The buttons that edit or delete an attempt, for the mouse; the keyboard
+    /// has `Enter` and the delete key.
+    fn render_relay_row_buttons(
+        &self,
+        index: usize,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement + use<> {
+        let strings = self.strings();
+        h_flex()
+            .flex_none()
+            .child(
+                Button::new(("relay-edit", index))
+                    .ghost()
+                    .xsmall()
+                    .icon(IconName::Pencil)
+                    .tooltip(strings.relays_edit_title)
+                    .accessibility_label(strings.relays_edit_title)
+                    .tab_stop(false)
+                    .on_click(cx.listener(move |app, _, window, cx| {
+                        app.open_edit_relay(index, window, cx);
+                    })),
+            )
+            .child(
+                Button::new(("relay-delete", index))
+                    .ghost()
+                    .xsmall()
+                    .icon(IconName::Trash)
+                    .tooltip(strings.delete_solve)
+                    .accessibility_label(strings.delete_solve)
+                    .tab_stop(false)
+                    .on_click(cx.listener(move |app, _, window, cx| {
+                        app.relays.selected = Some(index);
+                        app.confirm_delete_relay_attempt(window, cx);
+                    })),
+            )
+    }
+
     /// The attempts at the chosen relay, newest first, with the splits of the
     /// selected one.
     #[allow(clippy::too_many_lines, reason = "one list and one detail view")]
@@ -678,6 +973,7 @@ impl CubeApp {
                                 .text_color(muted)
                                 .child(language.format_date(attempt.solved_at_unix_ms)),
                         )
+                        .child(self.render_relay_row_buttons(index, cx))
                         .into_any_element()
                 }))
                 .into_any_element()

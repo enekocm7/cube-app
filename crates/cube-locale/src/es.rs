@@ -596,6 +596,8 @@ pub const STRINGS: Strings = Strings {
     relays_empty: "Tus intentos de relevo aparecerán aquí.",
     relays_unavailable: "No se pudieron leer tus relevos, así que por ahora no se pueden cambiar.",
     relays_total: "Total",
+    relays_edit_title: "Editar intento de relevo",
+    relays_edit_invalid_split: "Puzzle {puzzle}: escribe un tiempo como 9.12.",
     relays_too_few: "Un relevo necesita al menos {min} eventos.",
     relays_too_many: "Un relevo puede tener como máximo {max} eventos.",
     relays_unknown: "«{name}» no es un evento.",

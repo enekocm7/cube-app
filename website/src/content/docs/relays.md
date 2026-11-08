@@ -52,3 +52,10 @@ and the best and mean totals, leaving DNFs out of both. The selected attempt sho
 
 Relay attempts are kept in `relays.json`, apart from `times.json`, so they never count toward the stats of any event
 and cube-tui never sees them. See [Your data](/cube-app/docs/data/).
+
+## Editing and deleting attempts
+
+Select an attempt with `Up` and `Down` and press `Enter` to edit it, or use the pencil button on its row. The dialog has
+a field for the split of each puzzle and its penalty; the total follows the splits, so it is shown but not edited. Press
+`Enter` to save or `Esc` to cancel. The trash button on the row, or `D`, deletes the attempt, asking first unless that is
+turned off in settings.

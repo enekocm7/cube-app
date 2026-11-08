@@ -596,6 +596,8 @@ pub const STRINGS: Strings = Strings {
     relays_empty: "Tutaj pojawią się Twoje próby sztafet.",
     relays_unavailable: "Nie udało się odczytać Twoich sztafet, więc na razie nie można ich zmieniać.",
     relays_total: "Razem",
+    relays_edit_title: "Edytuj próbę sztafety",
+    relays_edit_invalid_split: "Łamigłówka {puzzle}: wpisz czas, np. 9.12.",
     relays_too_few: "Sztafeta wymaga co najmniej {min} konkurencji.",
     relays_too_many: "Sztafeta może mieć najwyżej {max} konkurencji.",
     relays_unknown: "„{name}” nie jest konkurencją.",

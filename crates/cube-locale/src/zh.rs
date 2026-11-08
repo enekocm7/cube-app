@@ -596,6 +596,8 @@ pub const STRINGS: Strings = Strings {
     relays_empty: "你的接力记录将显示在这里。",
     relays_unavailable: "无法读取你的接力,因此暂时无法修改。",
     relays_total: "总计",
+    relays_edit_title: "编辑接力记录",
+    relays_edit_invalid_split: "第 {puzzle} 个魔方:请输入类似 9.12 的时间。",
     relays_too_few: "接力至少需要 {min} 个项目。",
     relays_too_many: "接力最多可有 {max} 个项目。",
     relays_unknown: "“{name}”不是项目。",
