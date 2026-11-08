@@ -125,6 +125,8 @@ a solve in the list, or a single in the stats panel, to see its details or edit 
 
 Around the shortcuts:
 
+- **Navigation.** The title bar groups the screens as **Solve** (timer, Multi-Blind, relays), **Analyze** (stats, charts,
+  goals) and **Practice** (trainer, library). Each group opens a menu that the arrow keys, `Enter` and `Esc` work too.
 - **Dialogs.** They are reachable with `Tab`, `Enter` and `Space`. `Enter` runs a dialog's primary action and `Esc`
   closes it.
 - **Rebinding.** In the `F1` panel, **Edit** (opposite **Close**) shows a pencil to rebind an action and a trash can to

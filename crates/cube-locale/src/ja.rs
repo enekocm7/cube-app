@@ -4,6 +4,9 @@ pub const STRINGS: Strings = Strings {
     nav_timer: "タイマー",
     nav_stats: "統計",
     nav_charts: "グラフ",
+    nav_group_solve: "ソルブ",
+    nav_group_analyze: "分析",
+    nav_group_practice: "練習",
     settings: "設定",
 
     hint_start: "{key} を押して開始",

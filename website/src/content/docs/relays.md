@@ -6,7 +6,7 @@ order: 6
 ---
 
 A relay is several puzzles solved one after the other and timed as one attempt. cube records a split for each puzzle and
-a total. Open the screen with `Ctrl + R` or the Relays tab, beside Multi-Blind. Everything works from the keyboard.
+a total. Open the screen with `Ctrl + R` or **Solve → Relays** in the title bar. Everything works from the keyboard.
 
 ## Choosing a relay
 

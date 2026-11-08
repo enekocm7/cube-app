@@ -4,6 +4,9 @@ pub const STRINGS: Strings = Strings {
     nav_timer: "Timer",
     nav_stats: "Statistiche",
     nav_charts: "Grafici",
+    nav_group_solve: "Risolvere",
+    nav_group_analyze: "Analizzare",
+    nav_group_practice: "Esercitarsi",
     settings: "Impostazioni",
 
     hint_start: "Premi {key} per iniziare",

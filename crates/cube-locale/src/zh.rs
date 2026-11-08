@@ -4,6 +4,9 @@ pub const STRINGS: Strings = Strings {
     nav_timer: "计时器",
     nav_stats: "统计",
     nav_charts: "图表",
+    nav_group_solve: "还原",
+    nav_group_analyze: "分析",
+    nav_group_practice: "练习",
     settings: "设置",
 
     hint_start: "按 {key} 开始",

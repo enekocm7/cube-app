@@ -4,6 +4,9 @@ pub const STRINGS: Strings = Strings {
     nav_timer: "타이머",
     nav_stats: "통계",
     nav_charts: "그래프",
+    nav_group_solve: "솔브",
+    nav_group_analyze: "분석",
+    nav_group_practice: "연습",
     settings: "설정",
 
     hint_start: "{key}를 눌러 시작",
