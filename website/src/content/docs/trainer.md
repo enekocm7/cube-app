@@ -6,7 +6,7 @@ order: 4
 ---
 
 The trainer drills the cases of an algorithm set instead of full solves. Open it
-with the **Trainer** tab in the title bar or `Shift + P`.
+with **Practice → Trainer** in the title bar or `Shift + P`.
 
 ## Choosing cases
 

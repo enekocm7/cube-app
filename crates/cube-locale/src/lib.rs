@@ -258,6 +258,12 @@ pub struct Strings {
     pub nav_timer: &'static str,
     pub nav_stats: &'static str,
     pub nav_charts: &'static str,
+    /// The title bar's group of the timed solving screens.
+    pub nav_group_solve: &'static str,
+    /// The title bar's group of the stats, charts and goals screens.
+    pub nav_group_analyze: &'static str,
+    /// The title bar's group of the trainer and library screens.
+    pub nav_group_practice: &'static str,
     pub settings: &'static str,
 
     /// `{key}`: the timer's binding.

@@ -5,8 +5,8 @@ section: Timing
 order: 6
 ---
 
-The library lists the algorithm sets of every puzzle. Open it with the
-**Library** tab in the title bar or `Shift + B`.
+The library lists the algorithm sets of every puzzle. Open it with
+**Practice → Library** in the title bar or `Shift + B`.
 
 ## Training a case
 

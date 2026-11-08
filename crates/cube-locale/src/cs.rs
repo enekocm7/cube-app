@@ -4,6 +4,9 @@ pub const STRINGS: Strings = Strings {
     nav_timer: "Časovač",
     nav_stats: "Statistiky",
     nav_charts: "Grafy",
+    nav_group_solve: "Řešení",
+    nav_group_analyze: "Analýza",
+    nav_group_practice: "Procvičování",
     settings: "Nastavení",
 
     hint_start: "Stiskněte {key} pro spuštění",

@@ -77,6 +77,73 @@ pub enum Screen {
     Relays,
 }
 
+/// The title bar's navigation groups.
+///
+/// Related screens share one entry instead of taking a tab each, so adding
+/// practice insights or competition mode later widens a menu, not the bar.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum NavGroup {
+    /// The timed solving modes.
+    Solve,
+    /// The screens that read the solve history.
+    Analyze,
+    /// The screens that teach and store algorithms.
+    Practice,
+}
+
+impl NavGroup {
+    /// Every group, in the order the title bar shows them.
+    const ALL: [Self; 3] = [Self::Solve, Self::Analyze, Self::Practice];
+
+    /// The element id of the group's title-bar button.
+    const fn id(self) -> &'static str {
+        match self {
+            Self::Solve => "nav-solve",
+            Self::Analyze => "nav-analyze",
+            Self::Practice => "nav-practice",
+        }
+    }
+
+    /// The group's translated label.
+    const fn label(self, strings: &Strings) -> &'static str {
+        match self {
+            Self::Solve => strings.nav_group_solve,
+            Self::Analyze => strings.nav_group_analyze,
+            Self::Practice => strings.nav_group_practice,
+        }
+    }
+
+    /// The screens the group holds, in the order its menu lists them.
+    const fn screens(self) -> &'static [Screen] {
+        match self {
+            Self::Solve => &[Screen::Timer, Screen::MultiBlind, Screen::Relays],
+            Self::Analyze => &[Screen::Stats, Screen::Charts, Screen::Goals],
+            Self::Practice => &[Screen::Trainer, Screen::Library],
+        }
+    }
+
+    /// The group `screen` belongs to, so its entry stays highlighted.
+    fn of(screen: Screen) -> Option<Self> {
+        Self::ALL
+            .into_iter()
+            .find(|group| group.screens().contains(&screen))
+    }
+}
+
+/// The title bar's label for a screen.
+fn screen_label(strings: &'static Strings, screen: Screen) -> &'static str {
+    match screen {
+        Screen::Timer => strings.nav_timer,
+        Screen::Stats => strings.nav_stats,
+        Screen::Charts => strings.nav_charts,
+        Screen::Goals => strings.goals_title,
+        Screen::Trainer => strings.nav_trainer,
+        Screen::Library => strings.nav_library,
+        Screen::MultiBlind => strings.nav_multi_blind,
+        Screen::Relays => strings.nav_relays,
+    }
+}
+
 /// Everything read from disk at startup.
 pub struct Loaded {
     pub settings: Settings,
@@ -2392,33 +2459,55 @@ impl CubeApp {
             )
     }
 
+    /// One title-bar group: its name opens a menu of the screens it holds.
+    fn render_nav_button(
+        &self,
+        group: NavGroup,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement + use<> {
+        let strings = self.strings();
+        let current = self.screen;
+        let entity = cx.entity().downgrade();
+        Button::new(group.id())
+            .ghost()
+            .small()
+            .label(group.label(strings))
+            .dropdown_caret(true)
+            .tab_stop(false)
+            .selected(NavGroup::of(current) == Some(group))
+            .dropdown_menu(move |mut menu, _, _| {
+                for &screen in group.screens() {
+                    let entity = entity.clone();
+                    menu = menu.item(
+                        PopupMenuItem::new(screen_label(strings, screen))
+                            .checked(screen == current)
+                            .on_click(move |_, window, cx| {
+                                entity
+                                    .update(cx, |app, cx| {
+                                        if !app.timer.is_active() {
+                                            app.show_screen(screen, cx);
+                                            app.focus.focus(window, cx);
+                                        }
+                                    })
+                                    .ok();
+                            }),
+                    );
+                }
+                menu
+            })
+    }
+
     fn render_title_bar(
         &self,
         window: &Window,
         cx: &mut Context<Self>,
     ) -> impl IntoElement + use<> {
-        let strings = self.strings();
         let rem = window.rem_size().min(TITLE_BAR_MAX_REM);
-        let tab =
-            |id: &'static str, label: &'static str, screen: Screen, cx: &mut Context<Self>| {
-                Button::new(id)
-                    .ghost()
-                    .small()
-                    .label(label)
-                    .tab_stop(false)
-                    .selected(self.screen == screen)
-                    .on_click(cx.listener(move |app, _, window, cx| {
-                        if !app.timer.is_active() {
-                            app.show_screen(screen, cx);
-                        }
-                        app.focus.focus(window, cx);
-                    }))
-            };
         let (left_basis, right_basis) = TITLE_BAR_COLUMN_BASES;
         // The columns share the free room equally, which puts the picker on the
         // window's center. A column never gets narrower than what it holds, so
         // when the text is too large for that the picker moves aside rather
-        // than landing on the tabs.
+        // than landing on the navigation groups.
         ScopedRem::new(
             rem,
             TitleBar::new().child(
@@ -2439,42 +2528,9 @@ impl CubeApp {
                             )
                             .child(
                                 // The title bar is a drag region; only occluded children get clicks.
-                                h_flex()
-                                    .occlude()
-                                    .ml_4()
-                                    .gap_1()
-                                    .child(tab("nav-timer", strings.nav_timer, Screen::Timer, cx))
-                                    .child(tab("nav-stats", strings.nav_stats, Screen::Stats, cx))
-                                    .child(tab(
-                                        "nav-charts",
-                                        strings.nav_charts,
-                                        Screen::Charts,
-                                        cx,
-                                    ))
-                                    .child(tab(
-                                        "nav-trainer",
-                                        strings.nav_trainer,
-                                        Screen::Trainer,
-                                        cx,
-                                    ))
-                                    .child(tab(
-                                        "nav-library",
-                                        strings.nav_library,
-                                        Screen::Library,
-                                        cx,
-                                    ))
-                                    .child(tab(
-                                        "nav-multi-blind",
-                                        strings.nav_multi_blind,
-                                        Screen::MultiBlind,
-                                        cx,
-                                    ))
-                                    .child(tab(
-                                        "nav-relays",
-                                        strings.nav_relays,
-                                        Screen::Relays,
-                                        cx,
-                                    )),
+                                h_flex().occlude().ml_4().gap_1().children(
+                                    NavGroup::ALL.map(|group| self.render_nav_button(group, cx)),
+                                ),
                             ),
                     )
                     // The trainer's and library's sets say what is being practised

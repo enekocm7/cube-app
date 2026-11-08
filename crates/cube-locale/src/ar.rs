@@ -4,6 +4,9 @@ pub const STRINGS: Strings = Strings {
     nav_timer: "المؤقت",
     nav_stats: "الإحصاءات",
     nav_charts: "الرسوم البيانية",
+    nav_group_solve: "حل",
+    nav_group_analyze: "تحليل",
+    nav_group_practice: "تدريب",
     settings: "الإعدادات",
 
     hint_start: "اضغط {key} للبدء",

@@ -4,6 +4,9 @@ pub const STRINGS: Strings = Strings {
     nav_timer: "Таймер",
     nav_stats: "Статистика",
     nav_charts: "Графіки",
+    nav_group_solve: "Складання",
+    nav_group_analyze: "Аналіз",
+    nav_group_practice: "Тренування",
     settings: "Налаштування",
 
     hint_start: "Натисніть {key}, щоб почати",

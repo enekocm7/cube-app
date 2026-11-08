@@ -38,7 +38,7 @@ Goals and personal bests work the same way too.
 
 ## Multi-Blind
 
-Press `Shift + M` or use the Multi-Blind tab, beside Trainer, to open the screen. It has its own attempts, kept apart from
+Press `Shift + M` or use **Solve → Multi-Blind** in the title bar to open the screen. It has its own attempts, kept apart from
 your solves, because the result is points and not a time.
 
 1. Press the timer key (or **New Multi-Blind attempt**) and choose how many cubes (2 to 100).

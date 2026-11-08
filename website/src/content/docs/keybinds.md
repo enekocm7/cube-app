@@ -15,6 +15,19 @@ The panel opens with a search field; press `/` to focus it (the
 key (for example `space`, `ctrl` or `unassigned`). While an action is being
 rebound, keys go to the capture, never to the search field.
 
+## Navigating the screens
+
+The title bar groups the screens instead of giving each one a tab:
+
+- **Solve** holds the timer, Multi-Blind and Relays.
+- **Analyze** holds stats, charts and goals.
+- **Practice** holds the trainer and the library.
+
+Each group opens a menu of its screens. The menu works with the keyboard too:
+`Up` and `Down` move between the screens, `Enter` opens the highlighted one and
+`Esc` closes the menu. Every screen also keeps its own shortcut below, so no
+screen needs the menu.
+
 ## Default bindings
 
 Actions marked with a solve use the keyboard selection, or the latest solve when
@@ -71,7 +84,7 @@ nothing is selected.
 | See the case's attempts | `Shift + Q` | Works on the trainer's cases |
 | Select the cases you are learning | `3` | Works on the trainer's cases. Selects those the library has as learning, and only those |
 | Select the cases due for review | `4` | Works on the trainer's cases. Selects those the library has due, and only those |
-| Show the library or the timer | `Shift + B` | Also the Library tab in the title bar. See [Library](#library) |
+| Show the library or the timer | `Shift + B` | Also **Practice → Library** in the title bar. See [Library](#library) |
 | Next puzzle | `Shift + U` | Works in the library |
 | Train the case | `5` | Works in the library, for the highlighted case. Opens the trainer with only that case selected and starts it |
 | Change the case's status | `Shift + X` | Works in the library, for the highlighted case |
@@ -85,10 +98,10 @@ nothing is selected.
 | Hard | `7` | Grades a case in a review, once its algorithm is showing |
 | Good | `8` | Grades a case in a review, once its algorithm is showing |
 | Easy | `9` | Grades a case in a review, once its algorithm is showing |
-| Show Multi-Blind or the timer | `Shift + M` | Also the Multi-Blind tab in the title bar. See [Multi-Blind](#multi-blind) |
+| Show Multi-Blind or the timer | `Shift + M` | Also **Solve → Multi-Blind** in the title bar. See [Multi-Blind](#multi-blind) |
 | Copy the Multi-Blind scrambles | `Shift + C` | Works on the Multi-Blind screen, once an attempt has its scrambles |
 | Save the Multi-Blind scrambles | `Shift + V` | Writes them to a text file, one per cube, to print |
-| Show Relays or the timer | `Ctrl + R` | Also the Relays tab in the title bar. See [Relays](#relays) |
+| Show Relays or the timer | `Ctrl + R` | Also **Solve → Relays** in the title bar. See [Relays](#relays) |
 | Select the next relay | `1` | On the Relays screen: the presets first, then your custom relays |
 | Create a custom relay | `Ctrl + E` | On the Relays screen |
 | Delete the selected custom relay | `Ctrl + D` | On the Relays screen. Its past attempts are kept |
