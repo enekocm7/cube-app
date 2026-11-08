@@ -194,6 +194,10 @@ pub struct RelayAttempt {
     /// The scramble of each puzzle.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub scrambles: Vec<String>,
+    /// The total of an attempt a hardware timer timed, which reports no
+    /// per-puzzle splits, or `None` for an attempt timed with splits.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub total_only_ms: Option<u64>,
 }
 
 impl RelayAttempt {
@@ -218,7 +222,34 @@ impl RelayAttempt {
             modifiers,
             solved_at_unix_ms,
             scrambles,
+            total_only_ms: None,
         }
+    }
+
+    /// Records an attempt a hardware timer timed, which has a total but no
+    /// splits: the timer reports only the total, and the key that passes a
+    /// puzzle marks no time.
+    pub fn timed_by_hardware(
+        events: Vec<WcaEvent>,
+        scrambles: Vec<String>,
+        total_ms: u64,
+        solved_at_unix_ms: u64,
+    ) -> Self {
+        let mut attempt = Self::new(
+            events,
+            scrambles,
+            Vec::new(),
+            Modifier::None,
+            solved_at_unix_ms,
+        );
+        attempt.total_only_ms = Some(total_ms);
+        attempt
+    }
+
+    /// Returns whether the attempt has a time for each puzzle, rather than
+    /// just its total.
+    pub const fn has_splits(&self) -> bool {
+        self.total_only_ms.is_none()
     }
 
     /// Returns the number of puzzles.
@@ -226,15 +257,31 @@ impl RelayAttempt {
         self.events.len()
     }
 
-    /// Returns the time of puzzle `index` with its penalty, or `None` for a DNF.
+    /// Returns the time of puzzle `index` with its penalty, or `None` for a DNF
+    /// or an attempt with only a total.
     pub fn split_ms(&self, index: usize) -> Option<u64> {
+        if self.total_only_ms.is_some() {
+            return None;
+        }
         let raw = *self.splits_ms.get(index)?;
         penalized_ms(raw, self.modifiers.get(index).copied().unwrap_or_default())
     }
 
-    /// Returns the total, the sum of the splits, or `None` when any puzzle is
-    /// a DNF.
+    /// Returns the total, which is the sum of the splits, or the time the
+    /// hardware reported when the attempt has no splits, its penalties
+    /// included. `None` when any puzzle is a DNF.
     pub fn total_ms(&self) -> Option<u64> {
+        if let Some(total) = self.total_only_ms {
+            let mut total = total;
+            for &modifier in &self.modifiers {
+                match modifier {
+                    Modifier::None => {}
+                    Modifier::PlusTwo => total += PLUS_TWO_MS,
+                    Modifier::DNF => return None,
+                }
+            }
+            return Some(total);
+        }
         (0..self.puzzles()).try_fold(0, |total, index| Some(total + self.split_ms(index)?))
     }
 
@@ -246,6 +293,10 @@ impl RelayAttempt {
     /// Gives puzzle `index` the penalty `modifier`, or takes it away when it
     /// already has it.
     pub fn toggle_penalty(&mut self, index: usize, modifier: Modifier) {
+        // An attempt with only a total has no puzzle times to penalize.
+        if self.total_only_ms.is_some() {
+            return;
+        }
         if let Some(current) = self.modifiers.get_mut(index) {
             *current = if *current == modifier {
                 Modifier::None
@@ -264,17 +315,30 @@ impl RelayAttempt {
         if splits.len() != self.puzzles() || modifiers.len() != self.puzzles() {
             return Err(0);
         }
+        // An attempt with only a total may keep it: with every split left
+        // empty the penalties still change, and the total stays.
+        if self.total_only_ms.is_some() && splits.iter().all(|text| text.trim().is_empty()) {
+            self.modifiers.clone_from_slice(modifiers);
+            return Ok(());
+        }
         let splits_ms = parse_splits(splits)?;
         self.splits_ms = splits_ms;
         self.modifiers.clone_from_slice(modifiers);
+        // The attempt now has a split for every puzzle, so it is no longer an
+        // attempt that only has a total.
+        self.total_only_ms = None;
         Ok(())
     }
 
     /// Checks that the lists agree, so a file the app could not have written
     /// is refused rather than rewritten.
     pub fn is_consistent(&self) -> bool {
+        let splits_agree = match self.total_only_ms {
+            Some(_) => self.splits_ms.is_empty(),
+            None => self.splits_ms.len() == self.events.len(),
+        };
         validate(&self.events).is_ok()
-            && self.splits_ms.len() == self.events.len()
+            && splits_agree
             && self.modifiers.len() == self.events.len()
             && (self.scrambles.is_empty() || self.scrambles.len() == self.events.len())
     }
@@ -565,6 +629,52 @@ mod tests {
             None
         );
         assert_eq!(total_of(&splits, &[Modifier::None; 2]), None);
+    }
+
+    #[test]
+    fn a_hardware_attempt_keeps_its_total_and_no_splits() {
+        let mut attempt = RelayAttempt::timed_by_hardware(
+            presets()[0].clone(),
+            vec!["a".into(), "b".into(), "c".into()],
+            22_118,
+            0,
+        );
+        assert!(!attempt.has_splits());
+        assert_eq!(attempt.split_ms(0), None);
+        assert_eq!(attempt.total_ms(), Some(22_118));
+        assert!(!attempt.is_dnf());
+        assert!(attempt.is_consistent());
+        // There are no puzzle times to penalize.
+        attempt.toggle_penalty(0, Modifier::DNF);
+        assert_eq!(attempt.modifiers[0], Modifier::None);
+        assert_eq!(attempt.total_ms(), Some(22_118));
+    }
+
+    #[test]
+    fn editing_a_hardware_attempt_gives_it_splits() {
+        let mut attempt =
+            RelayAttempt::timed_by_hardware(presets()[0].clone(), Vec::new(), 9_000, 0);
+        let texts = ["1.0".to_owned(), "2.0".to_owned(), "3.0".to_owned()];
+        assert_eq!(attempt.edit(&texts, &[Modifier::None; 3]), Ok(()));
+        assert!(attempt.has_splits());
+        assert_eq!(attempt.total_ms(), Some(6_000));
+        assert!(attempt.is_consistent());
+    }
+
+    #[test]
+    fn a_hardware_attempt_keeps_its_total_when_edited_without_splits() {
+        let empty = [String::new(), String::new(), String::new()];
+        let mut attempt =
+            RelayAttempt::timed_by_hardware(presets()[0].clone(), Vec::new(), 22_118, 0);
+        let mut modifiers = [Modifier::None; 3];
+        modifiers[1] = Modifier::PlusTwo;
+        assert_eq!(attempt.edit(&empty, &modifiers), Ok(()));
+        assert!(!attempt.has_splits());
+        assert_eq!(attempt.total_ms(), Some(24_118));
+        assert!(attempt.is_consistent());
+        modifiers[1] = Modifier::DNF;
+        assert_eq!(attempt.edit(&empty, &modifiers), Ok(()));
+        assert_eq!(attempt.total_ms(), None);
     }
 
     #[test]

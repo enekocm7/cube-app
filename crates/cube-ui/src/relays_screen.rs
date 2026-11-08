@@ -14,6 +14,7 @@ use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use cube_core::format::{format_ms, parse_time};
 use cube_core::relay::{self, RelayAttempt, RelayData, RelayError};
 use cube_core::{Action, Modifier, Readiness, TimerOutcome, TimerPhase, WcaEvent, persistence};
+use cube_locale::Strings;
 use gpui_kit::assets::IconName;
 use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::input::{Input, InputEvent, InputState};
@@ -229,12 +230,25 @@ impl Render for RelayEditForm {
 }
 
 impl CubeApp {
+    /// Returns whether the scrambles of an attempt are ready to be timed.
+    pub(crate) fn relays_ready(&self) -> bool {
+        matches!(self.relays.phase, Phase::Ready { .. })
+    }
+
     /// Handles the timer key on this screen: it asks for the scrambles of a
     /// new attempt, or starts, splits and stops the one that is ready.
     pub(crate) fn relay_timer_key(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         match self.relays.phase {
             Phase::Idle => self.prepare_relay(window, cx),
             Phase::Ready { .. } => {
+                // A connected hardware timer starts and stops the attempt
+                // itself, so the key leaves it alone.
+                if self.hardware_timing() {
+                    if !self.timer.is_active() {
+                        self.toast_warning(self.strings().bluetooth_blocks_start, window, cx);
+                    }
+                    return;
+                }
                 self.key_down = true;
                 self.press_timer(window, cx);
             }
@@ -470,17 +484,29 @@ impl CubeApp {
             self.relays.phase = phase;
             return;
         };
-        let splits = self.timer.splits().durations(outcome.time_ms);
         let solved_at_unix_ms = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map_or(0, |elapsed| elapsed.as_millis() as u64);
-        self.relays.data.attempts.push(RelayAttempt::new(
-            self.relays.current.clone(),
-            scrambles,
-            splits,
-            outcome.modifier,
-            solved_at_unix_ms,
-        ));
+        // A hardware timer reports the total only, and the key that passes a
+        // puzzle marks no time, so the attempt keeps just its total.
+        let attempt = if self.hardware_attempt {
+            RelayAttempt::timed_by_hardware(
+                self.relays.current.clone(),
+                scrambles,
+                outcome.time_ms,
+                solved_at_unix_ms,
+            )
+        } else {
+            let splits = self.timer.splits().durations(outcome.time_ms);
+            RelayAttempt::new(
+                self.relays.current.clone(),
+                scrambles,
+                splits,
+                outcome.modifier,
+                solved_at_unix_ms,
+            )
+        };
+        self.relays.data.attempts.push(attempt);
         self.relays.selected = Some(self.relays.data.attempts.len() - 1);
         self.relays.puzzle = 0;
         self.save_relays(window, cx);
@@ -540,10 +566,16 @@ impl CubeApp {
         };
         let events = attempt.events.clone();
         let modifiers = attempt.modifiers.clone();
-        let splits: Vec<Entity<InputState>> = attempt
-            .splits_ms
-            .iter()
-            .map(|&ms| cx.new(|cx| InputState::new(window, cx).default_value(format_ms(ms))))
+        // An attempt with only a total has no split to fill in, so each field
+        // starts empty and may stay that way.
+        let splits: Vec<Entity<InputState>> = (0..attempt.puzzles())
+            .map(|index| {
+                let text = attempt
+                    .splits_ms
+                    .get(index)
+                    .map_or_else(String::new, |&ms| format_ms(ms));
+                cx.new(|cx| InputState::new(window, cx).default_value(text))
+            })
             .collect();
         let first = splits.first().cloned();
         let form_events = events.clone();
@@ -671,8 +703,16 @@ impl CubeApp {
         self.toast(self.strings().relays_scrambles_copied, window, cx);
     }
 
-    /// A time with its penalty, as shown in a list.
-    fn relay_split_text(attempt: &RelayAttempt, index: usize) -> String {
+    /// The time of a puzzle with its penalty, or that the timer kept no time
+    /// for it.
+    fn relay_split_text(strings: &Strings, attempt: &RelayAttempt, index: usize) -> String {
+        let raw = attempt.splits_ms.get(index).copied().unwrap_or_default();
+        // A split of zero means the timer kept no time for the puzzle, as on
+        // an attempt a hardware timer timed or one passed the instant it
+        // started.
+        if !attempt.has_splits() || raw == 0 {
+            return strings.relays_no_record.to_owned();
+        }
         let marker = match attempt.modifiers.get(index).copied().unwrap_or_default() {
             Modifier::None => "",
             Modifier::PlusTwo => "+",
@@ -685,15 +725,13 @@ impl CubeApp {
         }
     }
 
-    /// The text for a whole attempt: the total and every split.
+    /// The text for a whole attempt in the list: the relay it is and its
+    /// total.
     fn relay_attempt_text(attempt: &RelayAttempt) -> String {
         let total = attempt
             .total_ms()
             .map_or_else(|| "DNF".to_owned(), format_ms);
-        let splits: Vec<String> = (0..attempt.puzzles())
-            .map(|index| Self::relay_split_text(attempt, index))
-            .collect();
-        format!("{total} · {}", splits.join(" / "))
+        format!("{} · {total}", relay::name(&attempt.events))
     }
 
     /// The attempts, best and mean of the chosen relay, as small cards.
@@ -906,8 +944,8 @@ impl CubeApp {
             )
     }
 
-    /// The attempts at the chosen relay, newest first, with the splits of the
-    /// selected one.
+    /// The attempts at the chosen relay, newest first, each with the relay's
+    /// name and total, and the time of each puzzle of the selected one.
     #[allow(clippy::too_many_lines, reason = "one list and one detail view")]
     fn render_relay_attempts(&self, cx: &mut Context<Self>) -> AnyElement {
         let strings = self.strings();
@@ -1013,6 +1051,8 @@ impl CubeApp {
                                     .child(total),
                             ),
                     )
+                    // Every puzzle gets a row; one a hardware timer did not
+                    // time says so instead of showing a time.
                     .children((0..attempt.puzzles()).map(|puzzle| {
                         let penalized = attempt.modifiers[puzzle] != Modifier::None;
                         h_flex()
@@ -1042,7 +1082,7 @@ impl CubeApp {
                                     .font_family(mono.clone())
                                     .whitespace_nowrap()
                                     .when(penalized, |cell| cell.text_color(colors.yellow))
-                                    .child(Self::relay_split_text(attempt, puzzle)),
+                                    .child(Self::relay_split_text(strings, attempt, puzzle)),
                             )
                             .into_any_element()
                     }))
@@ -1129,13 +1169,19 @@ impl CubeApp {
             0
         };
         let elapsed_ms = self.timer.elapsed(now).as_millis() as u64;
-        let done = if running {
+        // A hardware timer times the whole relay and nothing per puzzle, so
+        // passing a puzzle only moves on to the next one.
+        let timed_by_hardware = self.hardware_timing();
+        let total_only = running && self.hardware_attempt;
+        let done = if running && !total_only {
             splits.durations(elapsed_ms)
         } else {
             Vec::new()
         };
 
-        let running_hint = if self.settings.relay_key_splits {
+        let running_hint = if timed_by_hardware {
+            strings.relays_running_hardware
+        } else if self.settings.relay_key_splits {
             strings.relays_running
         } else {
             strings.relays_running_stop
@@ -1146,44 +1192,52 @@ impl CubeApp {
         .replace("{key}", &timer_key)
         .replace("{split}", &split_key);
 
-        let (text, color, hint) = match self.timer.phase() {
-            TimerPhase::Running { .. } => (format_ms(elapsed_ms), foreground, running_hint),
-            TimerPhase::Inspecting { .. } => {
-                let elapsed = self.timer.elapsed(now);
-                let modifier = self.timer.inspection_modifier(elapsed);
-                let text = match modifier {
-                    Modifier::None => elapsed.as_secs().to_string(),
-                    Modifier::PlusTwo => "+2".to_owned(),
-                    Modifier::DNF => "DNF".to_owned(),
-                };
-                let color = if modifier == Modifier::None {
-                    colors.orange
-                } else {
-                    colors.yellow
-                };
-                (
-                    text,
-                    color,
-                    strings.hint_inspecting.replace("{key}", &timer_key),
-                )
+        let (text, color, hint) = if !active && timed_by_hardware {
+            (
+                format_ms(0),
+                muted,
+                strings.relays_ready_hardware.to_owned(),
+            )
+        } else {
+            match self.timer.phase() {
+                TimerPhase::Running { .. } => (format_ms(elapsed_ms), foreground, running_hint),
+                TimerPhase::Inspecting { .. } => {
+                    let elapsed = self.timer.elapsed(now);
+                    let modifier = self.timer.inspection_modifier(elapsed);
+                    let text = match modifier {
+                        Modifier::None => elapsed.as_secs().to_string(),
+                        Modifier::PlusTwo => "+2".to_owned(),
+                        Modifier::DNF => "DNF".to_owned(),
+                    };
+                    let color = if modifier == Modifier::None {
+                        colors.orange
+                    } else {
+                        colors.yellow
+                    };
+                    (
+                        text,
+                        color,
+                        strings.hint_inspecting.replace("{key}", &timer_key),
+                    )
+                }
+                _ => match self.timer.readiness(now) {
+                    Readiness::Waiting => (
+                        format_ms(0),
+                        colors.red,
+                        strings.hint_hold.replace("{key}", &timer_key),
+                    ),
+                    Readiness::Ready => (
+                        format_ms(0),
+                        colors.green,
+                        strings.hint_release.replace("{key}", &timer_key),
+                    ),
+                    Readiness::Released => (
+                        format_ms(0),
+                        foreground,
+                        strings.hint_start.replace("{key}", &timer_key),
+                    ),
+                },
             }
-            _ => match self.timer.readiness(now) {
-                Readiness::Waiting => (
-                    format_ms(0),
-                    colors.red,
-                    strings.hint_hold.replace("{key}", &timer_key),
-                ),
-                Readiness::Ready => (
-                    format_ms(0),
-                    colors.green,
-                    strings.hint_release.replace("{key}", &timer_key),
-                ),
-                Readiness::Released => (
-                    format_ms(0),
-                    foreground,
-                    strings.hint_start.replace("{key}", &timer_key),
-                ),
-            },
         };
 
         let rows = FadeScroll::new("relay-scrambles", background)
@@ -1225,7 +1279,7 @@ impl CubeApp {
                             .text_color(if finished { muted } else { colors.scramble })
                             .child(scramble.clone()),
                     )
-                    .when(finished, |row| {
+                    .when(finished && !total_only, |row| {
                         row.child(
                             div()
                                 .flex_none()

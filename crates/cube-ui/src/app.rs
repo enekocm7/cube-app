@@ -464,6 +464,9 @@ pub struct CubeApp {
     /// trigger that key's action until it is released.
     stop_repeat_key: Option<String>,
     pub(crate) last_result: Option<LastResult>,
+    /// Whether the attempt under way was started on a hardware timer, which
+    /// reports a total and no time for each puzzle.
+    pub(crate) hardware_attempt: bool,
     /// The effect on the digits for the latest solve, if it set a best.
     pub(crate) celebration: Option<Celebration>,
     pub(crate) stats: SessionStats,
@@ -642,6 +645,7 @@ impl CubeApp {
             pointer_down: false,
             stop_repeat_key: None,
             last_result: None,
+            hardware_attempt: false,
             celebration: None,
             chart_data: None,
             chart_view: ChartView::default(),
@@ -890,9 +894,12 @@ impl CubeApp {
                 self.cancel(window, cx);
             } else if self.screen == Screen::Relays
                 && !self.timer.mark_on_press
-                && action == Some(Action::OpenSolve)
+                && (action == Some(Action::OpenSolve)
+                    // The hardware timer stops the relay, so its key has
+                    // nothing else to do and passes the puzzle instead.
+                    || (self.hardware_timing() && action == Some(Action::Timer)))
             {
-                // The key stops the relay, so this one ends the puzzle.
+                // The key that would stop the relay ends the puzzle instead.
                 self.timer.mark(Instant::now());
                 self.stop_repeat_key = None;
                 cx.notify();
@@ -1253,20 +1260,28 @@ impl CubeApp {
             return;
         }
         if !self.timer.is_active() {
-            self.last_result = None;
-            // A drill times one case, and Multi-Blind one long attempt; neither
-            // has an inspection, nor a memo of its own to mark.
-            let separate = self.drilling() || self.screen == Screen::MultiBlind;
-            let relaying = self.screen == Screen::Relays;
-            self.timer.puzzles = if relaying { self.relay_puzzles() } else { 1 };
-            self.timer.mark_on_press = self.settings.relay_key_splits;
-            self.timer.inspection = self.settings.timer().inspection && !separate;
-            self.timer.blindfolded = self.shown_event().is_blindfolded() && !separate;
+            self.prepare_attempt(false);
         }
         if let Some(outcome) = self.timer.press(Instant::now()) {
             self.finish_attempt(outcome, window, cx);
         }
         cx.notify();
+    }
+
+    /// Sets the timer up for the attempt the screen is showing, before either
+    /// the timer key or a hardware timer starts it. A hardware timer reports
+    /// no time for a puzzle, so a relay's key only passes to the next one.
+    pub(crate) fn prepare_attempt(&mut self, hardware: bool) {
+        self.last_result = None;
+        self.hardware_attempt = hardware;
+        // A drill times one case, and Multi-Blind one long attempt; neither
+        // has an inspection, nor a memo of its own to mark.
+        let separate = self.drilling() || self.screen == Screen::MultiBlind;
+        let relaying = self.screen == Screen::Relays;
+        self.timer.puzzles = if relaying { self.relay_puzzles() } else { 1 };
+        self.timer.mark_on_press = !hardware && self.settings.relay_key_splits;
+        self.timer.inspection = self.settings.timer().inspection && !separate;
+        self.timer.blindfolded = self.shown_event().is_blindfolded() && !separate;
     }
 
     /// Records a finished attempt and moves on to the next scramble.
