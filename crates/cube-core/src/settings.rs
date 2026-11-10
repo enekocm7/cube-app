@@ -626,6 +626,8 @@ pub struct Settings {
     /// Draws the puzzle as the scramble leaves it, on the timer and in the
     /// solve details.
     pub scramble_preview: bool,
+    /// Draws the preview in 3D, to turn around, instead of as the flat net.
+    pub preview_3d: bool,
     /// The preview size of each event that differs from `Normal`.
     #[serde(
         deserialize_with = "lenient_preview_sizes",
@@ -644,6 +646,8 @@ pub struct Settings {
     pub scramble_sizes: BTreeMap<WcaEvent, SizeChoice<ScrambleSize>>,
     /// How large the library's cases are drawn.
     pub library_size: LibrarySize,
+    /// Draws the library's cases in 3D, to turn around, instead of flat.
+    pub library_3d: bool,
     /// Whether the start hint has been used, so it is no longer shown while idle.
     pub start_hint_seen: bool,
     /// The tags the next solves get. They stay until changed.
@@ -706,10 +710,12 @@ impl Default for Settings {
             timer_sizes: BTreeMap::new(),
             scramble_size: ScrambleSize::default(),
             scramble_preview: true,
+            preview_3d: false,
             preview_sizes: BTreeMap::new(),
             scramble_custom_pt: None,
             scramble_sizes: BTreeMap::new(),
             library_size: LibrarySize::default(),
+            library_3d: false,
             start_hint_seen: false,
             active_tags: Vec::new(),
             user_backup_dir: String::new(),
@@ -1251,6 +1257,18 @@ mod tests {
     }
 
     #[test]
+    fn the_preview_is_the_flat_net_unless_3d_is_chosen() {
+        assert!(!Settings::default().preview_3d);
+        let old: Settings = toml::from_str("scramble_preview = true").unwrap();
+        assert!(!old.preview_3d);
+        let settings: Settings = toml::from_str("preview_3d = true").unwrap();
+        assert!(settings.preview_3d);
+        let saved = toml::to_string(&settings).unwrap();
+        let loaded: Settings = toml::from_str(&saved).unwrap();
+        assert!(loaded.preview_3d);
+    }
+
+    #[test]
     fn older_files_get_the_celebration_defaults() {
         let settings: Settings = toml::from_str("inspection = false").unwrap();
         assert!(settings.celebrate_bests);
@@ -1403,6 +1421,16 @@ mod tests {
         let parsed: Settings = toml::from_str("library_size = 'big'").unwrap();
         assert_eq!(parsed.library_size, LibrarySize::Big);
         assert!(parsed.library_scale() > settings.library_scale());
+    }
+
+    #[test]
+    fn library_cases_are_flat_unless_3d_is_chosen() {
+        assert!(!Settings::default().library_3d);
+        let old: Settings = toml::from_str("preview_3d = true").unwrap();
+        assert!(!old.library_3d);
+        let settings: Settings = toml::from_str("library_3d = true").unwrap();
+        let saved = toml::to_string(&settings).unwrap();
+        assert!(toml::from_str::<Settings>(&saved).unwrap().library_3d);
     }
 
     #[test]

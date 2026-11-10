@@ -17,6 +17,14 @@ pub enum Action {
     NextScramble,
     ToggleInspection,
     ToggleScramblePreview,
+    TogglePreview3d,
+    RotatePreviewLeft,
+    RotatePreviewRight,
+    RotatePreviewUp,
+    RotatePreviewDown,
+    RollPreviewLeft,
+    RollPreviewRight,
+    ResetPreviewRotation,
     ManualEntry,
     PreviousSolve,
     NextSolve,
@@ -103,12 +111,20 @@ pub enum Action {
 
 impl Action {
     /// Every action, in the order the help dialog lists them.
-    pub const ALL: [Self; 85] = [
+    pub const ALL: [Self; 93] = [
         Self::Timer,
         Self::Cancel,
         Self::NextScramble,
         Self::ToggleInspection,
         Self::ToggleScramblePreview,
+        Self::TogglePreview3d,
+        Self::RotatePreviewLeft,
+        Self::RotatePreviewRight,
+        Self::RotatePreviewUp,
+        Self::RotatePreviewDown,
+        Self::RollPreviewLeft,
+        Self::RollPreviewRight,
+        Self::ResetPreviewRotation,
         Self::ManualEntry,
         Self::PreviousSolve,
         Self::NextSolve,
@@ -199,6 +215,14 @@ impl Action {
             Self::NextScramble => "next_scramble",
             Self::ToggleInspection => "toggle_inspection",
             Self::ToggleScramblePreview => "toggle_scramble_preview",
+            Self::TogglePreview3d => "toggle_preview_3d",
+            Self::RotatePreviewLeft => "rotate_preview_left",
+            Self::RotatePreviewRight => "rotate_preview_right",
+            Self::RotatePreviewUp => "rotate_preview_up",
+            Self::RotatePreviewDown => "rotate_preview_down",
+            Self::RollPreviewLeft => "roll_preview_left",
+            Self::RollPreviewRight => "roll_preview_right",
+            Self::ResetPreviewRotation => "reset_preview_rotation",
             Self::ManualEntry => "manual_entry",
             Self::PreviousSolve => "previous_solve",
             Self::NextSolve => "next_solve",
@@ -291,7 +315,8 @@ impl Action {
 
     /// Returns whether holding the key should repeat the action.
     ///
-    /// Solve navigation and new scrambles feel natural when held; opening
+    /// Solve navigation, new scrambles and turning the 3D preview feel natural
+    /// when held; opening
     /// dialogs, deleting solves or switching events and sessions must not
     /// repeat.
     pub const fn repeats(self) -> bool {
@@ -300,6 +325,12 @@ impl Action {
             Self::NextScramble
                 | Self::PreviousSolve
                 | Self::NextSolve
+                | Self::RotatePreviewLeft
+                | Self::RotatePreviewRight
+                | Self::RotatePreviewUp
+                | Self::RotatePreviewDown
+                | Self::RollPreviewLeft
+                | Self::RollPreviewRight
                 | Self::ChartZoomIn
                 | Self::ChartZoomOut
         )
@@ -445,6 +476,7 @@ pub enum BindingError {
 pub struct Keybinds(BTreeMap<Action, Option<KeyBinding>>);
 
 impl Default for Keybinds {
+    #[allow(clippy::too_many_lines, reason = "one line per action")]
     fn default() -> Self {
         let bindings = [
             (Action::Timer, "Space"),
@@ -452,6 +484,14 @@ impl Default for Keybinds {
             (Action::NextScramble, "n"),
             (Action::ToggleInspection, "i"),
             (Action::ToggleScramblePreview, "p"),
+            (Action::TogglePreview3d, "Ctrl+P"),
+            (Action::RotatePreviewLeft, "Ctrl+Left"),
+            (Action::RotatePreviewRight, "Ctrl+Right"),
+            (Action::RotatePreviewUp, "Ctrl+Up"),
+            (Action::RotatePreviewDown, "Ctrl+Down"),
+            (Action::RollPreviewLeft, "Ctrl+Shift+Left"),
+            (Action::RollPreviewRight, "Ctrl+Shift+Right"),
+            (Action::ResetPreviewRotation, "Ctrl+0"),
             (Action::ManualEntry, "m"),
             (Action::PreviousSolve, "Up"),
             (Action::NextSolve, "Down"),
@@ -989,6 +1029,40 @@ mod tests {
             Some(Action::Cancel)
         );
         assert_eq!(keybinds.action_for(&press("n", true, false, false)), None);
+    }
+
+    #[test]
+    fn the_3d_preview_actions_have_their_default_keys() {
+        let keybinds = Keybinds::default();
+        let press = |key: &str| KeyPress::new(key, true, false, false).unwrap();
+        for (key, action) in [
+            ("p", Action::TogglePreview3d),
+            ("Left", Action::RotatePreviewLeft),
+            ("Right", Action::RotatePreviewRight),
+            ("Up", Action::RotatePreviewUp),
+            ("Down", Action::RotatePreviewDown),
+            ("0", Action::ResetPreviewRotation),
+        ] {
+            assert_eq!(keybinds.action_for(&press(key)), Some(action), "{key}");
+        }
+        let rolled = |key: &str| KeyPress::new(key, true, false, true).unwrap();
+        assert_eq!(
+            keybinds.action_for(&rolled("Left")),
+            Some(Action::RollPreviewLeft)
+        );
+        assert_eq!(
+            keybinds.action_for(&rolled("Right")),
+            Some(Action::RollPreviewRight)
+        );
+        assert!(Action::RollPreviewLeft.repeats());
+        assert!(Action::RollPreviewRight.repeats());
+        // Turning repeats while the key is held; the others must not.
+        assert!(Action::RotatePreviewLeft.repeats());
+        assert!(Action::RotatePreviewRight.repeats());
+        assert!(Action::RotatePreviewUp.repeats());
+        assert!(Action::RotatePreviewDown.repeats());
+        assert!(!Action::ResetPreviewRotation.repeats());
+        assert!(!Action::TogglePreview3d.repeats());
     }
 
     #[test]

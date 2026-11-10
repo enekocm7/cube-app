@@ -149,7 +149,7 @@ impl CubeApp {
                 let preview = if self.trainer_revealed() {
                     None
                 } else {
-                    self.scramble_preview(room, window)
+                    self.scramble_preview(room, window, cx)
                 };
                 let revealed = self.render_revealed_case();
                 panel
@@ -258,25 +258,38 @@ impl CubeApp {
     }
 
     /// The drawing of the current scramble, unless it is hidden or not ready.
-    fn scramble_preview(&self, room: Pixels, window: &Window) -> Option<Div> {
+    fn scramble_preview(
+        &self,
+        room: Pixels,
+        window: &Window,
+        cx: &mut Context<Self>,
+    ) -> Option<Div> {
         if !self.settings.scramble_preview {
             return None;
         }
         let event = self.shown_event();
         let scramble = self.shown_scramble()?;
-        let image = self.preview.get(event, scramble)?;
+        let drawing = self
+            .preview
+            .get(event, scramble, self.settings.preview_3d)?;
         let size = self.settings.preview_size(event);
+        let app = cx.entity().downgrade();
         // Never taller than the room above the bottom edge once the gap above
         // the drawing is taken out.
         let tallest = (room - px(12.)).max(px(0.));
         let height = (window.viewport_size().height * size.height_share()).min(tallest);
-        Some(
-            div()
-                .flex_none()
-                .max_w_full()
-                .pt_3()
-                .child(image.element(height, size.max_scale())),
-        )
+        Some(div().flex_none().max_w_full().pt_3().child(drawing.element(
+            "timer-preview",
+            height,
+            size.max_scale(),
+            &self.preview_turn,
+            // A press must not start the timer on the digits behind.
+            true,
+            move |window, cx| {
+                app.update(cx, |app, cx| app.toggle_preview_3d(window, cx))
+                    .ok();
+            },
+        )))
     }
 
     /// Works out the digits, their color and the hint for the timer's phase.

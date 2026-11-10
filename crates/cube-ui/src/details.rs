@@ -1,5 +1,7 @@
 //! The solve details dialog, which is also where a solve is edited.
 
+use std::cell::Cell;
+
 use cube_core::format::{format_ms, parse_time};
 use cube_core::validation::{
     format_date_input, parse_date, parse_date_input, validate_comment, validate_duration,
@@ -18,7 +20,7 @@ use gpui_kit::component::{
 use gpui_kit::prelude::FluentBuilder as _;
 use gpui_kit::*;
 
-use crate::app::CubeApp;
+use crate::app::{CubeApp, key_press};
 use crate::dialog_size::{DialogSize, dialog_body, dialog_body_height, dialog_title, dialog_width};
 use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
 use crate::palette::Palette;
@@ -248,6 +250,7 @@ impl Render for SolveForm {
         dialog_body(
             FadeScroll::new("solve-form", background)
                 .track_focus(&self.focus)
+                .on_key_down(cx.listener(Self::on_key_down))
                 .max_h(max_height)
                 .gap_3()
                 .on_mouse_down(
@@ -300,19 +303,57 @@ impl SolveForm {
     /// The puzzle as the scramble in the field leaves it, unless the setting
     /// hides it or the text is not a scramble for the event.
     fn render_preview(&self, cx: &App) -> Option<impl IntoElement + use<>> {
-        let shown = self
+        let (three_d, turntable) = self
             .app
-            .read_with(cx, |app, _| app.settings.scramble_preview)
-            .unwrap_or(false);
-        if !shown {
-            return None;
-        }
+            .read_with(cx, |app, _| {
+                app.settings
+                    .scramble_preview
+                    .then(|| (app.settings.preview_3d, app.preview_turn.clone()))
+            })
+            .ok()??;
         let text = self.scramble.read(cx).value().to_string();
-        let image = self.preview.get(self.event, &text)?;
-        Some(h_flex().justify_center().child(image.element(
+        let drawing = self.preview.get(self.event, &text, three_d)?;
+        let app = self.app.clone();
+        Some(h_flex().justify_center().child(drawing.element(
+            "details-preview",
             PREVIEW_HEIGHT,
             cube_core::settings::PreviewSize::Normal.max_scale(),
+            &turntable,
+            // A press on the drawing moves focus off the fields, like
+            // one on the form's empty space, so the keys can turn it.
+            false,
+            move |window, cx| {
+                app.update(cx, |app, cx| app.toggle_preview_3d(window, cx))
+                    .ok();
+                // The form draws the preview, and only the app has changed.
+                window.refresh();
+            },
         )))
+    }
+
+    /// Turns or resets the 3D preview with the keys that do so on the timer.
+    /// A key that could be text is left to a focused field.
+    fn on_key_down(&mut self, event: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        let modifiers = event.keystroke.modifiers;
+        let typing = !(modifiers.control || modifiers.alt || modifiers.platform);
+        if typing && !self.focus.is_focused(window) {
+            return;
+        }
+        let Some(press) = key_press(&event.keystroke) else {
+            return;
+        };
+        let turned = self
+            .app
+            .read_with(cx, |app, _| {
+                app.keybinds().action_for(&press).is_some_and(|action| {
+                    (!event.is_held || action.repeats()) && app.preview_turn.act(action)
+                })
+            })
+            .unwrap_or(false);
+        if turned {
+            cx.stop_propagation();
+            cx.notify();
+        }
     }
 
     /// The event picker next to the date field.
@@ -613,7 +654,9 @@ impl CubeApp {
             language.format_count((index + 1) as u64)
         );
 
-        window.open_dialog(cx, move |dialog, window, _| {
+        let first_build = Cell::new(true);
+        window.open_dialog(cx, move |dialog, window, cx| {
+            focus_once(&first_build, &form, window, cx);
             let (form_for_save, app_for_delete) = (form.clone(), app.clone());
             let app_for_share = app.clone();
             let save: Submit = std::rc::Rc::new(move |window, cx| {
@@ -704,6 +747,15 @@ impl CubeApp {
             window,
             cx,
         );
+    }
+}
+
+/// Focuses the form the first time its dialog is built, so the keys that
+/// turn the preview reach it before any click.
+fn focus_once(first: &Cell<bool>, form: &Entity<SolveForm>, window: &mut Window, cx: &mut App) {
+    if first.replace(false) {
+        let focus = form.read(cx).focus.clone();
+        focus.focus(window, cx);
     }
 }
 

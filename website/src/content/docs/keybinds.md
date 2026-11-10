@@ -40,6 +40,14 @@ nothing is selected.
 | New scramble | `N` | |
 | Turn inspection on or off | `I` | |
 | Show or hide the scramble preview | `P` | The same switch as the setting |
+| Switch the scramble preview between flat and 3D | `Ctrl + P` | The same switch as **Timer → 3D scramble preview**. Clicking the preview switches too, as long as the 3D one is not dragged. In the library it switches the cases instead, like **Library → 3D cases** |
+| Turn the 3D preview left | `Ctrl + Left` | Turns the puzzle 15° around the vertical axis of the screen. Hold to keep turning. Works on the timer, in the solve's dialog and on the library's cases, as do the seven below |
+| Turn the 3D preview right | `Ctrl + Right` | |
+| Turn the 3D preview up | `Ctrl + Up` | Tilts the puzzle 15°, with no limit, so it can be turned right over |
+| Turn the 3D preview down | `Ctrl + Down` | Tilts the puzzle 15°, with no limit, so it can be turned right over |
+| Roll the 3D preview counterclockwise | `Ctrl + Shift + Left` | Turns the puzzle 15° around the line of sight, like a dial |
+| Roll the 3D preview clockwise | `Ctrl + Shift + Right` | |
+| Reset the 3D preview's orientation | `Ctrl + 0` | Back to the top, the front and the right side |
 | Turn manual mode on or off | `M` | Type a time from another timer. See [Manual mode](#manual-mode) |
 | Select the newer solve | `Up` | Moves the highlight up the list, or up the stats table. See [Charts](#charts) for the charts screen |
 | Select the older solve | `Down` | Moves the highlight down the list, or down the stats table |

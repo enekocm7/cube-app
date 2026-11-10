@@ -47,7 +47,7 @@ use crate::library_screen::{LibraryState, new_library_search};
 use crate::multi_blind_screen::MultiBlindState;
 use crate::palette;
 use crate::panel_resize::{PanelSide, render_grab};
-use crate::preview::PreviewCache;
+use crate::preview::{PreviewCache, Turntable};
 use crate::relays_screen::RelayState;
 use crate::scoped_rem::ScopedRem;
 use crate::stats_screen::StatsView;
@@ -444,6 +444,8 @@ pub struct CubeApp {
     pub(crate) manual: Option<ManualEntry>,
     /// The drawing of `scramble`, kept while the same one is on screen.
     pub(crate) preview: PreviewCache,
+    /// How the 3D preview is held, on the timer and in the solve details.
+    pub(crate) preview_turn: Turntable,
     /// Whether the wait for a scramble has outlasted `GENERATING_DELAY`, so
     /// the placeholder message may show.
     pub(crate) generating_visible: bool,
@@ -638,6 +640,7 @@ impl CubeApp {
             scramble: None,
             manual: None,
             preview: PreviewCache::default(),
+            preview_turn: Turntable::default(),
             generating_visible: false,
             generating_timer: None,
             queue: ScrambleQueue::new(event),
@@ -1028,6 +1031,18 @@ impl CubeApp {
             Action::NextScramble => self.skip_scramble(cx),
             Action::ToggleInspection => self.toggle_inspection(window, cx),
             Action::ToggleScramblePreview => self.toggle_scramble_preview(window, cx),
+            Action::TogglePreview3d => self.toggle_preview_3d(window, cx),
+            Action::RotatePreviewLeft
+            | Action::RotatePreviewRight
+            | Action::RotatePreviewUp
+            | Action::RotatePreviewDown
+            | Action::RollPreviewLeft
+            | Action::RollPreviewRight
+            | Action::ResetPreviewRotation => {
+                if self.preview_turn.act(action) {
+                    cx.notify();
+                }
+            }
             Action::ManualEntry => self.toggle_manual_entry(cx),
             Action::PreviousSolve => self.select_solve(true, cx),
             Action::NextSolve => self.select_solve(false, cx),
@@ -1479,6 +1494,14 @@ impl CubeApp {
     pub(crate) fn toggle_scramble_preview(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.update_settings(window, cx, |settings| {
             settings.scramble_preview = !settings.scramble_preview;
+        });
+    }
+
+    /// Switches the scramble preview between the flat net and 3D, saving the
+    /// setting, as the key or a click on the preview asks.
+    pub(crate) fn toggle_preview_3d(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.update_settings(window, cx, |settings| {
+            settings.preview_3d = !settings.preview_3d;
         });
     }
 

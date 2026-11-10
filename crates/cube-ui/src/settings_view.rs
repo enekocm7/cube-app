@@ -1525,6 +1525,11 @@ impl SettingsView {
                     strings.setting_scramble_preview_desc,
                     settings.scramble_preview,
                 ),
+                state(
+                    strings.setting_preview_3d,
+                    strings.setting_preview_3d_desc,
+                    settings.preview_3d,
+                ),
             ],
             [
                 self.switch(
@@ -1541,6 +1546,14 @@ impl SettingsView {
                     strings.setting_scramble_preview_desc,
                     settings.scramble_preview,
                     |settings, value| settings.scramble_preview = value,
+                    cx,
+                ),
+                self.switch(
+                    "preview-3d",
+                    strings.setting_preview_3d,
+                    strings.setting_preview_3d_desc,
+                    settings.preview_3d,
+                    |settings, value| settings.preview_3d = value,
                     cx,
                 ),
             ],
@@ -1730,8 +1743,19 @@ impl SettingsView {
                 strings.search_off
             }
         };
-        let mut library_texts = Vec::new();
-        let mut library_rows = Vec::new();
+        let mut library_texts = vec![state(
+            strings.setting_library_3d,
+            strings.setting_library_3d_desc,
+            settings.library_3d,
+        )];
+        let mut library_rows = vec![self.switch(
+            "library-3d",
+            strings.setting_library_3d,
+            strings.setting_library_3d_desc,
+            settings.library_3d,
+            |settings, value| settings.library_3d = value,
+            cx,
+        )];
         for (index, puzzle) in catalog().iter().enumerate() {
             let event = puzzle.event;
             let methods = puzzle.methods();

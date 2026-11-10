@@ -402,6 +402,14 @@ impl CubeApp {
                 | Action::ShowHelp
                 | Action::FocusSearch
                 | Action::ToggleScramblePreview
+                | Action::TogglePreview3d
+                | Action::RotatePreviewLeft
+                | Action::RotatePreviewRight
+                | Action::RotatePreviewUp
+                | Action::RotatePreviewDown
+                | Action::RollPreviewLeft
+                | Action::RollPreviewRight
+                | Action::ResetPreviewRotation
         ) {
             return false;
         }

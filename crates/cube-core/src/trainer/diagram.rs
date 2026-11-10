@@ -118,7 +118,11 @@ fn polygon(svg: &mut String, points: &[[f32; 2]], fill: &str, outline: f32) {
 }
 
 /// What each place shows in a case of a puzzle of stickers.
-fn sticker_fills(model: &StickerModel, set: &AlgSet, origins: &[u16]) -> Vec<&'static str> {
+pub(crate) fn sticker_fills(
+    model: &StickerModel,
+    set: &AlgSet,
+    origins: &[u16],
+) -> Vec<&'static str> {
     let shown = &set.show().places;
     origins
         .iter()

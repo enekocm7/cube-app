@@ -38,6 +38,7 @@ Sixteen languages, including English, Spanish, German, French, Japanese, and Chi
 |---|---|---|
 | Shorter 3x3x3 scrambles | Off | Searches longer for short scrambles; noticeably slower to generate |
 | Show the scramble preview | On | Draw the scrambled puzzle under the timer and in solve details (`P` toggles it too) |
+| 3D scramble preview | Off | Draw the puzzle in 3D, to turn around with the mouse or with `Ctrl` and the arrow keys. Clicking the preview, or `Ctrl + P`, toggles it. Saved as `preview_3d` |
 | Preview size, per event (**Appearance → Sizes per event**) | Normal | Small, Normal, Big or Huge for 2x2x2, 3x3x3, 4x4x4 and Square-1; up to Big for FTO; Small or Normal for the other events. Saved in `cube-app.toml` under `[preview_sizes]` for events that differ from Normal |
 
 ## Appearance
@@ -66,6 +67,10 @@ Light, dark, or system — plus your theme files. See [Themes](/cube-app/docs/th
 | Always show the solve list scrollbar | Off | Keeps it visible instead of only while scrolling |
 
 ## Library
+
+| Option | Default | What it does |
+|---|---|---|
+| 3D cases | Off | Draws the highlighted case and the case under review in 3D, to turn around with the mouse or the keyboard. Clicking a case's drawing, or `Ctrl + P` in the library, toggles it. Saved as `library_3d` |
 
 The library's sets are grouped by puzzle, then by method, and each row has two
 switches:
