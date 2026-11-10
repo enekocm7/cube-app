@@ -23,6 +23,7 @@ mod three_by_three;
 pub use cube::{CustomAlgError, check_algorithm, generate_scramble};
 pub use data::{Attempt, CaseStats, TrainerData, slowest_first, weighted_cases};
 pub use deck::Deck;
+pub(crate) use diagram::sticker_fills;
 pub use diagram::{case_diagram, case_thumbnail, diagram_ratio};
 pub use drill::{Drill, Prompt};
 pub use grid::{GridStep, grid_step, rows_before};

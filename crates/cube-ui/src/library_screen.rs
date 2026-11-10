@@ -15,6 +15,7 @@ use cube_core::library::{
     Grade, LibraryData, LibraryPuzzle, Status, check, find_set, first_visible_set, recognition,
     search_visible_cases, setup, visible_catalog,
 };
+use cube_core::preview3d::{Solid, case_solid};
 use cube_core::trainer::notation::AlgError;
 use cube_core::trainer::{
     AlgCase, AlgSet, CustomAlgError, PLL, Step, case_diagram, case_thumbnail, diagram_ratio,
@@ -35,6 +36,7 @@ use crate::details::{field_error, keep_focus};
 use crate::dialog_size::{DialogSize, dialog_title, dialog_width};
 use crate::dialog_submit::{DialogSubmit as _, Submit, on_press};
 use crate::palette::Palette;
+use crate::preview::{OnClick, Turntable, solid_view};
 use crate::scroll_fade::{FadeScroll, fading_scroll};
 use crate::search_bar::{focus_on_search_key, new_search, query, search_field};
 
@@ -94,6 +96,9 @@ fn full_diagram(image: Arc<Image>, set: &AlgSet, height: Rems) -> impl IntoEleme
 /// Case drawings by set id and case name; `None` if one could not be drawn.
 type Diagrams = HashMap<(&'static str, &'static str), Option<Arc<Image>>>;
 
+/// Cases in 3D by set id and case name; `None` if one could not be built.
+type Solids = HashMap<(&'static str, &'static str), Option<Rc<Solid>>>;
+
 /// A case and the set it is in.
 type Row = (&'static AlgSet, &'static AlgCase);
 
@@ -127,6 +132,9 @@ pub(crate) struct LibraryState {
     list_scroll: UniformListScrollHandle,
     diagrams: RefCell<Diagrams>,
     thumbnails: RefCell<Diagrams>,
+    solids: RefCell<Solids>,
+    /// How the cases are held in 3D, the same for every case.
+    pub(crate) turntable: Turntable,
 }
 
 impl LibraryState {
@@ -155,6 +163,8 @@ impl LibraryState {
             list_scroll: UniformListScrollHandle::new(),
             diagrams: RefCell::default(),
             thumbnails: RefCell::default(),
+            solids: RefCell::default(),
+            turntable: Turntable::default(),
         };
         state.refresh_rows(settings);
         state.reveal_set();
@@ -238,6 +248,15 @@ impl LibraryState {
         let entry = diagrams
             .entry((set.id, case.name))
             .or_insert_with(|| case_diagram(set, case).map(svg_image));
+        entry.clone()
+    }
+
+    /// Returns `case` in 3D, building it the first time.
+    fn solid(&self, set: &AlgSet, case: &'static AlgCase) -> Option<Rc<Solid>> {
+        let mut solids = self.solids.borrow_mut();
+        let entry = solids
+            .entry((set.id, case.name))
+            .or_insert_with(|| case_solid(set, case).map(Rc::new));
         entry.clone()
     }
 
@@ -483,6 +502,9 @@ impl CubeApp {
                 | Action::FocusSearch
         ) {
             return false;
+        }
+        if self.library_3d_action(action, window, cx) {
+            return true;
         }
         if self.library.review.is_some() {
             self.review_action(action, window, cx);
@@ -904,6 +926,74 @@ impl CubeApp {
             self.toast(self.strings().library_review_done, window, cx);
         }
         cx.notify();
+    }
+
+    /// The drawing of `case` at `height`, or the case in 3D when that is
+    /// chosen. A click on either, unless it drags the solid, switches between
+    /// the two.
+    fn case_view(
+        &self,
+        id: &'static str,
+        set: &'static AlgSet,
+        case: &'static AlgCase,
+        height: Rems,
+        cx: &mut Context<Self>,
+    ) -> Option<AnyElement> {
+        let app = cx.entity().downgrade();
+        let switch: OnClick = Rc::new(move |window, cx| {
+            app.update(cx, |app, cx| app.toggle_library_3d(window, cx))
+                .ok();
+        });
+        let solid = self.library.solid(set, case);
+        if self.settings.library_3d
+            && let Some(solid) = solid
+        {
+            return Some(
+                solid_view(id, solid, &self.library.turntable, height, switch).into_any_element(),
+            );
+        }
+        let image = self.library.diagram(set, case)?;
+        let drawing = full_diagram(image, set, height);
+        if solid.is_none() {
+            return Some(drawing.into_any_element());
+        }
+        Some(
+            div()
+                .id(id)
+                .flex_none()
+                .max_w_full()
+                .cursor_pointer()
+                .child(drawing)
+                .on_click(move |_, window, cx| switch(window, cx))
+                .into_any_element(),
+        )
+    }
+
+    /// Switches the library's cases between flat drawings and 3D, saving the
+    /// setting.
+    pub(crate) fn toggle_library_3d(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.update_settings(window, cx, |settings| {
+            settings.library_3d = !settings.library_3d;
+        });
+    }
+
+    /// Turns the cases in 3D, or switches them, as `action` asks. Returns
+    /// whether it was one of those.
+    fn library_3d_action(
+        &mut self,
+        action: Action,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        if action == Action::TogglePreview3d {
+            self.toggle_library_3d(window, cx);
+            return true;
+        }
+        if self.library.turntable.act(action) {
+            cx.notify();
+            return true;
+        }
+        false
     }
 
     /// The library screen: a review, or the sets to browse.
@@ -1331,11 +1421,13 @@ impl CubeApp {
         };
         panel
             .items_center()
-            .children(
-                self.library
-                    .diagram(set, case)
-                    .map(|image| full_diagram(image, set, library_rem(DETAIL_DIAGRAM, scale))),
-            )
+            .children(self.case_view(
+                "library-case",
+                set,
+                case,
+                library_rem(DETAIL_DIAGRAM, scale),
+                cx,
+            ))
             .child(div().text_center().child(case.name))
             .children(hint.map(|hint| {
                 div()
@@ -1551,11 +1643,13 @@ impl CubeApp {
                     .replace("{count}", &language.format_count(left as u64)),
             ),
         )
-        .children(
-            self.library
-                .diagram(set, case)
-                .map(|image| full_diagram(image, set, library_rem(REVIEW_DIAGRAM, scale))),
-        )
+        .children(self.case_view(
+            "library-review-case",
+            set,
+            case,
+            library_rem(REVIEW_DIAGRAM, scale),
+            cx,
+        ))
         .child(div().text_center().child(case.name))
         .child(div().text_xs().text_color(muted).child(format!(
             "{} · {}",

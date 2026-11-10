@@ -63,6 +63,18 @@ of its row in the list.
 The trainer and the library share the PLL and OLL cases, and the algorithm you
 choose in one is the one the other uses.
 
+### In 3D
+
+Click the case's drawing, press `Ctrl + P` or turn on **Library → 3D cases** in
+settings to see the case in 3D, in the drawing's colors: the last layer on top,
+and grey where the set does not care what is there. It works for every puzzle,
+in the case panel and in the review. Turn it the same way as the
+[3D scramble preview](/cube-app/docs/usage-timer/): drag it, hold `Shift` to keep
+to one axis, drag with the right button or hold `Alt` to roll it, or use `Ctrl`
+with the arrow keys, `Ctrl + Shift + Left` and `Right`, and `Ctrl + 0` to reset
+it. Click it without dragging, or press `Ctrl + P` again, to go back to the
+flat drawing. The list keeps its flat drawings.
+
 ## Review
 
 A learned case comes back for review on a schedule that stretches as you

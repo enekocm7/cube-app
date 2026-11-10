@@ -50,6 +50,10 @@ for valid bindings.
 | `N` | New scramble (hold to keep generating) |
 | `I` | Turn WCA inspection on or off |
 | `P` | Show or hide the scramble preview |
+| `Ctrl + P` | Switch the scramble preview between flat and 3D |
+| `Ctrl + Left` / `Right` / `Up` / `Down` | Turn the 3D preview |
+| `Ctrl + Shift + Left` / `Right` | Roll the 3D preview counterclockwise / clockwise |
+| `Ctrl + 0` | Reset the 3D preview's orientation |
 | `M` | Turn manual mode on or off |
 | `Up` / `Down` | Select a newer or older solve (hold to keep moving) |
 | `Enter` | Open the selected solve's details |
@@ -181,6 +185,7 @@ Around the shortcuts:
 
 - Algorithm sets for every puzzle, browsed by puzzle, method and set, with search.
 - A drawing, setup moves, algorithms and a status for each case, with your own algorithms, favourite and note.
+- Cases in 3D, to turn around: click a case's drawing or turn on **Library → 3D cases**.
 - A spaced-repetition review of the cases you have learned.
 - Hide a set from the library or leave it out of the trainer, per set or by puzzle or method, in settings.
 
@@ -240,9 +245,9 @@ Pick a category on the left to see its settings on the right.
 | Category | What you can change |
 |---|---|
 | **General** | Sixteen languages, including English and Spanish, notifications, and confirmation before deleting |
-| **Timer** | WCA inspection, its 8 s and 12 s audio cues, personal best celebrations, touching the digits to start or stop, shorter 3x3x3 scrambles (slower to generate) and the scramble preview |
+| **Timer** | WCA inspection, its 8 s and 12 s audio cues, personal best celebrations, touching the digits to start or stop, shorter 3x3x3 scrambles (slower to generate), the scramble preview and its 3D view |
 | **Appearance** | Light, dark or system and your theme files (see [Themes](#themes)), font and sizes with presets and a custom point size, ao5 in the solve list, and an always-visible solve list scrollbar |
-| **Library** | Show each algorithm set in the library, include it in the trainer, or both. Puzzles and methods have dropdowns with a switch for the whole group. See [Algorithm library](#algorithm-library) |
+| **Library** | Draw the cases in 3D. Show each algorithm set in the library, include it in the trainer, or both. Puzzles and methods have dropdowns with a switch for the whole group. See [Algorithm library](#algorithm-library) |
 | **Keyboard shortcuts** | Opens the `F1` panel, where shortcuts are rebound. See [Keyboard shortcuts](#keyboard-shortcuts) |
 | **Data** | Import and export csTimer sessions, and choose your own backup folder. See [Your data](#your-data) |
 | **Updates** | Automatic checks, release channel and check frequency. See [Updates](#updates) |
@@ -262,6 +267,8 @@ Details worth knowing:
 - **Scramble preview.** The preview draws the puzzle as the scramble leaves it, under the timer and in the solve
   details, where it follows the scramble you are editing. Turn it off with **Timer → Show the scramble preview**,
   or toggle it with `P`.
+- **3D scramble preview.** **Timer → 3D scramble preview**, or a click on the preview, draws the puzzle in 3D, to
+  turn around with the mouse or the keyboard.
 - **Sizes per event.** **Appearance → Sizes per event** opens a dialog that sets the preview, timer and scramble size
   of each event.
 - **Set visibility.** **Library** lists every puzzle with **Show in library** and **Include in training** switches that

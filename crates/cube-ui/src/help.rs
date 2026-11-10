@@ -22,12 +22,20 @@ use crate::search_bar::{BAR_HEIGHT, focus_on_search_key, new_search, query, sear
 /// uses the roomier form size rather than the narrower settings size.
 const DIALOG_SIZE: DialogSize = DialogSize::FORM;
 
-const TIMER_ACTIONS: [Action; 6] = [
+const TIMER_ACTIONS: [Action; 14] = [
     Action::Timer,
     Action::Cancel,
     Action::NextScramble,
     Action::ToggleInspection,
     Action::ToggleScramblePreview,
+    Action::TogglePreview3d,
+    Action::RotatePreviewLeft,
+    Action::RotatePreviewRight,
+    Action::RotatePreviewUp,
+    Action::RotatePreviewDown,
+    Action::RollPreviewLeft,
+    Action::RollPreviewRight,
+    Action::ResetPreviewRotation,
     Action::ManualEntry,
 ];
 const SOLVE_ACTIONS: [Action; 11] = [
@@ -495,6 +503,14 @@ fn action_label(strings: &'static Strings, action: Action) -> &'static str {
         Action::NextScramble => strings.new_scramble,
         Action::ToggleInspection => strings.action_toggle_inspection,
         Action::ToggleScramblePreview => strings.action_toggle_scramble_preview,
+        Action::TogglePreview3d => strings.action_toggle_preview_3d,
+        Action::RotatePreviewLeft => strings.action_rotate_preview_left,
+        Action::RotatePreviewRight => strings.action_rotate_preview_right,
+        Action::RotatePreviewUp => strings.action_rotate_preview_up,
+        Action::RotatePreviewDown => strings.action_rotate_preview_down,
+        Action::RollPreviewLeft => strings.action_roll_preview_left,
+        Action::RollPreviewRight => strings.action_roll_preview_right,
+        Action::ResetPreviewRotation => strings.action_reset_preview_rotation,
         Action::ManualEntry => strings.action_manual_entry,
         Action::PreviousSolve => strings.action_previous_solve,
         Action::NextSolve => strings.action_next_solve,
