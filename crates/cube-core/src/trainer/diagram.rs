@@ -6,8 +6,9 @@
 use std::fmt::Write as _;
 
 use super::{AlgCase, AlgSet};
+use crate::event::WcaEvent;
 use crate::library::case_origins;
-use crate::library::geometry::{Vec3, cross, dot, normalized, subtract};
+use crate::library::geometry::{Vec3, add, cross, dot, normalized, scale, subtract};
 use crate::library::model::{Model, StickerModel, square1_corner};
 
 /// How wide and tall the drawing is, in logical pixels.
@@ -166,6 +167,86 @@ fn draw_top(svg: &mut String, model: &StickerModel, fills: &[&str], style: Style
             _ => continue,
         };
         rectangle(svg, area, fill, gap, radius);
+    }
+}
+
+/// How much of its true depth a side sticker keeps when it is folded out
+/// from the top, so that the top stays the larger part of the drawing.
+const FOLDED_DEPTH: f64 = 0.45;
+
+/// Where a sticker of the top layer lands when the sides are folded out flat
+/// around the top, as `[x, z]` with the front toward `z`.
+fn folded_out(point: Vec3, normal: Vec3) -> [f64; 2] {
+    let up = [0., 1., 0.];
+    let level = dot(normal, up);
+    if level > 0.999 {
+        return [point[0], point[2]];
+    }
+    // The side meets the top along a line: fold the side over it, down
+    // its slope and out from the middle.
+    let outward = normalized([normal[0], 0., normal[2]]);
+    let across = (1. - level) / (1. - level * level).sqrt();
+    let hinge = add(scale(outward, across), up);
+    let along = cross(outward, up);
+    let downhill = normalized(cross(along, normal));
+    let downhill = if downhill[1] > 0. {
+        scale(downhill, -1.)
+    } else {
+        downhill
+    };
+    let offset = subtract(point, hinge);
+    let depth = dot(offset, downhill).max(0.) * FOLDED_DEPTH;
+    let flat = add(
+        scale(outward, across + depth),
+        scale(along, dot(offset, along)),
+    );
+    [flat[0], flat[2]]
+}
+
+/// Draws a puzzle whose top is not a grid, such as a Megaminx, from above:
+/// the top face with the stickers of its layer folded out around it.
+fn draw_folded_top(
+    svg: &mut String,
+    model: &StickerModel,
+    fills: &[&str],
+    layer: &[bool],
+    style: Style,
+) {
+    let shown: Vec<(Vec<[f64; 2]>, &str)> = model
+        .stickers
+        .iter()
+        .zip(fills)
+        .zip(layer)
+        .filter(|&(_, &in_layer)| in_layer)
+        .map(|((sticker, &fill), _)| {
+            let inset = sticker.polygon.iter().map(|&point| {
+                let toward = subtract(sticker.center, point);
+                folded_out(add(point, scale(toward, 0.06)), sticker.normal)
+            });
+            (inset.collect(), fill)
+        })
+        .collect();
+    let reach = shown
+        .iter()
+        .flat_map(|(points, _)| points)
+        .map(|[x, z]| x.abs().max(z.abs()))
+        .fold(0., f64::max);
+    if reach <= 0. {
+        return;
+    }
+    let view = f64::from(VIEW);
+    let scale = view / 2. / reach * 0.97;
+    for (points, fill) in &shown {
+        let flat: Vec<[f32; 2]> = points
+            .iter()
+            .map(|[x, z]| {
+                [
+                    (view / 2. + x * scale) as f32,
+                    (view / 2. + z * scale) as f32,
+                ]
+            })
+            .collect();
+        polygon(svg, &flat, fill, style.outline);
     }
 }
 
@@ -440,6 +521,9 @@ fn draw(set: &AlgSet, case: &AlgCase, style: Style) -> Option<String> {
             let fills = sticker_fills(model, set, &state);
             if set.solid_view {
                 draw_solid(&mut svg, model, &fills, style);
+            } else if set.event == WcaEvent::Megaminx {
+                let layer = set.model().region("layer:U")?.places;
+                draw_folded_top(&mut svg, model, &fills, &layer, style);
             } else {
                 draw_top(&mut svg, model, &fills, style);
             }
@@ -535,6 +619,44 @@ mod tests {
         let set = crate::library::find_set("4x4-oll-parity").unwrap();
         let svg = case_diagram(set, &set.cases[0]).unwrap();
         assert_eq!(svg.matches("<rect").count(), 16 + 16);
+    }
+
+    #[test]
+    fn a_megaminx_shows_its_top_layer_from_above() {
+        let set = crate::library::find_set("mega-pll-a").unwrap();
+        let svg = case_diagram(set, &set.cases[0]).unwrap();
+        // Eleven stickers on top, and three on each of the five sides.
+        assert_eq!(svg.matches("<polygon").count(), 11 + 5 * 3);
+        assert_eq!(fills(&svg, TOP), 11);
+        assert_eq!(fills(&svg, BLANK), 0);
+        for side in ["F", "R", "BR", "BL", "L"] {
+            assert_eq!(fills(&svg, face_color(side)), 3, "{side}");
+        }
+    }
+
+    #[test]
+    fn a_megaminx_side_folds_out_beyond_the_top() {
+        let Model::Stickers(model) = Model::of(WcaEvent::Megaminx) else {
+            unreachable!()
+        };
+        let front = model
+            .face_names
+            .iter()
+            .position(|&name| name == "F")
+            .unwrap();
+        let reach = |point: [f64; 2]| point[0].hypot(point[1]);
+        let top_edge = model.stickers[0]
+            .polygon
+            .iter()
+            .map(|&point| folded_out(point, [0., 1., 0.]))
+            .map(reach)
+            .fold(0., f64::max);
+        for sticker in &model.stickers {
+            if usize::from(sticker.face) == front && sticker.center[1] > 0.62 {
+                let [x, z] = folded_out(sticker.center, sticker.normal);
+                assert!(reach([x, z]) > top_edge * 0.8 && z > 0., "{x} {z}");
+            }
+        }
     }
 
     #[test]
