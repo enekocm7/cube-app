@@ -1,5 +1,5 @@
 ; Inno Setup script for cube.
-; Build: iscc /DAppVersion=0.2.0 /DSourceExe=..\target\release\cube.exe /DIconFile=..\target\cube.ico cube.iss
+; Build: iscc /DAppVersion=0.3.0 /DSourceExe=..\target\release\cube.exe /DIconFile=..\target\cube.ico cube.iss
 
 #ifndef AppVersion
   #define AppVersion "0.0.0"
