@@ -25,6 +25,12 @@ jobs:
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
+        with:
+          # Shared with warm-cache.yml, which keeps the master cache this
+          # restores. A tag run can only read caches from its own tag or
+          # master, so saving one here would never be used again.
+          shared-key: release
+          save-if: ${{ github.ref == 'refs/heads/master' }}
 
       - name: Determine version
         id: version
@@ -109,6 +115,12 @@ jobs:
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
+        with:
+          # Shared with warm-cache.yml, which keeps the master cache this
+          # restores. A tag run can only read caches from its own tag or
+          # master, so saving one here would never be used again.
+          shared-key: release
+          save-if: ${{ github.ref == 'refs/heads/master' }}
 
       - name: Install system dependencies
         if: runner.os == 'Linux'
