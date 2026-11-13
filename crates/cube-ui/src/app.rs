@@ -788,6 +788,7 @@ impl CubeApp {
 
     fn tick(&mut self, window: &mut Window, cx: &mut Context<Self>) -> Duration {
         let now = Instant::now();
+        crate::toasts::expire(window, cx);
         self.handle_writer_events(window, cx);
         self.play_inspection_cues(now, window, cx);
         if let Some(outcome) = self.timer.tick(now) {
@@ -1412,7 +1413,7 @@ impl CubeApp {
     pub(crate) fn toast(&self, message: &str, window: &mut Window, cx: &mut Context<Self>) {
         if self.settings.toasts {
             let toast = Notification::info(message.to_owned()).placement(Anchor::BottomRight);
-            window.push_notification(toast, cx);
+            crate::toasts::push(toast, window, cx);
         }
     }
 
@@ -1420,7 +1421,7 @@ impl CubeApp {
     pub(crate) fn toast_warning(&self, message: &str, window: &mut Window, cx: &mut Context<Self>) {
         if self.settings.toasts {
             let toast = Notification::warning(message.to_owned()).placement(Anchor::BottomRight);
-            window.push_notification(toast, cx);
+            crate::toasts::push(toast, window, cx);
         }
     }
 
@@ -2393,7 +2394,7 @@ impl CubeApp {
                 )
                 .replace("{kept}", &self.language().format_count(summary.kept as u64));
             let toast = Notification::warning(message).placement(Anchor::BottomRight);
-            window.push_notification(toast, cx);
+            crate::toasts::push(toast, window, cx);
         }
     }
 
@@ -2415,7 +2416,7 @@ impl CubeApp {
         cx: &mut Context<Self>,
     ) {
         let message = template.replace("{error}", &format!("{error:#}"));
-        window.push_notification(Notification::error(message), cx);
+        crate::toasts::push(Notification::error(message), window, cx);
     }
 
     /// The current event and the control to skip its scramble.

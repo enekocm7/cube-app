@@ -171,7 +171,7 @@ impl KeybindsView {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        window.push_notification(Notification::error(message.clone()), cx);
+        crate::toasts::push(Notification::error(message.clone()), window, cx);
         self.error = Some(message);
         cx.notify();
     }

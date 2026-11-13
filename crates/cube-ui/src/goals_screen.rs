@@ -134,7 +134,7 @@ impl CubeApp {
                 .strings()
                 .toast_goals_save_failed
                 .replace("{error}", &format!("{error:#}"));
-            window.push_notification(Notification::error(message), cx);
+            crate::toasts::push(Notification::error(message), window, cx);
         }
     }
 
@@ -253,7 +253,7 @@ impl CubeApp {
         let strings = self.strings();
         if self.goals_path.is_none() {
             let message = strings.goals_unavailable;
-            window.push_notification(Notification::warning(message), cx);
+            crate::toasts::push(Notification::warning(message), window, cx);
             return;
         }
         let form = self.new_goal_form(index, window, cx);

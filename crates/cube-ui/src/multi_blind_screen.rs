@@ -264,7 +264,7 @@ impl CubeApp {
         let strings = self.strings();
         if self.multi_blind.path.is_none() {
             let message = strings.multi_blind_unavailable;
-            window.push_notification(Notification::warning(message), cx);
+            crate::toasts::push(Notification::warning(message), window, cx);
             return;
         }
         let bounds = |text: &str| {
@@ -323,7 +323,7 @@ impl CubeApp {
         let strings = self.strings();
         if self.multi_blind.path.is_none() {
             let message = strings.multi_blind_unavailable;
-            window.push_notification(Notification::warning(message), cx);
+            crate::toasts::push(Notification::warning(message), window, cx);
             return;
         }
         let Some(attempt) = self.multi_blind.data.attempts.get(index) else {
@@ -680,7 +680,7 @@ impl CubeApp {
                         let message = strings
                             .toast_multi_blind_scrambles_failed
                             .replace("{error}", &error);
-                        window.push_notification(Notification::error(message), cx);
+                        crate::toasts::push(Notification::error(message), window, cx);
                     }
                 }
             })

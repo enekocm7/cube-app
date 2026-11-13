@@ -208,7 +208,7 @@ impl CubeApp {
                         .strings()
                         .bluetooth_disconnect_failed
                         .replace("{error}", &error);
-                    window.push_notification(Notification::error(message), cx);
+                    crate::toasts::push(Notification::error(message), window, cx);
                 })
                 .ok();
             }
@@ -235,7 +235,7 @@ impl CubeApp {
             LinkEvent::Failed(error) => {
                 self.timer_link = None;
                 let message = connect_error_message(strings, &error);
-                window.push_notification(Notification::error(message), cx);
+                crate::toasts::push(Notification::error(message), window, cx);
             }
             LinkEvent::Lost => {
                 self.timer_link = None;
@@ -243,7 +243,7 @@ impl CubeApp {
                 // Not a toast: losing the timer matters even with toasts off.
                 let toast = Notification::warning(strings.bluetooth_lost.to_owned())
                     .placement(Anchor::BottomRight);
-                window.push_notification(toast, cx);
+                crate::toasts::push(toast, window, cx);
             }
         }
         cx.notify();
@@ -307,7 +307,7 @@ impl CubeApp {
             }
         };
         self.timer.cancel();
-        window.push_notification(Notification::error(lost_solve), cx);
+        crate::toasts::push(Notification::error(lost_solve), window, cx);
     }
 }
 
@@ -410,7 +410,7 @@ impl BluetoothView {
             ScanEvent::Failed(error) => {
                 let strings = self.app.read(cx).strings();
                 let message = scan_error_message(strings, &error);
-                window.push_notification(Notification::error(message), cx);
+                crate::toasts::push(Notification::error(message), window, cx);
                 self.picker.fail(error);
             }
         }
