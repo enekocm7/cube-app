@@ -244,7 +244,7 @@ Pick a category on the left to see its settings on the right.
 
 | Category | What you can change |
 |---|---|
-| **General** | Sixteen languages, including English and Spanish, notifications, and confirmation before deleting |
+| **General** | Sixteen languages, including English and Spanish, notifications that close on their own, and confirmation before deleting |
 | **Timer** | WCA inspection, its 8 s and 12 s audio cues, personal best celebrations, touching the digits to start or stop, shorter 3x3x3 scrambles (slower to generate), the scramble preview and its 3D view |
 | **Appearance** | Light, dark or system and your theme files (see [Themes](#themes)), font and sizes with presets and a custom point size, ao5 in the solve list, and an always-visible solve list scrollbar |
 | **Library** | Draw the cases in 3D. Show each algorithm set in the library, include it in the trainer, or both. Puzzles and methods have dropdowns with a switch for the whole group. See [Algorithm library](#algorithm-library) |

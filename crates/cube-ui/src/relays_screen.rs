@@ -378,7 +378,11 @@ impl CubeApp {
     pub(crate) fn open_new_relay(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let strings = self.strings();
         if self.relays.path.is_none() {
-            window.push_notification(Notification::warning(strings.relays_unavailable), cx);
+            crate::toasts::push(
+                Notification::warning(strings.relays_unavailable),
+                window,
+                cx,
+            );
             return;
         }
         let prompt = Prompt {
@@ -442,7 +446,11 @@ impl CubeApp {
     fn prepare_relay(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let strings = self.strings();
         if self.relays.path.is_none() {
-            window.push_notification(Notification::warning(strings.relays_unavailable), cx);
+            crate::toasts::push(
+                Notification::warning(strings.relays_unavailable),
+                window,
+                cx,
+            );
             return;
         }
         self.relays.requests += 1;
@@ -558,7 +566,11 @@ impl CubeApp {
     fn open_edit_relay(&mut self, index: usize, window: &mut Window, cx: &mut Context<Self>) {
         let strings = self.strings();
         if self.relays.path.is_none() {
-            window.push_notification(Notification::warning(strings.relays_unavailable), cx);
+            crate::toasts::push(
+                Notification::warning(strings.relays_unavailable),
+                window,
+                cx,
+            );
             return;
         }
         let Some(attempt) = self.relays.data.attempts.get(index) else {

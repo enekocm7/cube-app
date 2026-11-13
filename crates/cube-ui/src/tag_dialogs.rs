@@ -172,7 +172,7 @@ impl CubeApp {
     fn tags_usable(&self, window: &mut Window, cx: &mut Context<Self>) -> bool {
         if !self.tags_available {
             let message = self.strings().tags_unavailable;
-            window.push_notification(Notification::warning(message), cx);
+            crate::toasts::push(Notification::warning(message), window, cx);
         }
         self.tags_available
     }

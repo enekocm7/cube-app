@@ -631,7 +631,7 @@ impl CubeApp {
                 strings.trainer_nothing_learning
             };
             let notice = Notification::warning(message);
-            window.push_notification(notice.placement(Anchor::BottomRight), cx);
+            crate::toasts::push(notice.placement(Anchor::BottomRight), window, cx);
             return;
         }
         self.trainer.data.select_only(set, &cases);
@@ -687,7 +687,7 @@ impl CubeApp {
         let strings = self.strings();
         if cases.is_empty() {
             let notice = Notification::warning(strings.trainer_nothing_selected);
-            window.push_notification(notice.placement(Anchor::BottomRight), cx);
+            crate::toasts::push(notice.placement(Anchor::BottomRight), window, cx);
             return;
         }
         let cases = weighted_cases(set, &cases, &self.trainer.data.stats(set));

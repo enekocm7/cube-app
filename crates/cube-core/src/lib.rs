@@ -36,6 +36,7 @@ pub mod stats;
 pub mod tags;
 pub mod theme;
 pub mod timer;
+pub mod toast;
 pub mod trainer;
 pub mod validation;
 pub mod window_state;

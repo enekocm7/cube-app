@@ -87,7 +87,7 @@ impl CubeApp {
                 // The notification layer belongs to the root view, which wraps
                 // this one and does not exist until construction finishes.
                 window.on_next_frame(move |window, cx| {
-                    window.push_notification(Notification::success(message).title(title), cx);
+                    crate::toasts::push(Notification::success(message).title(title), window, cx);
                 });
             }
         }
@@ -142,13 +142,14 @@ impl CubeApp {
             Ok(release) => release.filter(Release::is_newer_than_current),
             Err(error) => {
                 if manual {
-                    window.push_notification(
+                    crate::toasts::push(
                         Notification::error(
                             self.strings()
                                 .update_check_failed_body
                                 .replace("{error}", &error.to_string()),
                         )
                         .title(self.strings().update_check_failed_title),
+                        window,
                         cx,
                     );
                 }
@@ -157,13 +158,14 @@ impl CubeApp {
         };
         let Some(release) = release else {
             if manual {
-                window.push_notification(
+                crate::toasts::push(
                     Notification::success(
                         self.strings()
                             .update_uptodate_body
                             .replace("{version}", updater::CURRENT_VERSION),
                     )
                     .title(self.strings().update_uptodate_title),
+                    window,
                     cx,
                 );
             }
@@ -171,9 +173,10 @@ impl CubeApp {
         };
         if release.asset_for(updater::detect_kind()).is_none() {
             if manual {
-                window.push_notification(
+                crate::toasts::push(
                     Notification::error(self.strings().update_no_asset)
                         .title(self.strings().update_failed_title),
+                    window,
                     cx,
                 );
             }
@@ -328,13 +331,14 @@ impl CubeApp {
         let version = release.version.to_string();
         self.settings.updates.skipped_version = Some(version.clone());
         self.save_settings(window, cx);
-        window.push_notification(
+        crate::toasts::push(
             Notification::info(
                 self.strings()
                     .update_skipped_body
                     .replace("{version}", &version),
             )
             .title(self.strings().update_skipped_title),
+            window,
             cx,
         );
         cx.notify();
@@ -350,9 +354,10 @@ impl CubeApp {
         };
         let kind = updater::detect_kind();
         if release.asset_for(kind).is_none() {
-            window.push_notification(
+            crate::toasts::push(
                 Notification::error(self.strings().update_no_asset)
                     .title(self.strings().update_failed_title),
+                window,
                 cx,
             );
             return;
@@ -447,16 +452,18 @@ impl CubeApp {
             Ok(path) if !cancelled => path,
             Ok(_) | Err(UpdateError::Cancelled) => {
                 updater::discard_downloads();
-                window.push_notification(
+                crate::toasts::push(
                     Notification::info(self.strings().update_cancelled_body),
+                    window,
                     cx,
                 );
                 return;
             }
             Err(error) => {
-                window.push_notification(
+                crate::toasts::push(
                     Notification::error(error.to_string())
                         .title(self.strings().update_failed_title),
+                    window,
                     cx,
                 );
                 return;
@@ -512,13 +519,14 @@ impl CubeApp {
             Ok(()) => cx.quit(),
             Err(error) => {
                 updater::discard_downloads();
-                window.push_notification(
+                crate::toasts::push(
                     Notification::error(
                         self.strings()
                             .update_install_failed
                             .replace("{error}", &error.to_string()),
                     )
                     .title(self.strings().update_failed_title),
+                    window,
                     cx,
                 );
             }

@@ -62,7 +62,7 @@ impl ShareView {
                     }
                     Err(error) => {
                         let message = strings.share_save_failed.replace("{error}", &error);
-                        window.push_notification(Notification::error(message), cx);
+                        crate::toasts::push(Notification::error(message), window, cx);
                     }
                 }
             });
@@ -185,7 +185,7 @@ impl CubeApp {
                             .strings()
                             .share_failed
                             .replace("{error}", &format!("{error:#}"));
-                        window.push_notification(Notification::error(message), cx);
+                        crate::toasts::push(Notification::error(message), window, cx);
                     }
                 }
             });
